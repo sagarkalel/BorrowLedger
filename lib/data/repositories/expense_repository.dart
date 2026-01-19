@@ -1,0 +1,174 @@
+import 'package:borrow_ledger/data/models/expense_model.dart';
+
+import '../database/database_helper.dart';
+
+class ExpenseRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  // Create a new expense
+  Future<int> createExpense(ExpenseModel expense) async {
+    return await _dbHelper.insert('expenses', expense.toMap());
+  }
+
+  // Get all expenses
+  Future<List<ExpenseModel>> getAllExpenses() async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  // Get expenses by category
+  Future<List<ExpenseModel>> getExpensesByCategory(String category) async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      where: 'category = ?',
+      whereArgs: [category],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  // Get expense by ID
+  Future<ExpenseModel?> getExpenseById(int id) async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return ExpenseModel.fromMap(maps.first);
+  }
+
+  // Search expenses
+  Future<List<ExpenseModel>> searchExpenses(String query) async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      where: 'description LIKE ? OR category LIKE ?',
+      whereArgs: ['%$query%', '%$query%'],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  // Update expense
+  Future<int> updateExpense(ExpenseModel expense) async {
+    return await _dbHelper.update(
+      'expenses',
+      expense.copyWith(updatedAt: DateTime.now()).toMap(),
+      where: 'id = ?',
+      whereArgs: [expense.id],
+    );
+  }
+
+  // Delete expense
+  Future<int> deleteExpense(int id) async {
+    return await _dbHelper.delete('expenses', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Get expenses by date range
+  Future<List<ExpenseModel>> getExpensesByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      where: 'date BETWEEN ? AND ?',
+      whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  // Get total expenses
+  Future<double> getTotalExpenses() async {
+    final result = await _dbHelper.rawQuery('''
+      SELECT SUM(amount) as total FROM expenses
+    ''');
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  // Get expenses by month
+  Future<List<ExpenseModel>> getExpensesByMonth(int year, int month) async {
+    final startDate = DateTime(year, month, 1);
+    final endDate = DateTime(year, month + 1, 1).subtract(Duration(days: 1));
+    return await getExpensesByDateRange(startDate, endDate);
+  }
+
+  // Get category-wise summary
+  Future<List<Map<String, dynamic>>> getCategorySummary() async {
+    return await _dbHelper.rawQuery('''
+      SELECT 
+        category,
+        SUM(amount) as total,
+        COUNT(*) as count
+      FROM expenses
+      GROUP BY category
+      ORDER BY total DESC
+    ''');
+  }
+
+  // Get monthly category breakdown
+  Future<List<Map<String, dynamic>>> getMonthlyCategoryBreakdown(
+    int year,
+    int month,
+  ) async {
+    final startDate = DateTime(year, month, 1);
+    final endDate = DateTime(year, month + 1, 1).subtract(Duration(days: 1));
+
+    return await _dbHelper.rawQuery(
+      '''
+      SELECT 
+        category,
+        SUM(amount) as total,
+        COUNT(*) as count
+      FROM expenses
+      WHERE date BETWEEN ? AND ?
+      GROUP BY category
+      ORDER BY total DESC
+    ''',
+      [startDate.toIso8601String(), endDate.toIso8601String()],
+    );
+  }
+
+  // Get recent expenses (limit to n items)
+  Future<List<ExpenseModel>> getRecentExpenses(int limit) async {
+    final List<Map<String, dynamic>> maps = await _dbHelper.query(
+      'expenses',
+      orderBy: 'date DESC',
+      limit: limit,
+    );
+    return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  // Get yearly total
+  Future<double> getYearlyTotal(int year) async {
+    final result = await _dbHelper.rawQuery(
+      '''
+      SELECT SUM(amount) as total 
+      FROM expenses
+      WHERE strftime('%Y', date) = ?
+    ''',
+      [year.toString()],
+    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  // Get monthly totals for a year
+  Future<List<Map<String, dynamic>>> getMonthlyTotals(int year) async {
+    return await _dbHelper.rawQuery(
+      '''
+      SELECT 
+        strftime('%m', date) as month,
+        SUM(amount) as total,
+        COUNT(*) as count
+      FROM expenses
+      WHERE strftime('%Y', date) = ?
+      GROUP BY month
+      ORDER BY month
+    ''',
+      [year.toString()],
+    );
+  }
+}
