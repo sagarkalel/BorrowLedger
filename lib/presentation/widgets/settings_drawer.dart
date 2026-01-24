@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/splash_screen.dart';
 import 'package:borrow_ledger/presentation/widgets/clear_data_dialog.dart';
@@ -716,25 +717,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           developer.log('📱 Storage permission status: $status');
 
           if (!status.isGranted) {
-            if (context.mounted) {
+            if (mounted) {
               Navigator.pop(context); // Close loading
               developer.log('❌ Storage permission denied');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.white),
-                      SizedBox(width: 12),
-                      Text(tr.storagePermissionDenied),
-                    ],
-                  ),
-                  backgroundColor: AppTheme.errorColor,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
+              showWarningSnackbar(context, tr.storagePermissionDenied);
             }
             return;
           }
@@ -799,27 +785,16 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('❌ Export failed: $e');
       developer.log('Stack trace: $stackTrace');
 
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('${tr.exportFailed}: $e')),
-              ],
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            action: SnackBarAction(
-              label: tr.retry,
-              textColor: Colors.white,
-              onPressed: _exportData,
-            ),
+
+        showFailureSnackbar(
+          context,
+          '${tr.exportFailed}: $e',
+          action: SnackBarAction(
+            label: tr.retry,
+            textColor: Colors.white,
+            onPressed: _exportData,
           ),
         );
       }
@@ -1005,25 +980,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('❌ Import failed: $e');
       developer.log('Stack trace: $stackTrace');
 
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('${tr.importFailed}: $e')),
-              ],
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        showFailureSnackbar(context, '${tr.importFailed} $e');
       }
     }
   }
@@ -1215,14 +1174,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('✅ Share dialog opened');
     } catch (e) {
       developer.log('❌ Share failed: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr.shareFailed}: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      if (mounted) showFailureSnackbar(context, '${tr.shareFailed} $e');
     }
   }
 
@@ -1255,47 +1207,15 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     try {
       await DatabaseHelper().clearAllData();
 
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Text(tr.allDataCleared),
-              ],
-            ),
-            backgroundColor: AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        showSuccessSnackbar(context, tr.allDataCleared);
+        restartApp(context);
       }
-
-      restartApp(context);
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('${tr.failedToDelete}: $e')),
-              ],
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        showFailureSnackbar(context, '${tr.failedToDelete} $e');
       }
     }
   }

@@ -46,7 +46,7 @@ class ExpenseRepository {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
       where: 'description LIKE ? OR category LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
+      whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
       orderBy: 'date DESC',
     );
     return maps.map((map) => ExpenseModel.fromMap(map)).toList();

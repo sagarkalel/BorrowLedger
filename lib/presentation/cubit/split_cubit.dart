@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:borrow_ledger/data/models/split_model.dart';
@@ -19,6 +20,8 @@ class SplitState {
   final String? searchQuery;
   final double totalPaidByUser;
   final double totalOwed;
+  final double totalReceivable;
+  final double totalPayable;
   final String? error;
   final String? successMessage;
   final DateTime? lastUpdate;
@@ -36,6 +39,8 @@ class SplitState {
     this.searchQuery,
     this.totalPaidByUser = 0.0,
     this.totalOwed = 0.0,
+    this.totalReceivable = 0.0,
+    this.totalPayable = 0.0,
     this.error,
     this.successMessage,
     this.lastUpdate,
@@ -54,6 +59,8 @@ class SplitState {
     bool clearSearchQuery = false,
     double? totalPaidByUser,
     double? totalOwed,
+    double? totalReceivable,
+    double? totalPayable,
     String? error,
     String? successMessage,
     DateTime? lastUpdate,
@@ -71,6 +78,8 @@ class SplitState {
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       totalPaidByUser: totalPaidByUser ?? this.totalPaidByUser,
       totalOwed: totalOwed ?? this.totalOwed,
+      totalReceivable: totalReceivable ?? this.totalReceivable,
+      totalPayable: totalPayable ?? this.totalPayable,
       error: error,
       successMessage: successMessage,
       lastUpdate: lastUpdate ?? this.lastUpdate,
@@ -84,6 +93,7 @@ class SplitState {
 // Split Cubit with Pagination
 class SplitCubit extends Cubit<SplitState> {
   final SplitRepository _repository;
+  late Timer timer;
 
   SplitCubit(this._repository) : super(SplitState());
 
@@ -103,7 +113,7 @@ class SplitCubit extends Cubit<SplitState> {
       // Load summary
       final summary = await _repository.getSplitSummary();
       log(
-        'SplitCubit: Summary - Paid: ₹${summary['total_paid_by_user']}, Owed: ₹${summary['total_owed']}',
+        'SplitCubit: Summary - Paid: ₹${summary['total_paid_by_user']}, Owed: ₹${summary['total_owed']}, totalPayable: ₹${summary['total_payable']}, totalReceivable: ₹${summary['total_receivable']},',
       );
 
       // Load first page
@@ -120,6 +130,8 @@ class SplitCubit extends Cubit<SplitState> {
           splits: splits,
           totalPaidByUser: summary['total_paid_by_user'] ?? 0.0,
           totalOwed: summary['total_owed'] ?? 0.0,
+          totalPayable: summary['total_payable'] ?? 0.0,
+          totalReceivable: summary['total_receivable'] ?? 0.0,
           error: null,
           lastUpdate: DateTime.now(),
           currentPage: 0,
@@ -302,6 +314,23 @@ class SplitCubit extends Cubit<SplitState> {
     }
   }
 
+  /// Settle entire split - marks all participants as fully paid
+  /// This is the proper way to settle a split - it updates both participant payments and status
+  Future<void> settleSplit(int splitId) async {
+    log('SplitCubit: Settling split ID: $splitId');
+    try {
+      await _repository.settleSplit(splitId);
+      log(
+        'SplitCubit: Split settled successfully - all participants marked as paid',
+      );
+      emit(state.copyWith(successMessage: 'Split marked as settled'));
+      await loadSplits();
+    } catch (e) {
+      log('SplitCubit: Error settling split - $e');
+      emit(state.copyWith(error: 'Failed to settle split: $e'));
+    }
+  }
+
   /// Set filter by status
   void setFilterStatus(String? status) {
     log('SplitCubit: Setting filter status to: ${status ?? "All"}');
@@ -319,6 +348,10 @@ class SplitCubit extends Cubit<SplitState> {
     emit(state.copyWith(searchQuery: query));
     if (query == null || query.isEmpty) {
       loadSplits();
+    } else {
+      timer = Timer(const Duration(milliseconds: 500), () {
+        if (!timer.isActive) loadSplits();
+      });
     }
   }
 
@@ -344,5 +377,11 @@ class SplitCubit extends Cubit<SplitState> {
   void resetPagination() {
     log('SplitCubit: Resetting pagination');
     emit(state.copyWith(currentPage: 0, hasMoreData: true, splits: []));
+  }
+
+  @override
+  Future<void> close() {
+    if (timer.isActive) timer.cancel();
+    return super.close();
   }
 }

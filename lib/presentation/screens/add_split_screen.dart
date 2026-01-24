@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -795,16 +796,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         final phoneToCheck = contact.phone?.trim() ?? '';
 
         if (phoneToCheck.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.contactMustHavePhoneNumber),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+          showWarningSnackbar(context, tr.contactMustHavePhoneNumber);
           return;
         }
 
@@ -814,16 +806,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         );
 
         if (existsInList) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.thisContactIsAlreadyAdded),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+          showWarningSnackbar(context, tr.thisContactIsAlreadyAdded);
           return;
         }
 
@@ -855,16 +838,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
           }
         });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr.failedToSave}: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        showFailureSnackbar(context, tr.failedToSave);
       }
     }
   }
@@ -873,16 +847,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     final tr = AppLocalizations.of(context)!;
     if (_formKey.currentState!.validate()) {
       if (_participants.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tr.pleaseAddAtLeastOneParticipant),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        showFailureSnackbar(context, tr.pleaseAddAtLeastOneParticipant);
         return;
       }
 
@@ -890,16 +855,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       final paidByUser = double.parse(_paidByUserController.text);
 
       if (paidByUser > totalAmount) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tr.amountYouPaidCannotExceedTotalAmount),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        showFailureSnackbar(context, tr.amountYouPaidCannotExceedTotalAmount);
         return;
       }
 
@@ -909,16 +865,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         final userShare = totalAmount - totalShares;
 
         if (userShare < 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.totalSharesExceedTotal),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+          showFailureSnackbar(context, tr.totalSharesExceedTotal);
           return;
         }
       }

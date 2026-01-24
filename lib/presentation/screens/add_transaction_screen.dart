@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
@@ -134,12 +135,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (mounted) {
         final tr = AppLocalizations.of(context);
         setState(() => _isLoadingContacts = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr?.failedToLoad}: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        showFailureSnackbar(context, '${tr?.failedToLoad}: $e');
       }
     }
   }
@@ -933,12 +929,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       // Handle contact selection based on mode
       if (_usePhoneContacts) {
         if (_selectedContact == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.pleaseSelectContactFromPhone),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
+          showWarningSnackbar(context, tr.pleaseSelectContactFromPhone);
           return;
         }
 
@@ -947,14 +938,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             final id = await contactRepo.createContact(_selectedContact!);
             contactToUse = _selectedContact!.copyWith(id: id);
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${tr.failedToSave}: $e'),
-                  backgroundColor: AppTheme.errorColor,
-                ),
-              );
-            }
+            if (mounted) showFailureSnackbar(context, '${tr.failedToSave}: $e');
             return;
           }
         } else {
@@ -965,12 +949,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         final phone = _phoneController.text.trim();
 
         if (name.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.pleaseEnterContactName),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
+          showFailureSnackbar(context, tr.pleaseEnterContactName);
           return;
         }
 
@@ -998,27 +977,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             contactToUse = newContact.copyWith(id: id);
           }
         } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${tr.failedToSave}: $e'),
-                backgroundColor: AppTheme.errorColor,
-              ),
-            );
-          }
+          if (mounted) showFailureSnackbar(context, '${tr.failedToSave}: $e');
           return;
         }
       }
 
       if (contactToUse == null || contactToUse.id == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr.failedToSave),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
+        if (mounted) showFailureSnackbar(context, tr.failedToSave);
         return;
       }
 
@@ -1066,14 +1031,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           Navigator.pop(context, true);
         }
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${tr.failedToSave}: $e'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
+        if (mounted) showFailureSnackbar(context, '${tr.failedToSave}: $e');
       }
     }
   }

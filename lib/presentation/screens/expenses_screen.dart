@@ -101,80 +101,74 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
       appBar: AppBar(
         title: Text(tr.expenses),
         actions: [
-          if (_viewMode == ExpenseViewMode.list && _hasActiveFilters)
-            IconButton(
-              icon: const Icon(Icons.filter_alt_off),
-              tooltip: tr.clearFilters,
-              onPressed: () {
-                setState(() {
-                  _selectedCategory = null;
-                  _searchController.clear();
-                });
-                context.read<ExpenseCubit>().clearFilters();
-              },
-            ),
+          BlocBuilder<ExpenseCubit, ExpenseState>(
+            builder: (context, state) =>
+                (_viewMode == ExpenseViewMode.list && _hasActiveFilters)
+                ? IconButton(
+                    icon: const Icon(Icons.filter_alt_off),
+                    tooltip: tr.clearFilters,
+                    onPressed: () {
+                      _selectedCategory = null;
+                      _searchController.clear();
+                      context.read<ExpenseCubit>().clearFilters();
+                    },
+                  )
+                : SizedBox.shrink(),
+          ),
         ],
       ),
-      body: BlocListener<ExpenseCubit, ExpenseState>(
+      body: BlocConsumer<ExpenseCubit, ExpenseState>(
         listener: (context, state) {
           if (state.successMessage != null) {
             _loadStatistics();
           }
 
           if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: Colors.red,
-              ),
-            );
+            showFailureSnackbar(context, state.error!);
             context.read<ExpenseCubit>().clearMessages();
           }
           if (state.successMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.successMessage!),
-                backgroundColor: Colors.green,
-              ),
-            );
+            showSuccessSnackbar(context, state.successMessage!);
             context.read<ExpenseCubit>().clearMessages();
           }
         },
-        child: RefreshIndicator(
-          onRefresh: _refreshData,
-          child: CustomScrollView(
-            slivers: [
-              // Dashboard Summary
-              SliverToBoxAdapter(child: _buildDashboardSummary()),
+        builder: (context, state) {
+          return RefreshIndicator(
+            onRefresh: _refreshData,
+            child: CustomScrollView(
+              slivers: [
+                // Dashboard Summary
+                SliverToBoxAdapter(child: _buildDashboardSummary()),
 
-              // View Mode Selector
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: FloatingTabHeaderDelegate(
-                  child: _buildViewModeSelector(),
+                // View Mode Selector
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: FloatingTabHeaderDelegate(
+                    child: _buildViewModeSelector(),
+                  ),
                 ),
-              ),
 
-              // Search bar (only for list view)
-              if (_viewMode == ExpenseViewMode.list)
-                SliverToBoxAdapter(child: _buildSearchBar()),
+                // Search bar (only for list view)
+                if (_viewMode == ExpenseViewMode.list)
+                  SliverToBoxAdapter(child: _buildSearchBar()),
 
-              // Category filter chips (only for list view)
-              if (_viewMode == ExpenseViewMode.list)
-                SliverToBoxAdapter(child: _buildCategoryFilters()),
+                // Category filter chips (only for list view)
+                if (_viewMode == ExpenseViewMode.list)
+                  SliverToBoxAdapter(child: _buildCategoryFilters()),
 
-              // Content based on view mode
-              if (_viewMode == ExpenseViewMode.overview)
-                ..._buildOverviewContent()
-              else ...[
-                _buildListView(),
-                SliverToBoxAdapter(
-                  child: const SizedBox(height: kToolbarHeight),
-                ),
+                // Content based on view mode
+                if (_viewMode == ExpenseViewMode.overview)
+                  ..._buildOverviewContent()
+                else ...[
+                  _buildListView(),
+                  SliverToBoxAdapter(
+                    child: const SizedBox(height: kToolbarHeight),
+                  ),
+                ],
               ],
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'expense_fab',
@@ -224,7 +218,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
             (thisMonthData['total'] as num?)?.toDouble() ?? 0.0;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
               // Total expenses card
@@ -615,7 +609,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.white,
@@ -786,7 +780,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     final effectiveMaxY = maxY > 0 ? maxY : 1000;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.white,
@@ -961,7 +955,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     final tr = AppLocalizations.of(context)!;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.white,
@@ -1105,7 +1099,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8, top: 8),
+      margin: const EdgeInsets.only(top: 4),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
@@ -1117,7 +1111,6 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                   onPressed: () {
                     _searchController.clear();
                     context.read<ExpenseCubit>().setSearchQuery('');
-                    setState(() {});
                   },
                 )
               : null,
@@ -1134,49 +1127,48 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
             vertical: 12,
           ),
         ),
-        onChanged: (value) {
-          context.read<ExpenseCubit>().setSearchQuery(value);
-          setState(() {});
-        },
-        onSubmitted: (value) {
-          context.read<ExpenseCubit>().searchExpenses();
-        },
+        onChanged: (value) =>
+            context.read<ExpenseCubit>().setSearchQuery(value),
+        onSubmitted: (value) => context.read<ExpenseCubit>().searchExpenses(),
       ),
     );
   }
 
   Widget _buildCategoryFilters() {
     final tr = AppLocalizations.of(context)!;
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          FilterChipWidget(
-            label: tr.all,
-            isSelected: _selectedCategory == null,
-            onSelected: () {
-              setState(() => _selectedCategory = null);
-              context.read<ExpenseCubit>().setFilterCategory(null);
-            },
-          ),
-          const SizedBox(width: 8),
-          ...AppConstants.expenseCategories.map((category) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChipWidget(
-                label: getCategoryLabel(context, category),
-                icon: getCategoryIcon(category),
-                isSelected: _selectedCategory == category,
-                onSelected: () {
-                  setState(() => _selectedCategory = category);
-                  context.read<ExpenseCubit>().setFilterCategory(category);
-                },
-              ),
-            );
-          }),
-        ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            FilterChipWidget(
+              label: tr.all,
+              isSelected: _selectedCategory == null,
+              onSelected: () {
+                _selectedCategory = null;
+                _searchController.clear();
+                context.read<ExpenseCubit>().clearFilters();
+              },
+            ),
+            const SizedBox(width: 8),
+            ...AppConstants.expenseCategories.map((category) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChipWidget(
+                  label: getCategoryLabel(context, category),
+                  icon: getCategoryIcon(category),
+                  isSelected: _selectedCategory == category,
+                  onSelected: () {
+                    _selectedCategory = category;
+                    _searchController.clear();
+                    context.read<ExpenseCubit>().setFilterCategory(category);
+                  },
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

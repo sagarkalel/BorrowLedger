@@ -108,6 +108,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get youWillGive => 'You\'ll Give';
 
   @override
+  String get payable => 'Payable';
+
+  @override
+  String get receivable => 'Receivable';
+
+  @override
   String get youPaid => 'You Paid';
 
   @override

@@ -183,7 +183,7 @@ class TransactionRepository {
     if (query.trim().isEmpty) return [];
     final whereConditions = <String>[];
     final whereArgs = <dynamic>[];
-    final searchTerm = '%$query%';
+    final searchTerm = '%${query.trim()}%';
 
     whereConditions.add(
       '(LOWER(t.description) LIKE LOWER(?) OR LOWER(c.name) LIKE LOWER(?) OR LOWER(t.item_name) LIKE LOWER(?))',
@@ -274,20 +274,37 @@ class TransactionRepository {
   // Dashboard summary (overall totals)
   Future<Map<String, double>> getDashboardSummary() async {
     log('TransactionRepository: Fetching dashboard summary');
+
+    // First, get the existing overall stats
     final result = await _dbHelper.rawQuery('''
+    SELECT 
+      COALESCE(SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END), 0) AS total_lent,
+      COALESCE(SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END), 0) AS total_borrowed,
+      
+      -- Cash breakdown
+      COALESCE(SUM(CASE WHEN type = 'lend' AND transaction_category = 'cash' THEN amount ELSE 0 END), 0) AS cash_lent,
+      COALESCE(SUM(CASE WHEN type = 'borrow' AND transaction_category = 'cash' THEN amount ELSE 0 END), 0) AS cash_borrowed,
+      
+      -- Udhari breakdown
+      COALESCE(SUM(CASE WHEN type = 'lend' AND transaction_category = 'udhari' THEN amount ELSE 0 END), 0) AS udhari_given,
+      COALESCE(SUM(CASE WHEN type = 'borrow' AND transaction_category = 'udhari' THEN amount ELSE 0 END), 0) AS udhari_taken
+    FROM transactions
+  ''');
+
+    // Second, calculate per-contact net balances and sum them up
+    final balanceResult = await _dbHelper.rawQuery('''
+    SELECT 
+      COALESCE(SUM(CASE WHEN net_balance > 0 THEN net_balance ELSE 0 END), 0) AS total_receivable,
+      COALESCE(SUM(CASE WHEN net_balance < 0 THEN ABS(net_balance) ELSE 0 END), 0) AS total_payable
+    FROM (
       SELECT 
-        COALESCE(SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END), 0) AS total_lent,
-        COALESCE(SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END), 0) AS total_borrowed,
-        
-        -- Cash breakdown
-        COALESCE(SUM(CASE WHEN type = 'lend' AND transaction_category = 'cash' THEN amount ELSE 0 END), 0) AS cash_lent,
-        COALESCE(SUM(CASE WHEN type = 'borrow' AND transaction_category = 'cash' THEN amount ELSE 0 END), 0) AS cash_borrowed,
-        
-        -- Udhari breakdown
-        COALESCE(SUM(CASE WHEN type = 'lend' AND transaction_category = 'udhari' THEN amount ELSE 0 END), 0) AS udhari_given,
-        COALESCE(SUM(CASE WHEN type = 'borrow' AND transaction_category = 'udhari' THEN amount ELSE 0 END), 0) AS udhari_taken
+        contact_id,
+        (SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END) - 
+         SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END)) AS net_balance
       FROM transactions
-    ''');
+      GROUP BY contact_id
+    )
+  ''');
 
     final totalLent = (result.first['total_lent'] as num?)?.toDouble() ?? 0.0;
     final totalBorrowed =
@@ -299,9 +316,13 @@ class TransactionRepository {
         (result.first['udhari_given'] as num?)?.toDouble() ?? 0.0;
     final udhariTaken =
         (result.first['udhari_taken'] as num?)?.toDouble() ?? 0.0;
+    final totalReceivable =
+        (balanceResult.first['total_receivable'] as num?)?.toDouble() ?? 0.0;
+    final totalPayable =
+        (balanceResult.first['total_payable'] as num?)?.toDouble() ?? 0.0;
 
     log(
-      'TransactionRepository: Summary - Total Lent: ₹$totalLent, Total Borrowed: ₹$totalBorrowed',
+      'TransactionRepository: Summary - Total Lent: ₹$totalLent, Total Borrowed: ₹$totalBorrowed, Receivable: ₹$totalReceivable, Payable: ₹$totalPayable',
     );
 
     return {
@@ -314,6 +335,8 @@ class TransactionRepository {
       'udhari_given': udhariGiven,
       'udhari_taken': udhariTaken,
       'udhari_net': udhariGiven - udhariTaken,
+      'total_receivable': totalReceivable,
+      'total_payable': totalPayable,
     };
   }
 
@@ -359,10 +382,8 @@ class TransactionRepository {
 
     // Apply search filter
     if (searchQuery != null && searchQuery.trim().isNotEmpty) {
-      whereConditions.add(
-        '(LOWER(c.name) LIKE LOWER(?) OR LOWER(c.phone) LIKE LOWER(?))',
-      );
-      final searchTerm = '%$searchQuery%';
+      whereConditions.add('(LOWER(c.name) LIKE LOWER(?) OR c.phone LIKE ?)');
+      final searchTerm = '%${searchQuery.trim()}%';
       args.add(searchTerm);
       args.add(searchTerm);
     }
@@ -430,7 +451,7 @@ class TransactionRepository {
       whereConditions.add(
         '(LOWER(c.name) LIKE LOWER(?) OR LOWER(c.phone) LIKE LOWER(?))',
       );
-      final searchTerm = '%$searchQuery%';
+      final searchTerm = '%${searchQuery.trim()}%';
       args.add(searchTerm);
       args.add(searchTerm);
     }

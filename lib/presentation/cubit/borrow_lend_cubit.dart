@@ -20,6 +20,8 @@ class BorrowLendState {
   final bool isLoadingMore;
   final double totalLent;
   final double totalBorrowed;
+  final double totalReceivable;
+  final double totalPayable;
   final double netBalance;
 
   // Category-wise breakdown
@@ -66,6 +68,8 @@ class BorrowLendState {
     this.isLoadingMore = false,
     this.totalLent = 0.0,
     this.totalBorrowed = 0.0,
+    this.totalReceivable = 0.0,
+    this.totalPayable = 0.0,
     this.netBalance = 0.0,
     this.cashLent = 0.0,
     this.cashBorrowed = 0.0,
@@ -100,6 +104,8 @@ class BorrowLendState {
     bool? isLoadingMore,
     double? totalLent,
     double? totalBorrowed,
+    double? totalPayable,
+    double? totalReceivable,
     double? netBalance,
     double? cashLent,
     double? cashBorrowed,
@@ -139,6 +145,8 @@ class BorrowLendState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       totalLent: totalLent ?? this.totalLent,
       totalBorrowed: totalBorrowed ?? this.totalBorrowed,
+      totalReceivable: totalReceivable ?? this.totalReceivable,
+      totalPayable: totalPayable ?? this.totalPayable,
       netBalance: netBalance ?? this.netBalance,
       cashLent: cashLent ?? this.cashLent,
       cashBorrowed: cashBorrowed ?? this.cashBorrowed,
@@ -209,6 +217,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       final udhariGiven = summary['udhari_given'] ?? 0.0;
       final udhariTaken = summary['udhari_taken'] ?? 0.0;
       final udhariNet = summary['udhari_net'] ?? 0.0;
+      final totalReceivable = summary['total_receivable'] ?? 0.0;
+      final totalPayable = summary['total_payable'] ?? 0.0;
 
       log(
         'BorrowLendCubit: Summary - Total: ₹$netBalance (Cash: ₹$cashNet, Udhari: ₹$udhariNet)',
@@ -242,6 +252,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           isLoading: false,
           totalLent: totalLent,
           totalBorrowed: totalBorrowed,
+          totalReceivable: totalReceivable,
+          totalPayable: totalPayable,
           netBalance: netBalance,
           cashLent: cashLent,
           cashBorrowed: cashBorrowed,

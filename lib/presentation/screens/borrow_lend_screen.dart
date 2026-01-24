@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/build_summary_card.dart';
@@ -155,22 +156,12 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           // Handle messages
           if (state.error != null) {
             log('MergedBorrowLendScreen: Error - ${state.error}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: Colors.red,
-              ),
-            );
+            showFailureSnackbar(context, state.error!);
             context.read<BorrowLendCubit>().clearMessages();
           }
           if (state.successMessage != null) {
             log('MergedBorrowLendScreen: Success - ${state.successMessage}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.successMessage!),
-                backgroundColor: Colors.green,
-              ),
-            );
+            showSuccessSnackbar(context, state.successMessage!);
             context.read<BorrowLendCubit>().clearMessages();
           }
         },
@@ -267,7 +258,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     return BlocBuilder<BorrowLendCubit, BorrowLendState>(
       builder: (context, state) {
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -280,8 +271,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                 children: [
                   Expanded(
                     child: BuildSummaryCard(
-                      title: tr.youGot,
-                      amount: state.totalLent,
+                      title: tr.receivable,
+                      amount: state.totalReceivable,
                       icon: Icons.call_received,
                       color: Colors.green,
                       isPositive: true,
@@ -290,8 +281,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: BuildSummaryCard(
-                      title: tr.youGave,
-                      amount: state.totalBorrowed,
+                      title: tr.payable,
+                      amount: state.totalPayable,
                       icon: Icons.call_made,
                       color: Colors.orange,
                       isPositive: false,
@@ -307,7 +298,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   }
 
   Widget _buildNetBalanceCard(BorrowLendState state) {
-    final isPositive = state.netBalance >= 0;
+    final isPositive = (state.netBalance >= 0);
 
     final Color primaryColor;
     final Color accentColor;
@@ -406,6 +397,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
                 Text(
                   '${isPositive ? '+' : '-'}₹${state.netBalance.abs().toStringAsFixed(2)}',
+                  // '₹${state.netBalance.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 32,
@@ -711,7 +703,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8, top: 8),
+      margin: const EdgeInsets.only(top: 4),
       child: TextField(
         controller: _contactSearchController,
         decoration: InputDecoration(
@@ -755,7 +747,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8, top: 8),
+      margin: const EdgeInsets.only(top: 4),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
@@ -785,7 +777,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         ),
         onChanged: (value) {
           context.read<BorrowLendCubit>().setSearchQuery(value);
-          setState(() {});
+          // setState(() {});
         },
         onSubmitted: (_) =>
             context.read<BorrowLendCubit>().searchTransactions(),

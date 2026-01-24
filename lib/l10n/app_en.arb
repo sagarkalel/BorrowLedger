@@ -41,6 +41,8 @@
   "unknown": "Unknown",
   "youWillGet": "You'll Get",
   "youWillGive": "You'll Give",
+  "payable": "Payable",
+  "receivable": "Receivable",
   "youPaid": "You Paid",
   "required": "Required",
   "invalid": "Invalid",

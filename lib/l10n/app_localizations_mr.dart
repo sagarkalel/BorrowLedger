@@ -108,6 +108,12 @@ class AppLocalizationsMr extends AppLocalizations {
   String get youWillGive => 'तुम्ही द्याल';
 
   @override
+  String get payable => 'देय';
+
+  @override
+  String get receivable => 'घ्यायचे';
+
+  @override
   String get youPaid => 'तुम्ही दिले';
 
   @override

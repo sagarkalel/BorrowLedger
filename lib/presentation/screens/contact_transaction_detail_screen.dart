@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
@@ -435,18 +436,9 @@ class ContactTransactionDetailScreen extends StatelessWidget {
 
           // Show success message
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(tr.transactionDeleted),
-                backgroundColor: AppTheme.successColor,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-
+            showSuccessSnackbar(context, tr.transactionDeleted);
             // Call update callback
-            if (onUpdate != null) {
-              onUpdate!();
-            }
+            if (onUpdate != null) onUpdate!();
 
             // Navigate back
             Navigator.pop(context, true);

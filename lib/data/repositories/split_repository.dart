@@ -115,7 +115,7 @@ class SplitRepository {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'split_expenses',
       where: 'title LIKE ? OR description LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
+      whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
       orderBy: 'date DESC',
       limit: limit,
       offset: offset,
@@ -222,6 +222,29 @@ class SplitRepository {
     }
   }
 
+  // Settle entire split - marks all participants as fully paid**
+  Future<void> settleSplit(int splitId) async {
+    final participants = await getParticipantsBySplitId(splitId);
+
+    // Mark each participant as fully paid (set paid = share_amount)
+    for (var participant in participants) {
+      await _dbHelper.update(
+        'split_participants',
+        {'paid': participant.shareAmount, 'status': 'paid'},
+        where: 'id = ?',
+        whereArgs: [participant.id],
+      );
+    }
+
+    // Update split status to settled
+    await _dbHelper.update(
+      'split_expenses',
+      {'status': 'settled', 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [splitId],
+    );
+  }
+
   // Delete split expense (cascade deletes participants)
   Future<int> deleteSplit(int id) async {
     // First delete all participants
@@ -267,18 +290,38 @@ class SplitRepository {
 
   // Get summary
   Future<Map<String, double>> getSplitSummary() async {
-    final result = await _dbHelper.rawQuery('''
-      SELECT 
-        SUM(CASE WHEN status != 'settled' THEN paid_by_user ELSE 0 END) as total_paid_by_user,
-        SUM(CASE WHEN status != 'settled' THEN (total_amount - paid_by_user) ELSE 0 END) as total_owed
-      FROM split_expenses
-    ''');
+    // Query 1: Get totals from split_expenses table
+    final expenseResult = await _dbHelper.rawQuery('''
+    SELECT 
+      SUM(CASE WHEN status != 'settled' THEN paid_by_user ELSE 0 END) as total_paid_by_user,
+      SUM(CASE WHEN status != 'settled' THEN (total_amount - paid_by_user) ELSE 0 END) as total_owed
+    FROM split_expenses
+  ''');
+
+    // Query 2: Get total receivable from participants
+    final participantResult = await _dbHelper.rawQuery('''
+    SELECT 
+      SUM(CASE WHEN se.status != 'settled' OR se.status != 'paid' THEN sp.share_amount - sp.paid ELSE 0 END) as total_receivable
+    FROM split_expenses se
+    INNER JOIN split_participants sp ON se.id = sp.split_id
+    WHERE sp.status != 'paid'
+  ''');
 
     final totalPaidByUser =
-        (result.first['total_paid_by_user'] as num?)?.toDouble() ?? 0.0;
-    final totalOwed = (result.first['total_owed'] as num?)?.toDouble() ?? 0.0;
+        (expenseResult.first['total_paid_by_user'] as num?)?.toDouble() ?? 0.0;
+    final totalOwed =
+        (expenseResult.first['total_owed'] as num?)?.toDouble() ?? 0.0;
+    final totalReceivable =
+        (participantResult.first['total_receivable'] as num?)?.toDouble() ??
+        0.0;
+    final totalPayable = 0.0;
 
-    return {'total_paid_by_user': totalPaidByUser, 'total_owed': totalOwed};
+    return {
+      'total_paid_by_user': totalPaidByUser,
+      'total_owed': totalOwed,
+      'total_receivable': totalReceivable,
+      'total_payable': totalPayable,
+    };
   }
 
   // Get pending amount from a specific contact

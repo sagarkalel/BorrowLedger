@@ -24,6 +24,8 @@
   "totalBalance": "एकूण बाकी",
   "youWillGet": "तुम्हाला मिळेल",
   "youWillGive": "तुम्ही द्याल",
+  "payable": "देय",
+  "receivable": "घ्यायचे",
   "netBalance": "निव्वळ शिल्लक",
   "transactions": "व्यवहार",
   "transaction": "व्यवहार",

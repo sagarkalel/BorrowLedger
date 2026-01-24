@@ -298,6 +298,18 @@ abstract class AppLocalizations {
   /// **'You\'ll Give'**
   String get youWillGive;
 
+  /// No description provided for @payable.
+  ///
+  /// In en, this message translates to:
+  /// **'Payable'**
+  String get payable;
+
+  /// No description provided for @receivable.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivable'**
+  String get receivable;
+
   /// No description provided for @youPaid.
   ///
   /// In en, this message translates to:

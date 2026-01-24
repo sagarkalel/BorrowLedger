@@ -42,7 +42,6 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: const Icon(Icons.swap_horiz_rounded),
             activeIcon: const Icon(Icons.swap_horiz_rounded, size: 28),
-            // label: 'Borrow/Lend',
             label: tr.borrowLend,
           ),
           BottomNavigationBarItem(

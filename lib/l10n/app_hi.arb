@@ -18,6 +18,8 @@
   "totalBalance": "कुल बकाया",
   "youWillGet": "आपको मिलेगा",
   "youWillGive": "आपको देना है",
+  "payable": "देय",
+  "receivable": "लेने वाला",
   "netBalance": "नेट बैलेंस",
   "transactions": "लेन-देन",
   "transaction": "लेन-देन",

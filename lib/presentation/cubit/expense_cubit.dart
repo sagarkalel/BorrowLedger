@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer';
+
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,6 +58,7 @@ class ExpenseState {
 // Expense Cubit
 class ExpenseCubit extends Cubit<ExpenseState> {
   final ExpenseRepository _repository;
+  late Timer timer;
 
   ExpenseCubit(this._repository) : super(ExpenseState());
 
@@ -64,7 +68,6 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     try {
       List<ExpenseModel> expenses;
       List<Map<String, dynamic>> summary = [];
-
       if (state.searchQuery != null && state.searchQuery!.isNotEmpty) {
         expenses = await _repository.searchExpenses(state.searchQuery!);
       } else if (state.filterCategory != null) {
@@ -133,14 +136,16 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     loadExpenses();
   }
 
+  /// Set search query
   void setSearchQuery(String? query) {
-    if (query == null || query.isEmpty) {
-      emit(state.copyWith(clearSearchQuery: true, clearFilterCategory: true));
-    } else {
-      emit(state.copyWith(searchQuery: query, clearFilterCategory: true));
-    }
+    log('ExpenseCubit: Setting search query to: "${query ?? ""}"');
+    emit(state.copyWith(searchQuery: query));
     if (query == null || query.isEmpty) {
       loadExpenses();
+    } else {
+      timer = Timer(const Duration(milliseconds: 500), () {
+        if (!timer.isActive) loadExpenses();
+      });
     }
   }
 
@@ -148,12 +153,20 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     loadExpenses();
   }
 
+  /// Clear all filters
   void clearFilters() {
+    log('ExpenseCubit: Clearing all filters');
     emit(state.copyWith(clearFilterCategory: true, clearSearchQuery: true));
     loadExpenses();
   }
 
   void clearMessages() {
     emit(state.copyWith(error: null, successMessage: null));
+  }
+
+  @override
+  Future<void> close() {
+    if (timer.isActive) timer.cancel();
+    return super.close();
   }
 }

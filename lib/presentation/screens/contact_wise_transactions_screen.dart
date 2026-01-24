@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
@@ -91,12 +92,7 @@ class _ContactWiseTransactionsScreenState
       setState(() => _isLoading = false);
       if (mounted) {
         final tr = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr?.failedToLoad}: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        showFailureSnackbar(context, '${tr?.failedToLoad}: $e');
       }
     }
   }
@@ -663,30 +659,11 @@ class _ContactWiseTransactionsScreenState
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text(tr.balanceSettledSuccessfully),
-              ],
-            ),
-            backgroundColor: AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        showSuccessSnackbar(context, tr.balanceSettledSuccessfully);
         _loadTransactions();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr.failedToUpdate}: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      if (mounted) showFailureSnackbar(context, '${tr.failedToUpdate}: $e');
     }
   }
 }

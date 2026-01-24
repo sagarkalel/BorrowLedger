@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -84,25 +85,7 @@ class LanguageSelectorCard extends StatelessWidget {
     return InkWell(
       onTap: () {
         context.read<LocaleCubit>().setLocale(languageCode);
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
-                Text('${tr.languageChangedTo} $label'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        showSuccessSnackbar(context, '${tr.languageChangedTo} $label');
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

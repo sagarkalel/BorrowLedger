@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -90,13 +91,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
       if (!await FlutterContacts.requestPermission(readonly: true)) {
         if (mounted) {
           final tr = AppLocalizations.of(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr?.contactsPermissionRequired ?? '-'),
-              backgroundColor: Colors.red.shade400,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showFailureSnackbar(context, tr?.contactsPermissionRequired ?? '-');
           Navigator.pop(context);
         }
         return;
@@ -119,13 +114,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
     } catch (e) {
       if (mounted) {
         final tr = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${tr?.failedToLoad}: $e'),
-            backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        showFailureSnackbar(context, '${tr?.failedToLoad}: $e');
         Navigator.pop(context);
       }
     }

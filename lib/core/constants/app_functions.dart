@@ -13,32 +13,73 @@ showToast(String message) {
   );
 }
 
-void showDialogSafely(
+void showSuccessSnackbar(
   BuildContext context,
-  Widget Function(BuildContext) builder,
-) {
-  // Use addPostFrameCallback to ensure we're not in the middle of a build
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (context.mounted) {
-      showDialog(context: context, builder: builder);
-    }
-  });
+  String msg, {
+  SnackBarAction? action,
+}) async {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          SizedBox(width: 12),
+          Text(msg),
+        ],
+      ),
+      backgroundColor: AppTheme.success,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      action: action,
+    ),
+  );
 }
 
-void showSnackBarSafely(BuildContext context, SnackBar snackBar) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-    }
-  });
+void showWarningSnackbar(
+  BuildContext context,
+  String msg, {
+  SnackBarAction? action,
+}) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(Icons.warning_amber_outlined, color: Colors.white),
+          SizedBox(width: 12),
+          Text(msg),
+        ],
+      ),
+      backgroundColor: AppTheme.warning,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      action: action,
+    ),
+  );
 }
 
-void closeDialogSafely(BuildContext context) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (context.mounted && Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
-  });
+void showFailureSnackbar(
+  BuildContext context,
+  String msg, {
+  SnackBarAction? action,
+}) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(Icons.cancel, color: Colors.white),
+          SizedBox(width: 12),
+          Text(msg),
+        ],
+      ),
+      backgroundColor: AppTheme.errorColor,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      action: action,
+    ),
+  );
 }
 
 String getCategoryLabel(BuildContext context, String category) {

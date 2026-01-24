@@ -120,7 +120,9 @@ class ContactRepository {
       }
     }
 
-    final rows = await _dbHelper.rawQuery(sql.toString(), ['%$query%']);
+    final rows = await _dbHelper.rawQuery(sql.toString(), [
+      '%${query.trim()}%',
+    ]);
 
     return rows.map(_mapToContactSummary).toList();
   }
