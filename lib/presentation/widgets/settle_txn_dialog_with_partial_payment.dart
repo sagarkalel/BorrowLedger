@@ -38,15 +38,16 @@ class _SettleDialogState extends State<SettleDialog> {
   @override
   Widget build(BuildContext context) {
     final color = widget.isPositive
-        ? AppTheme.primaryGreen
-        : AppTheme.warningColor;
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final tr = AppLocalizations.of(context)!;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           child: Form(
             key: _formKey,
             child: Column(
@@ -72,31 +73,20 @@ class _SettleDialogState extends State<SettleDialog> {
                     Expanded(
                       child: Text(
                         tr.settleBalance,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: theme.dialogTheme.titleTextStyle,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Current Balance Card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.1),
-                        color.withValues(alpha: 0.05),
-                      ],
-                    ),
+                    color: color.withValues(alpha: widget.isDark ? 0.16 : 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                    border: Border.all(color: color.withValues(alpha: 0.24)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,13 +152,12 @@ class _SettleDialogState extends State<SettleDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Settlement Type Toggle
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: widget.isDark ? Colors.grey[850] : Colors.grey[100],
+                    color: colorScheme.onSurface.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -195,9 +184,8 @@ class _SettleDialogState extends State<SettleDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Partial Amount Input
                 if (_isPartialSettle) ...[
                   TextFormField(
                     controller: _amountController,
@@ -222,12 +210,9 @@ class _SettleDialogState extends State<SettleDialog> {
                         },
                         tooltip: tr.setToFullBalance,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: color, width: 2),
+                        borderSide: BorderSide(color: color, width: 1),
                       ),
                     ),
                     validator: (value) {
@@ -248,25 +233,23 @@ class _SettleDialogState extends State<SettleDialog> {
 
                   // Amount suggestions
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: _buildAmountSuggestions(color),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                 ],
 
-                // Info Box
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50.withValues(
-                      alpha: widget.isDark ? 0.1 : 1,
-                    ),
+                    color: colorScheme.onSurface.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Colors.blue.shade200.withValues(
-                        alpha: widget.isDark ? 0.3 : 1,
-                      ),
+                      color: colorScheme.onSurface.withValues(alpha: 0.08),
                     ),
                   ),
                   child: Row(
@@ -275,9 +258,7 @@ class _SettleDialogState extends State<SettleDialog> {
                       Icon(
                         Icons.info_outline,
                         size: 18,
-                        color: widget.isDark
-                            ? Colors.blue.shade300
-                            : Colors.blue.shade700,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -291,9 +272,7 @@ class _SettleDialogState extends State<SettleDialog> {
                                     : tr.fullSettlementInfoNegative),
                           style: TextStyle(
                             fontSize: 12,
-                            color: widget.isDark
-                                ? Colors.blue.shade300
-                                : Colors.blue.shade700,
+                            color: colorScheme.onSurfaceVariant,
                             height: 1.4,
                           ),
                         ),
@@ -301,29 +280,17 @@ class _SettleDialogState extends State<SettleDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
-                // Action Buttons
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(
-                            color: widget.isDark
-                                ? Colors.grey[700]!
-                                : Colors.grey[300]!,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
                         child: Text(tr.cancel),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       flex: 2,
                       child: ElevatedButton.icon(
@@ -335,11 +302,6 @@ class _SettleDialogState extends State<SettleDialog> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
                         ),
                       ),
                     ),
@@ -360,8 +322,8 @@ class _SettleDialogState extends State<SettleDialog> {
     required VoidCallback onTap,
   }) {
     final color = widget.isPositive
-        ? AppTheme.primaryGreen
-        : AppTheme.warningColor;
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
 
     return GestureDetector(
       onTap: onTap,

@@ -6,7 +6,7 @@ class AppConstants {
 
   // Database
   static const String dbName = 'borrow_ledger.db';
-  static const int dbVersion = 6; // UPDATED: Added udhari_items table
+  static const int dbVersion = 9; // UPDATED: Added multi-payer split support
 
   // Storage Keys
   static const String themeKey = 'theme_mode';
@@ -23,6 +23,10 @@ class AppConstants {
   // Transaction Categories
   static const String categoryCash = 'cash';
   static const String categoryUdhari = 'udhari';
+  static const String categorySplit = 'split';
+
+  // Transaction Sources
+  static const String sourceTypeSplit = 'split';
 
   // Transaction Status
   static const String statusPending = 'pending';

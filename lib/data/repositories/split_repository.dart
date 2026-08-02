@@ -1,4 +1,6 @@
+import 'package:borrow_ledger/core/constants/app_constants.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
+import 'package:borrow_ledger/data/models/transaction_model.dart';
 
 import '../database/database_helper.dart';
 
@@ -9,6 +11,18 @@ class SplitRepository {
   bool _isAmountFullyPaid(double paid, double shareAmount) {
     const tolerance = 0.01; // 1 cent tolerance
     return (paid - shareAmount).abs() < tolerance || paid >= shareAmount;
+  }
+
+  double _remainingParticipantDebtToUser(SplitParticipantModel participant) {
+    final remaining =
+        participant.shareAmount - participant.expensePaid - participant.paid;
+    return remaining <= 0 ? 0 : remaining;
+  }
+
+  double _remainingUserDebtToParticipant(SplitParticipantModel participant) {
+    final remaining =
+        participant.expensePaid - participant.shareAmount - participant.paid;
+    return remaining <= 0 ? 0 : remaining;
   }
 
   // Create a new split expense
@@ -23,6 +37,102 @@ class SplitRepository {
     for (var participant in participants) {
       await _dbHelper.insert('split_participants', participant.toMap());
     }
+  }
+
+  Future<void> syncSplitTransactions(int splitId) async {
+    final split = await getSplitById(splitId);
+    if (split == null) return;
+
+    await _deleteGeneratedTransactions(splitId);
+
+    if (split.status == AppConstants.statusSettled) return;
+
+    final participants = split.participants ?? [];
+    if (participants.isEmpty) return;
+
+    final participantShareTotal = participants.fold<double>(
+      0,
+      (sum, participant) => sum + participant.shareAmount,
+    );
+    final userShare = split.totalAmount - participantShareTotal;
+    var userNet = split.paidByUser - userShare;
+    const tolerance = 0.01;
+
+    if (userNet > tolerance) {
+      for (final participant in participants) {
+        final participantOwes = _remainingParticipantDebtToUser(participant);
+        if (participantOwes <= tolerance || userNet <= tolerance) continue;
+
+        final amount = participantOwes < userNet ? participantOwes : userNet;
+        await _createGeneratedTransaction(
+          split: split,
+          participant: participant,
+          type: AppConstants.typeLend,
+          amount: amount,
+        );
+        userNet -= amount;
+      }
+    } else if (userNet < -tolerance) {
+      var userOwes = -userNet;
+      for (final participant in participants) {
+        final participantNet = _remainingUserDebtToParticipant(participant);
+        if (participantNet <= tolerance || userOwes <= tolerance) continue;
+
+        final amount = participantNet < userOwes ? participantNet : userOwes;
+        await _createGeneratedTransaction(
+          split: split,
+          participant: participant,
+          type: AppConstants.typeBorrow,
+          amount: amount,
+        );
+        userOwes -= amount;
+      }
+    }
+
+    await _checkAndUpdateSplitStatus(splitId);
+  }
+
+  Future<void> _createGeneratedTransaction({
+    required SplitExpenseModel split,
+    required SplitParticipantModel participant,
+    required String type,
+    required double amount,
+  }) async {
+    if (amount < 0.01) return;
+
+    await _dbHelper.insert(
+      'transactions',
+      TransactionModel(
+        type: type,
+        category: AppConstants.categorySplit,
+        contactId: participant.contactId,
+        amount: amount,
+        description: 'Split: ${split.title}',
+        date: split.date,
+        createdAt: split.createdAt,
+        updatedAt: DateTime.now(),
+        sourceType: AppConstants.sourceTypeSplit,
+        sourceId: split.id,
+      ).toMap(),
+    );
+  }
+
+  Future<void> syncAllSplitTransactions() async {
+    final rows = await _dbHelper.query('split_expenses');
+    for (final row in rows) {
+      final splitId = row['id'] as int?;
+      if (splitId != null) {
+        await syncSplitTransactions(splitId);
+      }
+    }
+  }
+
+  Future<void> _deleteGeneratedTransactions(int splitId) async {
+    await _dbHelper.delete(
+      'transactions',
+      where: 'source_type = ? AND source_id = ?',
+      whereArgs: [AppConstants.sourceTypeSplit, splitId],
+    );
   }
 
   // Get all split expenses with participants (with pagination)
@@ -170,7 +280,9 @@ class SplitRepository {
     final participant = await getParticipantById(participantId);
     if (participant != null) {
       // Use helper method to check if fully paid (handles decimal precision)
-      final isFullyPaid = _isAmountFullyPaid(amount, participant.shareAmount);
+      final amountToSettle = (participant.shareAmount - participant.expensePaid)
+          .abs();
+      final isFullyPaid = _isAmountFullyPaid(amount, amountToSettle);
 
       await _dbHelper.update(
         'split_participants',
@@ -179,8 +291,7 @@ class SplitRepository {
         whereArgs: [participantId],
       );
 
-      // Check if all participants paid, then mark split as settled
-      await _checkAndUpdateSplitStatus(participant.splitId);
+      await syncSplitTransactions(participant.splitId);
     }
   }
 
@@ -198,11 +309,18 @@ class SplitRepository {
 
   // Check and update split status based on participants - WITH PRECISION FIX
   Future<void> _checkAndUpdateSplitStatus(int splitId) async {
-    final participants = await getParticipantsBySplitId(splitId);
-
-    // Check if all participants are marked as 'paid' status
-    // This already accounts for the precision fix from markParticipantAsPaid
-    final allPaid = participants.every((p) => p.status == 'paid');
+    final pendingTransactions = await _dbHelper.rawQuery(
+      '''
+      SELECT COUNT(*) as count
+      FROM transactions
+      WHERE source_type = ?
+        AND source_id = ?
+        AND transaction_category = ?
+    ''',
+      [AppConstants.sourceTypeSplit, splitId, AppConstants.categorySplit],
+    );
+    final pendingCount = pendingTransactions.first['count'] as int? ?? 0;
+    final allPaid = pendingCount == 0;
 
     if (allPaid) {
       await _dbHelper.update(
@@ -226,11 +344,13 @@ class SplitRepository {
   Future<void> settleSplit(int splitId) async {
     final participants = await getParticipantsBySplitId(splitId);
 
-    // Mark each participant as fully paid (set paid = share_amount)
+    // Mark each participant as fully settled in whichever direction applies.
     for (var participant in participants) {
+      final amountToSettle = (participant.shareAmount - participant.expensePaid)
+          .abs();
       await _dbHelper.update(
         'split_participants',
-        {'paid': participant.shareAmount, 'status': 'paid'},
+        {'paid': amountToSettle, 'status': 'paid'},
         where: 'id = ?',
         whereArgs: [participant.id],
       );
@@ -243,10 +363,13 @@ class SplitRepository {
       where: 'id = ?',
       whereArgs: [splitId],
     );
+    await _deleteGeneratedTransactions(splitId);
   }
 
   // Delete split expense (cascade deletes participants)
   Future<int> deleteSplit(int id) async {
+    await _deleteGeneratedTransactions(id);
+
     // First delete all participants
     await _dbHelper.delete(
       'split_participants',
@@ -290,7 +413,6 @@ class SplitRepository {
 
   // Get summary
   Future<Map<String, double>> getSplitSummary() async {
-    // Query 1: Get totals from split_expenses table
     final expenseResult = await _dbHelper.rawQuery('''
     SELECT 
       SUM(CASE WHEN status != 'settled' THEN paid_by_user ELSE 0 END) as total_paid_by_user,
@@ -298,23 +420,44 @@ class SplitRepository {
     FROM split_expenses
   ''');
 
-    // Query 2: Get total receivable from participants
-    final participantResult = await _dbHelper.rawQuery('''
+    final linkedTransactionResult = await _dbHelper.rawQuery(
+      '''
     SELECT 
-      SUM(CASE WHEN se.status != 'settled' OR se.status != 'paid' THEN sp.share_amount - sp.paid ELSE 0 END) as total_receivable
+      COALESCE(SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END), 0) as total_receivable,
+      COALESCE(SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END), 0) as total_payable
+    FROM transactions
+    WHERE source_type = ?
+      AND transaction_category = ?
+  ''',
+      [AppConstants.sourceTypeSplit, AppConstants.categorySplit],
+    );
+
+    final fallbackParticipantResult = await _dbHelper.rawQuery('''
+    SELECT 
+      COALESCE(SUM(MAX(sp.share_amount - sp.expense_paid - sp.paid, 0)), 0) as total_receivable
     FROM split_expenses se
     INNER JOIN split_participants sp ON se.id = sp.split_id
-    WHERE sp.status != 'paid'
+    WHERE se.status != 'settled'
   ''');
 
     final totalPaidByUser =
         (expenseResult.first['total_paid_by_user'] as num?)?.toDouble() ?? 0.0;
     final totalOwed =
         (expenseResult.first['total_owed'] as num?)?.toDouble() ?? 0.0;
-    final totalReceivable =
-        (participantResult.first['total_receivable'] as num?)?.toDouble() ??
+    var totalReceivable =
+        (linkedTransactionResult.first['total_receivable'] as num?)
+            ?.toDouble() ??
         0.0;
-    final totalPayable = 0.0;
+    final totalPayable =
+        (linkedTransactionResult.first['total_payable'] as num?)?.toDouble() ??
+        0.0;
+
+    if (totalReceivable == 0 && totalPayable == 0) {
+      totalReceivable =
+          (fallbackParticipantResult.first['total_receivable'] as num?)
+              ?.toDouble() ??
+          0.0;
+    }
 
     return {
       'total_paid_by_user': totalPaidByUser,
@@ -328,8 +471,8 @@ class SplitRepository {
   Future<double> getPendingAmountFromContact(int contactId) async {
     final result = await _dbHelper.rawQuery(
       '''
-      SELECT SUM(share_amount - paid) as pending
-      FROM split_participants
+	      SELECT SUM(MAX(share_amount - expense_paid - paid, 0)) as pending
+	      FROM split_participants
       WHERE contact_id = ? AND status != 'paid'
     ''',
       [contactId],
@@ -385,6 +528,8 @@ class SplitRepository {
         participant.copyWith(splitId: splitId).toMap(),
       );
     }
+
+    await syncSplitTransactions(splitId);
   }
 
   // Get recent splits

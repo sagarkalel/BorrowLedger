@@ -6,6 +6,7 @@ class EmptyStateWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onActionPressed;
   final String? actionLabel;
+  final bool compact;
 
   const EmptyStateWidget({
     super.key,
@@ -14,6 +15,7 @@ class EmptyStateWidget extends StatelessWidget {
     required this.message,
     this.onActionPressed,
     this.actionLabel,
+    this.compact = false,
   });
 
   @override
@@ -21,13 +23,17 @@ class EmptyStateWidget extends StatelessWidget {
     return Center(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 28 : 40,
+            vertical: compact ? 24 : 36,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(24),
+                width: compact ? 64 : 88,
+                height: compact ? 64 : 88,
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
@@ -36,21 +42,21 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  size: 64,
+                  size: compact ? 30 : 42,
                   color: Theme.of(
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.6),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: compact ? 16 : 22),
               Text(
                 title,
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: compact ? 8 : 10),
               Text(
                 message,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -59,7 +65,7 @@ class EmptyStateWidget extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               if (onActionPressed != null && actionLabel != null) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: compact ? 16 : 22),
                 ElevatedButton.icon(
                   onPressed: onActionPressed,
                   icon: const Icon(Icons.add),

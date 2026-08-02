@@ -12,6 +12,9 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../cubit/split_cubit.dart';
+import '../widgets/app_list_avatar.dart';
+import '../widgets/app_pill_badge.dart';
+import '../widgets/app_search_field.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/settings_drawer.dart';
 import 'split_detail_screen.dart';
@@ -21,6 +24,20 @@ class SplitsScreen extends StatefulWidget {
 
   @override
   State<SplitsScreen> createState() => _SplitsScreenState();
+}
+
+class _ParticipantSettlementInfo {
+  final bool userReceives;
+  final double totalAmount;
+  final double settledAmount;
+  final double remainingAmount;
+
+  const _ParticipantSettlementInfo({
+    required this.userReceives,
+    required this.totalAmount,
+    required this.settledAmount,
+    required this.remainingAmount,
+  });
 }
 
 class _SplitsScreenState extends State<SplitsScreen>
@@ -110,15 +127,12 @@ class _SplitsScreenState extends State<SplitsScreen>
               slivers: [
                 SliverToBoxAdapter(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
                     child: Column(
                       children: [
                         // Net-Balance cards
                         _buildNetBalanceCard(state),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
 
                         // Summary cards
                         Row(
@@ -128,18 +142,20 @@ class _SplitsScreenState extends State<SplitsScreen>
                                 title: tr.receivable,
                                 amount: _getReceivable(state).abs(),
                                 icon: Icons.call_received,
-                                color: Colors.green,
+                                color: AppTheme.moneyInColor,
                                 isPositive: true,
+                                isCompact: true,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: BuildSummaryCard(
                                 title: tr.payable,
                                 amount: _getPayable(state).abs(),
                                 icon: Icons.call_made,
-                                color: Colors.orange,
+                                color: AppTheme.moneyOutColor,
                                 isPositive: false,
+                                isCompact: true,
                               ),
                             ),
                           ],
@@ -154,15 +170,15 @@ class _SplitsScreenState extends State<SplitsScreen>
                   pinned: true,
                   // floating: true,
                   delegate: FloatingTabHeaderDelegate(
-                    minHeight: 105,
-                    maxHeight: 105,
+                    minHeight: 104,
+                    maxHeight: 104,
                     child: _buildSearchBarAndFilters(),
                   ),
                 ),
                 // Splits header
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -198,7 +214,7 @@ class _SplitsScreenState extends State<SplitsScreen>
                 else
                   // Splits list
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -233,7 +249,7 @@ class _SplitsScreenState extends State<SplitsScreen>
 
                           final split = state.splits[index];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: _buildSplitCard(context, split, isDark),
                           );
                         },
@@ -269,55 +285,35 @@ class _SplitsScreenState extends State<SplitsScreen>
   Widget _buildSearchBarAndFilters() {
     final tr = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-      ),
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          // Search bar
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            margin: const EdgeInsets.only(top: 4),
+            child: AppSearchField(
+              controller: _searchController,
               hintText: tr.searchSplits,
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear_rounded),
-                      onPressed: () {
-                        _searchController.clear();
-                        context.read<SplitCubit>().setSearchQuery('');
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[850]
-                  : Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              onClear: () {
+                _searchController.clear();
+                context.read<SplitCubit>().setSearchQuery('');
+              },
+              onChanged: (value) {
+                context.read<SplitCubit>().setSearchQuery(value);
+                // setState(() {});
+              },
+              onSubmitted: (_) {
+                context.read<SplitCubit>().searchSplits();
+              },
             ),
-            onChanged: (value) {
-              context.read<SplitCubit>().setSearchQuery(value);
-              // setState(() {});
-            },
-            onSubmitted: (value) {
-              context.read<SplitCubit>().searchSplits();
-            },
           ),
 
           // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -370,147 +366,73 @@ class _SplitsScreenState extends State<SplitsScreen>
   Widget _buildNetBalanceCard(SplitState state) {
     final netBalance = _getReceivable(state).abs() - _getPayable(state);
     final isPositive = (netBalance >= 0);
-
-    final Color primaryColor;
-    final Color accentColor;
-
-    if (isPositive) {
-      primaryColor = AppTheme.primaryGreen;
-      accentColor = AppTheme.primaryBlue;
-    } else {
-      primaryColor = const Color(0xFFFFB74D);
-      // secondaryColor = const Color(0xFFFFB74D);
-      accentColor = AppTheme.borrowColor;
-    }
-
+    final colorScheme = Theme.of(context).colorScheme;
+    final balanceColor = isPositive
+        ? AppTheme.successColor
+        : AppTheme.warningColor;
     final tr = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accentColor, primaryColor, accentColor],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.2),
-            blurRadius: 4,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.2),
-            blurRadius: 16,
-            spreadRadius: 5,
-            offset: const Offset(4, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              isPositive
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            AppListAvatar(
+              label: tr.netBalance,
+              centerIcon: isPositive
                   ? Icons.account_balance_wallet_rounded
                   : Icons.account_balance_outlined,
-              color: Colors.white,
-              size: 32,
+              indicatorIcon: isPositive ? Icons.call_received : Icons.call_made,
+              indicatorColor: balanceColor,
             ),
-          ),
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      tr.netBalance,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.95),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        tr.netBalance,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      isPositive
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color: Colors.white.withOpacity(0.9),
-                      size: 16,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                Text(
-                  '${isPositive ? '+' : '-'}₹${netBalance.abs().toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    height: 1.1,
+                      const SizedBox(width: 6),
+                      Icon(
+                        isPositive
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                        color: balanceColor,
+                        size: 16,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
+                  const SizedBox(height: 4),
+                  Text(
+                    '${isPositive ? '+' : '-'}₹${netBalance.abs().toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isPositive ? Icons.call_received : Icons.call_made,
-                  color: Colors.white,
-                  size: 12,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isPositive ? tr.youWillGet : tr.youWillGive,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
+            AppPillBadge(
+              label: isPositive ? tr.youWillGet : tr.youWillGive,
+              icon: isPositive ? Icons.call_received : Icons.call_made,
+              color: balanceColor,
+              fontSize: 11,
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -542,12 +464,84 @@ class _SplitsScreenState extends State<SplitsScreen>
   // Helper to calculate balance (what user gets back or needs to give)
   double _calculateBalance(SplitExpenseModel split) {
     final participants = split.participants ?? [];
+    final settlements = _buildParticipantSettlements(split, participants);
+    final receivable = settlements
+        .where((s) => s.userReceives)
+        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
+    final payable = settlements
+        .where((s) => !s.userReceives)
+        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
+    return receivable > 0 ? receivable : -payable;
+  }
+
+  List<_ParticipantSettlementInfo> _buildParticipantSettlements(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+  ) {
     final totalShares = participants.fold<double>(
       0,
       (sum, p) => sum + p.shareAmount,
     );
     final userShare = split.totalAmount - totalShares;
-    return split.paidByUser - userShare;
+    var userNet = split.paidByUser - userShare;
+    const tolerance = 0.01;
+    final settlements = <_ParticipantSettlementInfo>[];
+
+    if (userNet > tolerance) {
+      for (final participant in participants) {
+        final participantOwes =
+            participant.shareAmount - participant.expensePaid;
+        final allocated = participantOwes > 0
+            ? (participantOwes < userNet ? participantOwes : userNet)
+            : 0.0;
+        final remaining = allocated - participant.paid;
+        settlements.add(
+          _ParticipantSettlementInfo(
+            userReceives: true,
+            totalAmount: allocated,
+            settledAmount: participant.paid > allocated
+                ? allocated
+                : participant.paid,
+            remainingAmount: remaining <= tolerance ? 0 : remaining,
+          ),
+        );
+        userNet -= allocated;
+      }
+    } else if (userNet < -tolerance) {
+      var userOwes = -userNet;
+      for (final participant in participants) {
+        final participantCredit =
+            participant.expensePaid - participant.shareAmount;
+        final allocated = participantCredit > 0
+            ? (participantCredit < userOwes ? participantCredit : userOwes)
+            : 0.0;
+        final remaining = allocated - participant.paid;
+        settlements.add(
+          _ParticipantSettlementInfo(
+            userReceives: false,
+            totalAmount: allocated,
+            settledAmount: participant.paid > allocated
+                ? allocated
+                : participant.paid,
+            remainingAmount: remaining <= tolerance ? 0 : remaining,
+          ),
+        );
+        userOwes -= allocated;
+      }
+    } else {
+      for (final _ in participants) {
+        settlements.add(
+          const _ParticipantSettlementInfo(
+            userReceives: true,
+            totalAmount: 0,
+            settledAmount: 0,
+            remainingAmount: 0,
+          ),
+        );
+      }
+    }
+
+    return settlements;
   }
 
   // IMPROVED SPLIT CARD - Shows total and what you get back/need to give
@@ -557,6 +551,7 @@ class _SplitsScreenState extends State<SplitsScreen>
     bool isDark,
   ) {
     final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final participants = split.participants ?? [];
     final isSettled = split.status == AppConstants.statusSettled;
@@ -566,34 +561,31 @@ class _SplitsScreenState extends State<SplitsScreen>
 
     // Calculate balance
     final balance = _calculateBalance(split);
-    final isPositive = balance > 0;
+    final isPositive = balance >= 0;
+    final directionColor = isPositive
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
 
-    // FIXED: Calculate payment statistics correctly
-    final totalPendingCount = participants
-        .where((p) => p.paid == 0) // Only those who haven't paid anything
+    final settlements = _buildParticipantSettlements(split, participants);
+    final totalPendingCount = settlements
+        .where((s) => s.remainingAmount > 0 && s.settledAmount == 0)
         .length;
 
-    final totalPaidCount = participants
-        .where((p) => p.status == AppConstants.statusPaid)
+    final totalPaidCount = settlements
+        .where((s) => s.remainingAmount <= 0)
         .length;
 
-    final partiallyPaidCount = participants
-        .where(
-          (p) =>
-              p.paid > 0 &&
-              p.paid < p.shareAmount &&
-              p.status != AppConstants.statusPaid,
-        )
+    final partiallyPaidCount = settlements
+        .where((s) => s.remainingAmount > 0 && s.settledAmount > 0)
         .length;
 
-    // Calculate total received
-    final totalReceived = participants.fold<double>(
+    final totalReceived = settlements.fold<double>(
       0,
-      (sum, p) => sum + p.paid,
+      (sum, s) => sum + s.settledAmount,
     );
-    final totalExpected = participants.fold<double>(
+    final totalExpected = settlements.fold<double>(
       0,
-      (sum, p) => sum + p.shareAmount,
+      (sum, s) => sum + s.totalAmount,
     );
     final paymentProgress = totalExpected > 0
         ? totalReceived / totalExpected
@@ -601,14 +593,6 @@ class _SplitsScreenState extends State<SplitsScreen>
 
     return Card(
       margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-          width: 1,
-        ),
-      ),
       child: InkWell(
         onTap: () async {
           final result = await Navigator.push(
@@ -617,403 +601,269 @@ class _SplitsScreenState extends State<SplitsScreen>
               builder: (_) => SplitDetailScreen(splitId: split.id!),
             ),
           );
-          if (result == true && mounted) {
+          if (result == true && context.mounted) {
             context.read<SplitCubit>().loadSplits();
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title row with status
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Icon with purple gradient
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.deepPurple.shade300,
-                          AppTheme.splitColor,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.pie_chart_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                  AppListAvatar(
+                    label: split.title,
+                    centerIcon: Icons.pie_chart_rounded,
+                    indicatorIcon: Icons.group_rounded,
+                    indicatorColor: colorScheme.secondary,
                   ),
                   const SizedBox(width: 12),
-                  // Title
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           split.title,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_rounded,
-                              size: 11,
-                              color: isDark
-                                  ? Colors.grey[500]
-                                  : Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              DateFormat(
-                                AppConstants.dateFormat,
-                              ).format(split.date),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 4),
+                        _buildSplitMetaRow(
+                          context,
+                          split,
+                          participants.length,
+                          statusColor,
+                          isSettled,
                         ),
+                        if (split.description != null &&
+                            split.description!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            split.description!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: statusColor.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSettled
-                              ? Icons.check_circle_rounded
-                              : Icons.schedule_rounded,
-                          size: 11,
-                          color: statusColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isSettled ? tr.settledBadge : tr.pendingBadge,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: statusColor,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(width: 12),
+                  _buildSplitAmountSection(
+                    context,
+                    balance: balance,
+                    totalAmount: split.totalAmount,
+                    color: directionColor,
+                    isPositive: isPositive,
+                    isSettled: isSettled,
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
 
-              if (split.description != null &&
-                  split.description!.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  split.description!,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey[500] : Colors.grey[600],
+              if (!isSettled && totalExpected > 0) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: paymentProgress,
+                    minHeight: 4,
+                    backgroundColor: colorScheme.outline.withValues(
+                      alpha: 0.14,
+                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      colorScheme.secondary,
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
 
-              const SizedBox(height: 12),
-
-              // IMPROVED: Amount info showing Total and Balance
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[850] : Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-                  ),
-                ),
-                child: Row(
+              if (totalPaidCount > 0 ||
+                  partiallyPaidCount > 0 ||
+                  totalPendingCount > 0) ...[
+                const SizedBox(height: 7),
+                Wrap(
+                  spacing: 5,
+                  runSpacing: 4,
                   children: [
-                    // Total Amount
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.receipt_rounded,
-                                size: 13,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                tr.total,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDark
-                                      ? Colors.grey[500]
-                                      : Colors.grey[600],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹${split.totalAmount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Divider
-                    Container(
-                      width: 1,
-                      height: 44,
-                      color: isDark ? Colors.grey[800] : Colors.grey[300],
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-
-                    // Balance - Get Back or Need to Give
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                isPositive
-                                    ? Icons.call_received
-                                    : Icons.call_made,
-                                size: 13,
-                                color: isPositive
-                                    ? Colors.green
-                                    : Colors.orange,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  isPositive ? tr.youWillGet : tr.youWillGive,
-                                  // isPositive ? tr.receivable : tr.payable,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: isPositive
-                                        ? Colors.green
-                                        : Colors.orange,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            // (balance - totalReceived).abs() != balance.abs()
-                            //     ? '₹${balance - totalReceived} of ₹${balance.abs().toStringAsFixed(2)}'
-                            //     :
-                            '₹${balance.abs().toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isPositive
-                                  ? Colors.green.shade600
-                                  : Colors.orange.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Payment progress indicator for pending splits with partial payments
-              if (!isSettled) ...[
-                const SizedBox(height: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.hourglass_bottom_rounded,
-                              size: 12,
-                              color: AppTheme.splitColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              tr.collectionProgress,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '${(paymentProgress * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.splitColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: paymentProgress,
-                        minHeight: 6,
-                        backgroundColor: isDark
-                            ? Colors.grey[800]
-                            : Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.splitColor,
+                    if (totalPaidCount > 0)
+                      AppPillBadge(
+                        label: '$totalPaidCount ${tr.paid}',
+                        color: AppTheme.successColor,
+                        fontSize: 9,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                       ),
-                    ),
+                    if (partiallyPaidCount > 0)
+                      AppPillBadge(
+                        label: '$partiallyPaidCount ${tr.partial}',
+                        color: colorScheme.secondary,
+                        fontSize: 9,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                      ),
+                    if (totalPendingCount > 0)
+                      AppPillBadge(
+                        label: '$totalPendingCount ${tr.pending}',
+                        color: AppTheme.warningColor,
+                        fontSize: 9,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                      ),
                   ],
                 ),
               ],
-
-              const SizedBox(height: 12),
-
-              // Participants summary with badges
-              Row(
-                children: [
-                  Icon(
-                    Icons.group_rounded,
-                    size: 16,
-                    color: isDark ? Colors.grey[500] : Colors.grey[600],
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${participants.length} ${participants.length == 1 ? tr.personSmall : tr.peopleSmall}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.grey[500] : Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (totalPaidCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$totalPaidCount ${tr.paid}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.successColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (partiallyPaidCount > 0) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.pink.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$partiallyPaidCount ${tr.partial}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.splitColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (totalPendingCount > 0) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.warningColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$totalPendingCount ${tr.pending}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.warningColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: isDark ? Colors.grey[600] : Colors.grey[400],
-                  ),
-                ],
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSplitMetaRow(
+    BuildContext context,
+    SplitExpenseModel split,
+    int participantCount,
+    Color statusColor,
+    bool isSettled,
+  ) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 3,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        AppPillBadge(
+          label: isSettled ? tr.settledBadge : tr.pendingBadge,
+          icon: isSettled ? Icons.check_circle_rounded : Icons.schedule_rounded,
+          color: statusColor,
+          fontSize: 9,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 10,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              DateFormat(AppConstants.dateFormat).format(split.date),
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.group_rounded,
+              size: 11,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              '$participantCount ${participantCount == 1 ? tr.personSmall : tr.peopleSmall}',
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        AppPillBadge(
+          label: '₹${split.totalAmount.toStringAsFixed(2)}',
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 9,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSplitAmountSection(
+    BuildContext context, {
+    required double balance,
+    required double totalAmount,
+    required Color color,
+    required bool isPositive,
+    required bool isSettled,
+  }) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final label = isSettled
+        ? tr.settled
+        : isPositive
+        ? tr.youWillGet
+        : tr.youWillGive;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '₹',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isSettled ? colorScheme.onSurfaceVariant : color,
+              ),
+            ),
+            Text(
+              (isSettled ? totalAmount : balance.abs()).toStringAsFixed(2),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: isSettled ? colorScheme.onSurface : color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        AppPillBadge(
+          label: label,
+          icon: isSettled
+              ? Icons.done_all_rounded
+              : isPositive
+              ? Icons.call_received
+              : Icons.call_made,
+          color: isSettled ? colorScheme.onSurfaceVariant : color,
+          fontSize: 8,
+        ),
+      ],
     );
   }
 }

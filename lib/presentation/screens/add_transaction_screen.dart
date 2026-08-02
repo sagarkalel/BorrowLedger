@@ -5,7 +5,6 @@ import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -14,8 +13,13 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/contact_model.dart';
 import '../../data/repositories/contact_repository.dart';
 import '../../data/repositories/udhari_item_repository.dart';
+import '../../data/repositories/udhari_quantity_repository.dart';
+import '../widgets/app_amount_field.dart';
+import '../widgets/app_date_field.dart';
+import '../widgets/app_segmented_control.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/udhari_item_suggestions.dart';
+import '../widgets/udhari_quantity_suggestions.dart';
 import 'contact_picker_screen.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -73,6 +77,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (widget.transaction != null) {
       _amountController.text = widget.transaction!.amount.toString();
       _descriptionController.text = widget.transaction!.description ?? '';
+      _nameController.text = widget.transaction!.contactName ?? '';
+      _phoneController.text = widget.transaction!.contactPhone ?? '';
       _selectedDate = widget.transaction!.date;
       _currentTransactionType = widget.transaction!.type;
       _currentTransactionCategory = widget.transaction!.category;
@@ -113,10 +119,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               .where((c) => c.id == widget.transaction!.contactId)
               .firstOrNull;
 
-          if (_selectedContact != null) {
-            _nameController.text = _selectedContact!.name;
-            _phoneController.text = _selectedContact!.phone ?? '';
-          }
+          _selectedContact ??= ContactModel(
+            id: widget.transaction!.contactId,
+            name: widget.transaction!.contactName ?? _nameController.text,
+            phone: widget.transaction!.contactPhone ?? _phoneController.text,
+            avatar: widget.transaction!.contactAvatar,
+          );
+
+          _nameController.text = _selectedContact!.name;
+          _phoneController.text = _selectedContact!.phone ?? '';
         }
         // If prefilled contact ID provided
         else if (widget.prefilledContactId != null) {
@@ -156,10 +167,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isLend = _currentTransactionType == AppConstants.typeLend;
     final isCash = _currentTransactionCategory == AppConstants.categoryCash;
     final isEditing = widget.transaction != null;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final actionColor = AppTheme.getTransactionActionColor(
+      _currentTransactionType,
+    );
     final tr = AppLocalizations.of(context)!;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           isEditing
@@ -172,253 +189,91 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       body: _isLoadingContacts
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(12, 10, 12, 16 + bottomInset),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Category switcher (Cash/Udhari)
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[850] : Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildCategorySwitchButton(
-                              context: context,
-                              label: tr.cash,
-                              icon: Icons.currency_rupee_rounded,
-                              color: AppTheme.successColor,
-                              isSelected: isCash,
-                              onTap: () {
-                                setState(() {
-                                  _currentTransactionCategory =
-                                      AppConstants.categoryCash;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildCategorySwitchButton(
-                              context: context,
-                              label: tr.udhari,
-                              icon: Icons.shopping_basket_rounded,
-                              color: AppTheme.infoColor,
-                              isSelected: !isCash,
-                              onTap: () {
-                                setState(() {
-                                  _currentTransactionCategory =
-                                      AppConstants.categoryUdhari;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    AppSegmentedControl<String>(
+                      selectedValue: _currentTransactionCategory,
+                      margin: EdgeInsets.zero,
+                      segmentHeight: 40,
+                      iconSize: 16,
+                      fontSize: 10.5,
+                      selectedColor: colorScheme.onSurface,
+                      onChanged: (category) {
+                        setState(() {
+                          _currentTransactionCategory = category;
+                        });
+                      },
+                      items: [
+                        AppSegmentedControlItem(
+                          value: AppConstants.categoryCash,
+                          label: tr.cash,
+                          icon: Icons.currency_rupee_rounded,
+                        ),
+                        AppSegmentedControlItem(
+                          value: AppConstants.categoryUdhari,
+                          label: tr.udhari,
+                          icon: Icons.shopping_basket_outlined,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     // Transaction type switcher (Lend/Borrow)
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[850] : Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildTypeSwitchButton(
-                              context: context,
-                              label: isCash
-                                  ? tr.youGaveMoney
-                                  : tr.youGaveOnUdhari,
-                              icon: Icons.call_made,
-                              color: isCash
-                                  ? AppTheme.successColor
-                                  : Colors.orangeAccent,
-                              isSelected: isLend,
-                              onTap: () {
-                                setState(() {
-                                  _currentTransactionType =
-                                      AppConstants.typeLend;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildTypeSwitchButton(
-                              context: context,
-                              label: isCash
-                                  ? tr.youGotMoney
-                                  : tr.youTookOnUdhari,
-                              icon: Icons.call_received,
-                              color: isCash
-                                  ? AppTheme.warningColor
-                                  : Colors.purple,
-                              isSelected: !isLend,
-                              onTap: () {
-                                setState(() {
-                                  _currentTransactionType =
-                                      AppConstants.typeBorrow;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    AppSegmentedControl<String>(
+                      selectedValue: _currentTransactionType,
+                      margin: EdgeInsets.zero,
+                      segmentHeight: 40,
+                      iconSize: 16,
+                      fontSize: 10.5,
+                      selectedColor: colorScheme.onSurface,
+                      onChanged: (type) {
+                        setState(() {
+                          _currentTransactionType = type;
+                        });
+                      },
+                      items: [
+                        AppSegmentedControlItem(
+                          value: AppConstants.typeLend,
+                          label: tr.youGave,
+                          icon: Icons.call_made,
+                        ),
+                        AppSegmentedControlItem(
+                          value: AppConstants.typeBorrow,
+                          label: tr.youGot,
+                          icon: Icons.call_received,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Transaction type indicator
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isLend
-                            ? (isCash
-                                  ? AppTheme.successColor.withValues(alpha: 0.1)
-                                  : Colors.blue.withValues(alpha: 0.1))
-                            : (isCash
-                                  ? AppTheme.warningColor.withValues(alpha: 0.1)
-                                  : Colors.orangeAccent.withValues(alpha: 0.1)),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isLend
-                              ? (isCash
-                                    ? AppTheme.successColor.withValues(
-                                        alpha: 0.3,
-                                      )
-                                    : Colors.blue.withValues(alpha: 0.3))
-                              : (isCash
-                                    ? AppTheme.warningColor.withValues(
-                                        alpha: 0.3,
-                                      )
-                                    : Colors.orangeAccent.withValues(
-                                        alpha: 0.3,
-                                      )),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isLend
-                                  ? (isCash
-                                        ? AppTheme.successColor
-                                        : Colors.blue)
-                                  : (isCash
-                                        ? AppTheme.warningColor
-                                        : Colors.purple),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              isLend ? Icons.call_made : Icons.call_received,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isCash
-                                      ? (isLend
-                                            ? tr.youGaveMoney
-                                            : tr.youGotMoney)
-                                      : (isLend
-                                            ? tr.youGaveOnUdhari
-                                            : tr.youTookOnUdhari),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  isCash
-                                      ? (isLend ? tr.theyOweYou : tr.youOweThem)
-                                      : (isLend
-                                            ? tr.theyNeedToPayForItems
-                                            : tr.youNeedToPayForItems),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).hintColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isCash
-                                  ? Colors.green.withValues(alpha: 0.2)
-                                  : Colors.blue.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  isCash ? '💵' : '📦',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isCash ? tr.cash : tr.udhari,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: isCash
-                                        ? Colors.green
-                                        : Colors.deepOrange,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    _buildTransactionSummaryCard(context, isCash, isLend, tr),
+                    const SizedBox(height: 14),
 
                     // Contact selection toggle
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SegmentedButton<bool>(
-                            segments: [
-                              ButtonSegment(
-                                value: true,
-                                label: Text(tr.phoneContacts),
-                                icon: Icon(Icons.contacts, size: 18),
-                              ),
-                              ButtonSegment(
-                                value: false,
-                                label: Text(tr.manualEntry),
-                                icon: Icon(Icons.edit, size: 18),
-                              ),
-                            ],
-                            selected: {_usePhoneContacts},
-                            onSelectionChanged: (Set<bool> selection) {
-                              setState(() {
-                                _usePhoneContacts = selection.first;
-                                _selectedContact = null;
-                                _nameController.clear();
-                                _phoneController.clear();
-                              });
-                            },
-                          ),
+                    AppSegmentedControl<bool>(
+                      selectedValue: _usePhoneContacts,
+                      margin: EdgeInsets.zero,
+                      segmentHeight: 40,
+                      iconSize: 16,
+                      fontSize: 10.5,
+                      selectedColor: colorScheme.onSurface,
+                      onChanged: _setContactInputMode,
+                      items: [
+                        AppSegmentedControlItem(
+                          value: true,
+                          label: tr.phoneContacts,
+                          icon: Icons.contacts_outlined,
+                        ),
+                        AppSegmentedControlItem(
+                          value: false,
+                          label: tr.manualEntry,
+                          icon: Icons.edit_outlined,
                         ),
                       ],
                     ),
@@ -426,8 +281,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                     // Contact selection (conditional)
                     if (_usePhoneContacts)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                      _buildContactPickerTile(
+                        icon: Icons.person_outline,
+                        label: tr.selectContactRequired,
+                        value: _selectedContact?.name,
+                        subtitle: _selectedContact?.phone,
+                        isSelected: _selectedContact != null,
                         onTap: () async {
                           final selectedContact = await Navigator.push(
                             context,
@@ -444,71 +303,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             });
                           }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[850] : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _selectedContact != null
-                                  ? AppTheme.primaryGreen
-                                  : (isDark
-                                        ? Colors.grey[700]!
-                                        : Colors.grey[300]!),
-                              width: _selectedContact != null ? 2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.person_outline,
-                                color: _selectedContact != null
-                                    ? AppTheme.primaryGreen
-                                    : Theme.of(context).hintColor,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _selectedContact != null
-                                          ? _selectedContact!.name
-                                          : tr.selectContactRequired,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: _selectedContact != null
-                                            ? (isDark
-                                                  ? Colors.white
-                                                  : Colors.grey[900])
-                                            : Theme.of(context).hintColor,
-                                      ),
-                                    ),
-                                    if (_selectedContact != null &&
-                                        _selectedContact!.phone != null)
-                                      Text(
-                                        _selectedContact!.phone!,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Theme.of(context).hintColor,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Theme.of(context).hintColor,
-                              ),
-                            ],
-                          ),
-                        ),
                       )
                     else ...[
                       // Manual contact entry
-                      CustomTextField(
+                      _buildCompactTextField(
                         controller: _nameController,
                         labelText: tr.contactNameRequired,
                         hintText: tr.enterName,
@@ -521,8 +319,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
+                      const SizedBox(height: 10),
+                      _buildCompactTextField(
                         controller: _phoneController,
                         labelText: tr.phoneNumberOptional,
                         hintText: tr.enterPhoneNumber,
@@ -530,23 +328,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         keyboardType: TextInputType.phone,
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Amount field
-                    CustomTextField(
+                    AppAmountField(
                       controller: _amountController,
                       labelText: tr.amountRequired,
                       hintText: tr.enterAmount,
-                      prefixText: '₹ ',
-                      prefixIcon: Icons.currency_rupee,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}'),
-                        ),
-                      ],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return tr.pleaseEnterAmount;
@@ -560,11 +348,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Udhari-specific fields
                     if (!isCash) ...[
-                      CustomTextField(
+                      _buildCompactTextField(
                         controller: _itemNameController,
                         labelText: tr.itemServiceNameRequired,
                         hintText: tr.egMilkMedicalGroceries,
@@ -588,163 +376,53 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      CustomTextField(
+                      _buildCompactTextField(
                         controller: _quantityController,
                         labelText: tr.quantityOptional,
                         hintText: tr.egQuantityExamples,
                         prefixIcon: Icons.format_list_numbered,
                         textCapitalization: TextCapitalization.words,
                       ),
+                      UdhariQuantitySuggestions(
+                        controller: _quantityController,
+                        onQuantitySelected: () {
+                          setState(() {});
+                        },
+                      ),
                       const SizedBox(height: 16),
                     ],
-
+                    const SizedBox(height: 10),
                     // Transaction date
-                    InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                    AppDateField(
+                      prefixIcon: Icons.calendar_today_outlined,
+                      labelText: tr.transactionDate,
+                      valueText: DateFormat(
+                        AppConstants.dateFormat,
+                      ).format(_selectedDate),
                       onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[850] : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.grey[700]!
-                                : Colors.grey[300]!,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tr.transactionDate,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark
-                                          ? Colors.grey[500]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat(
-                                      AppConstants.dateFormat,
-                                    ).format(_selectedDate),
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.grey[900],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: Theme.of(context).hintColor,
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Expected return date
-                    InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                    AppDateField(
+                      prefixIcon: Icons.event_outlined,
+                      labelText: tr.expectedReturnDateOptional,
+                      valueText: _expectedDate == null
+                          ? null
+                          : DateFormat(
+                              AppConstants.dateFormat,
+                            ).format(_expectedDate!),
+                      placeholderText: tr.tapToSet,
                       onTap: () => _selectExpectedDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[850] : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _expectedDate != null
-                                ? AppTheme.primaryGreen
-                                : (isDark
-                                      ? Colors.grey[700]!
-                                      : Colors.grey[300]!),
-                            width: _expectedDate != null ? 2 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.event_outlined,
-                              color: _expectedDate != null
-                                  ? AppTheme.primaryGreen
-                                  : Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tr.expectedReturnDateOptional,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark
-                                          ? Colors.grey[500]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _expectedDate == null
-                                        ? tr.tapToSet
-                                        : DateFormat(
-                                            AppConstants.dateFormat,
-                                          ).format(_expectedDate!),
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: _expectedDate == null
-                                          ? (isDark
-                                                ? Colors.grey[600]
-                                                : Colors.grey[400])
-                                          : (isDark
-                                                ? Colors.white
-                                                : Colors.grey[900]),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_expectedDate != null)
-                              IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () =>
-                                    setState(() => _expectedDate = null),
-                                iconSize: 20,
-                                tooltip: tr.clearDate,
-                                visualDensity: VisualDensity.compact,
-                              )
-                            else
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Theme.of(context).hintColor,
-                              ),
-                          ],
-                        ),
-                      ),
+                      clearTooltip: tr.clearDate,
+                      onClear: _expectedDate == null
+                          ? null
+                          : () => setState(() => _expectedDate = null),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Description
-                    CustomTextField(
+                    _buildCompactTextField(
                       controller: _descriptionController,
                       labelText: tr.descriptionOptional,
                       hintText: isCash
@@ -754,27 +432,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       maxLines: 3,
                       maxLength: 200,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 14),
 
                     // Save button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveTransaction,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: isLend
-                              ? (isCash ? AppTheme.successColor : Colors.blue)
-                              : (isCash
-                                    ? AppTheme.warningColor
-                                    : Colors.orangeAccent),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text(
-                          isEditing ? tr.updateTransaction : tr.saveTransaction,
-                        ),
-                      ),
+                    _buildSubmitButton(
+                      label: isEditing
+                          ? tr.updateTransaction
+                          : tr.saveTransaction,
+                      color: actionColor,
+                      onPressed: _saveTransaction,
                     ),
+                    const SizedBox(height: 4),
                   ],
                 ),
               ),
@@ -782,52 +450,44 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildCategorySwitchButton({
-    required BuildContext context,
+  Widget _buildSubmitButton({
     required String label,
-    required IconData icon,
     required Color color,
-    required bool isSelected,
-    required VoidCallback onTap,
+    required VoidCallback onPressed,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color
-              : isDark
-              ? Colors.grey[850]
-              : Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-        ),
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: onPressed,
+        style:
+            FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStatePropertyAll(
+                Colors.white.withValues(alpha: isDark ? 0.14 : 0.18),
+              ),
+            ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? Colors.white
-                  : isDark
-                  ? Colors.grey[400]
-                  : Colors.grey[700],
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected
-                    ? Colors.white
-                    : isDark
-                    ? Colors.grey[400]
-                    : Colors.grey[700],
-              ),
+            const Icon(Icons.check_rounded, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -835,57 +495,233 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildTypeSwitchButton({
-    required BuildContext context,
-    required String label,
-    required IconData icon,
-    required Color color,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildTransactionSummaryCard(
+    BuildContext context,
+    bool isCash,
+    bool isLend,
+    AppLocalizations tr,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = AppTheme.getTransactionActionColor(
+      isLend ? AppConstants.typeLend : AppConstants.typeBorrow,
+    );
+    final title = isCash
+        ? (isLend ? tr.youGaveMoney : tr.youGotMoney)
+        : (isLend ? tr.youGaveOnUdhari : tr.youTookOnUdhari);
+    final subtitle = isCash
+        ? (isLend ? tr.theyOweYou : tr.youOweThem)
+        : (isLend ? tr.theyNeedToPayForItems : tr.youNeedToPayForItems);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color
-              : isDark
-              ? Colors.grey[850]
-              : Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.07),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? Colors.white
-                  : isDark
-                  ? Colors.grey[400]
-                  : Colors.grey[700],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: isDark ? 0.18 : 0.1),
+              borderRadius: BorderRadius.circular(9),
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
+            child: Icon(
+              isLend ? Icons.call_made : Icons.call_received,
+              color: accentColor,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              isCash ? tr.cash : tr.udhari,
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected
-                    ? Colors.white
-                    : isDark
-                    ? Colors.grey[400]
-                    : Colors.grey[700],
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.grey[300] : Colors.grey[700],
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactTextField({
+    TextEditingController? controller,
+    String? labelText,
+    String? hintText,
+    String? prefixText,
+    IconData? prefixIcon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    TextCapitalization textCapitalization = TextCapitalization.sentences,
+    int? maxLines = 1,
+    int? maxLength,
+  }) {
+    return CustomTextField(
+      controller: controller,
+      labelText: labelText,
+      hintText: hintText,
+      prefixText: prefixText,
+      prefixIcon: prefixIcon,
+      keyboardType: keyboardType,
+      validator: validator,
+      textCapitalization: textCapitalization,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      isDense: true,
+    );
+  }
+
+  Widget _buildContactPickerTile({
+    required IconData icon,
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+    String? subtitle,
+    bool isSelected = false,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final hasValue = value != null && value.isNotEmpty;
+    final displayValue = hasValue ? value : label;
+    final borderColor = isSelected
+        ? colorScheme.primary.withValues(alpha: 0.45)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.07);
+    final foregroundColor = isSelected
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: colorScheme.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: foregroundColor, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayValue,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: hasValue
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        color: hasValue
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.68,
+                              ),
+                        height: 1.25,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _setContactInputMode(bool usePhoneContacts) {
+    if (_usePhoneContacts == usePhoneContacts) return;
+
+    setState(() {
+      _usePhoneContacts = usePhoneContacts;
+
+      if (!usePhoneContacts) {
+        if (_selectedContact != null) {
+          _nameController.text = _selectedContact!.name;
+          _phoneController.text = _selectedContact!.phone ?? '';
+        }
+        return;
+      }
+
+      if (_selectedContact?.id != null) {
+        _selectedContact =
+            _contacts.where((c) => c.id == _selectedContact!.id).firstOrNull ??
+            _selectedContact;
+        _nameController.text = _selectedContact!.name;
+        _phoneController.text = _selectedContact!.phone ?? '';
+      }
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -924,6 +760,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     if (_formKey.currentState!.validate()) {
       final contactRepo = context.read<ContactRepository>();
+      final borrowLendCubit = context.read<BorrowLendCubit>();
       ContactModel? contactToUse;
 
       // Handle contact selection based on mode
@@ -1000,31 +837,51 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
       }
 
+      if (_currentTransactionCategory == AppConstants.categoryUdhari &&
+          _quantityController.text.trim().isNotEmpty) {
+        try {
+          final quantityRepo = UdhariQuantityRepository();
+          await quantityRepo.recordQuantityUsage(
+            _quantityController.text.trim(),
+          );
+          log(
+            'Recorded udhari quantity usage: ${_quantityController.text.trim()}',
+          );
+        } catch (e) {
+          log('Failed to record quantity usage: $e');
+        }
+      }
+
+      final isSavingCash =
+          _currentTransactionCategory == AppConstants.categoryCash;
+      final itemName = _itemNameController.text.trim();
+      final quantity = _quantityController.text.trim();
+      final description = _descriptionController.text.trim();
+
       final transaction = TransactionModel(
         id: widget.transaction?.id,
         type: _currentTransactionType,
         category: _currentTransactionCategory,
         contactId: contactToUse.id!,
-        amount: double.parse(_amountController.text),
-        itemName: _itemNameController.text.isEmpty
-            ? null
-            : _itemNameController.text,
-        quantity: _quantityController.text.isEmpty
-            ? null
-            : _quantityController.text,
+        amount: double.parse(_amountController.text.trim()),
+        itemName: isSavingCash || itemName.isEmpty ? null : itemName,
+        quantity: isSavingCash || quantity.isEmpty ? null : quantity,
         expectedDate: _expectedDate,
-        description: _descriptionController.text.isEmpty
-            ? null
-            : _descriptionController.text,
+        description: description.isEmpty ? null : description,
         date: _selectedDate,
+        createdAt: widget.transaction?.createdAt,
+        updatedAt: widget.transaction?.updatedAt,
+        isSettlement: widget.transaction?.isSettlement ?? false,
         contactName: contactToUse.name,
+        contactPhone: contactToUse.phone,
+        contactAvatar: contactToUse.avatar,
       );
       log("transaction: ${transaction.toMap()}");
       try {
         if (widget.transaction == null) {
-          await context.read<BorrowLendCubit>().createTransaction(transaction);
+          await borrowLendCubit.createTransaction(transaction);
         } else {
-          await context.read<BorrowLendCubit>().updateTransaction(transaction);
+          await borrowLendCubit.updateTransaction(transaction);
         }
 
         if (mounted) {

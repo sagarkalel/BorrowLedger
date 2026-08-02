@@ -1,7 +1,7 @@
 class TransactionModel {
   final int? id;
   final String type; // 'lend' or 'borrow'
-  final String category; // 'cash' or 'udhari'
+  final String category; // 'cash', 'udhari', or 'split'
   final int contactId;
   final double amount;
   final String? description;
@@ -17,6 +17,10 @@ class TransactionModel {
 
   // Settlement flag (RECOMMENDED APPROACH)
   final bool isSettlement;
+
+  // Source linkage for generated transactions
+  final String? sourceType;
+  final int? sourceId;
 
   // Optional, for joined queries
   final String? contactName;
@@ -38,6 +42,8 @@ class TransactionModel {
     this.expectedDate,
     this.paidAmount,
     this.isSettlement = false, // Default false
+    this.sourceType,
+    this.sourceId,
     this.contactName,
     this.contactPhone,
     this.contactAvatar,
@@ -49,6 +55,9 @@ class TransactionModel {
 
   // Helper getter for udhari transactions
   bool get isUdhari => category == 'udhari';
+
+  // Helper getter for split-linked transactions
+  bool get isSplit => category == 'split';
 
   // Helper getter to check if transaction is overdue
   bool get isOverdue {
@@ -72,6 +81,8 @@ class TransactionModel {
       'expected_date': expectedDate?.toIso8601String(),
       'paid_amount': paidAmount,
       'is_settlement': isSettlement ? 1 : 0, // Store as integer
+      'source_type': sourceType,
+      'source_id': sourceId,
     };
   }
 
@@ -95,6 +106,8 @@ class TransactionModel {
           ? (map['paid_amount'] as num).toDouble()
           : null,
       isSettlement: (map['is_settlement'] as int?) == 1,
+      sourceType: map['source_type'] as String?,
+      sourceId: map['source_id'] as int?,
       contactName: map['contact_name'] as String?,
       contactPhone: map['contact_phone'] as String?,
       contactAvatar: map['contact_avatar'] as String?,
@@ -117,6 +130,8 @@ class TransactionModel {
     String? status,
     double? paidAmount,
     bool? isSettlement,
+    String? sourceType,
+    int? sourceId,
     String? contactName,
     String? contactPhone,
     String? contactAvatar,
@@ -136,6 +151,8 @@ class TransactionModel {
       expectedDate: expectedDate ?? this.expectedDate,
       paidAmount: paidAmount ?? this.paidAmount,
       isSettlement: isSettlement ?? this.isSettlement,
+      sourceType: sourceType ?? this.sourceType,
+      sourceId: sourceId ?? this.sourceId,
       contactName: contactName ?? this.contactName,
       contactPhone: contactPhone ?? this.contactPhone,
       contactAvatar: contactAvatar ?? this.contactAvatar,

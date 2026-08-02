@@ -20,6 +20,9 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly;
   final TextCapitalization textCapitalization;
   final VoidCallback? onTap;
+  final bool isDense;
+  final EdgeInsetsGeometry? contentPadding;
+  final Color? fillColor;
 
   const CustomTextField({
     super.key,
@@ -41,18 +44,47 @@ class CustomTextField extends StatelessWidget {
     this.readOnly = false,
     this.textCapitalization = TextCapitalization.sentences,
     this.onTap,
+    this.isDense = true,
+    this.contentPadding,
+    this.fillColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final fieldFillColor =
+        fillColor ??
+        theme.inputDecorationTheme.fillColor ??
+        colorScheme.surface;
+
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
+        filled: true,
+        fillColor: fieldFillColor,
         labelText: labelText,
         hintText: hintText,
         prefixText: prefixText,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+        prefixIconConstraints: isDense
+            ? const BoxConstraints(minWidth: 42, minHeight: 42)
+            : null,
         suffixIcon: suffixIcon,
+        suffixIconConstraints: isDense
+            ? const BoxConstraints(minWidth: 42, minHeight: 42)
+            : null,
+        isDense: isDense,
+        contentPadding:
+            contentPadding ??
+            (isDense
+                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+                : null),
+        floatingLabelStyle: TextStyle(
+          color: colorScheme.primary,
+          backgroundColor: fieldFillColor,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,

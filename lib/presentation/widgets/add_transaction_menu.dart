@@ -1,4 +1,5 @@
 import 'package:borrow_ledger/core/constants/app_constants.dart';
+import 'package:borrow_ledger/core/theme/app_theme.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/add_transaction_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,126 +11,128 @@ void showAddTransactionMenu(
   String? prefilledContactName,
   String? prefilledContactPhone,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
   final tr = AppLocalizations.of(context)!;
 
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+    useSafeArea: true,
     builder: (context) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
-            // Title
-            Text(
-              tr.addNewTransaction,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-
-            // CASH SECTION
-            _buildSectionHeader(context, tr.cashMoney, isDark),
-            const SizedBox(height: 12),
-            _buildQuickActionTile(
-              context,
-              icon: Icons.call_made,
-              title: tr.youGaveMoney,
-              subtitle: tr.directCashLent,
-              color: Colors.green,
-              isDark: isDark,
-              onTap: () => _navigateToAddTransactionScreen(
-                context,
-                type: AppConstants.typeLend,
-                category: AppConstants.categoryCash,
-                prefilledContactId: prefilledContactId,
-                prefilledContactName: prefilledContactName,
-                prefilledContactPhone: prefilledContactPhone,
-                refreshData: refreshData,
+              Row(
+                children: [
+                  Text(
+                    tr.addNewTransaction,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            _buildQuickActionTile(
-              context,
-              icon: Icons.call_received,
-              title: tr.youGotMoney,
-              subtitle: tr.directCashBorrowed,
-              color: Colors.orange,
-              isDark: isDark,
-              onTap: () => _navigateToAddTransactionScreen(
-                context,
-                type: AppConstants.typeBorrow,
-                category: AppConstants.categoryCash,
-                prefilledContactId: prefilledContactId,
-                prefilledContactName: prefilledContactName,
-                prefilledContactPhone: prefilledContactPhone,
-                refreshData: refreshData,
-              ),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
-            Divider(color: Colors.grey[300], thickness: 1),
-            const SizedBox(height: 20),
-
-            // UDHARI SECTION
-            _buildSectionHeader(context, tr.udhariItemsServices, isDark),
-            const SizedBox(height: 12),
-            _buildQuickActionTile(
-              context,
-              icon: Icons.shopping_bag_rounded,
-              title: tr.youGaveOnUdhari,
-              subtitle: tr.soldItemsOnCredit,
-              color: Colors.orangeAccent,
-              isDark: isDark,
-              onTap: () => _navigateToAddTransactionScreen(
+              _buildSectionHeader(
                 context,
-                type: AppConstants.typeLend,
-                category: AppConstants.categoryUdhari,
-                prefilledContactId: prefilledContactId,
-                prefilledContactName: prefilledContactName,
-                prefilledContactPhone: prefilledContactPhone,
-                refreshData: refreshData,
+                tr.cash,
+                Icons.currency_rupee_rounded,
               ),
-            ),
-            const SizedBox(height: 10),
-            _buildQuickActionTile(
-              context,
-              icon: Icons.shopping_cart_rounded,
-              title: tr.youTookOnUdhari,
-              subtitle: tr.boughtItemsOnCredit,
-              color: Colors.purple,
-              isDark: isDark,
-              onTap: () => _navigateToAddTransactionScreen(
+              const SizedBox(height: 8),
+              _buildQuickActionTile(
                 context,
-                type: AppConstants.typeBorrow,
-                category: AppConstants.categoryUdhari,
-                prefilledContactId: prefilledContactId,
-                prefilledContactName: prefilledContactName,
-                prefilledContactPhone: prefilledContactPhone,
-                refreshData: refreshData,
+                icon: Icons.call_made,
+                title: tr.youGaveMoney,
+                subtitle: tr.directCashLent,
+                color: AppTheme.moneyOutColor,
+                onTap: () => _navigateToAddTransactionScreen(
+                  context,
+                  type: AppConstants.typeLend,
+                  category: AppConstants.categoryCash,
+                  prefilledContactId: prefilledContactId,
+                  prefilledContactName: prefilledContactName,
+                  prefilledContactPhone: prefilledContactPhone,
+                  refreshData: refreshData,
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              _buildQuickActionTile(
+                context,
+                icon: Icons.call_received,
+                title: tr.youGotMoney,
+                subtitle: tr.directCashBorrowed,
+                color: AppTheme.moneyInColor,
+                onTap: () => _navigateToAddTransactionScreen(
+                  context,
+                  type: AppConstants.typeBorrow,
+                  category: AppConstants.categoryCash,
+                  prefilledContactId: prefilledContactId,
+                  prefilledContactName: prefilledContactName,
+                  prefilledContactPhone: prefilledContactPhone,
+                  refreshData: refreshData,
+                ),
+              ),
 
-            const SizedBox(height: kToolbarHeight),
-          ],
+              const SizedBox(height: 16),
+
+              _buildSectionHeader(
+                context,
+                tr.udhari,
+                Icons.shopping_basket_outlined,
+              ),
+              const SizedBox(height: 8),
+              _buildQuickActionTile(
+                context,
+                icon: Icons.shopping_bag_rounded,
+                title: tr.youGaveOnUdhari,
+                subtitle: tr.soldItemsOnCredit,
+                color: AppTheme.moneyOutColor,
+                onTap: () => _navigateToAddTransactionScreen(
+                  context,
+                  type: AppConstants.typeLend,
+                  category: AppConstants.categoryUdhari,
+                  prefilledContactId: prefilledContactId,
+                  prefilledContactName: prefilledContactName,
+                  prefilledContactPhone: prefilledContactPhone,
+                  refreshData: refreshData,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildQuickActionTile(
+                context,
+                icon: Icons.shopping_cart_rounded,
+                title: tr.youTookOnUdhari,
+                subtitle: tr.boughtItemsOnCredit,
+                color: AppTheme.moneyInColor,
+                onTap: () => _navigateToAddTransactionScreen(
+                  context,
+                  type: AppConstants.typeBorrow,
+                  category: AppConstants.categoryUdhari,
+                  prefilledContactId: prefilledContactId,
+                  prefilledContactName: prefilledContactName,
+                  prefilledContactPhone: prefilledContactPhone,
+                  refreshData: refreshData,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     },
@@ -164,14 +167,19 @@ void _navigateToAddTransactionScreen(
   }
 }
 
-Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
+Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+  final colorScheme = Theme.of(context).colorScheme;
+
   return Row(
     children: [
+      Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+      const SizedBox(width: 5),
       Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: isDark ? Colors.white : Colors.grey[900],
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     ],
@@ -184,62 +192,71 @@ Widget _buildQuickActionTile(
   required String title,
   required String subtitle,
   required Color color,
-  required bool isDark,
   required VoidCallback onTap,
 }) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: isDark ? 0.3 : 0.2),
-          width: 1,
-        ),
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final isDark = theme.brightness == Brightness.dark;
+
+  return Material(
+    color: colorScheme.surface,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+      side: BorderSide(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.07),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
+    ),
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, color: color, size: 18),
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.grey[900],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: isDark ? Colors.grey[600] : Colors.grey[400],
-          ),
-        ],
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     ),
   );

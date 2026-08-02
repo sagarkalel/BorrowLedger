@@ -11,15 +11,26 @@ class ContactRepository {
   ======================== */
 
   Future<bool> requestContactsPermission() async {
-    return FlutterContacts.requestPermission();
+    final status = await FlutterContacts.permissions.request(
+      PermissionType.read,
+    );
+    return status == PermissionStatus.granted ||
+        status == PermissionStatus.limited;
   }
 
   Future<List<Contact>> getPhoneContacts() async {
-    if (!await FlutterContacts.requestPermission()) {
+    if (!await requestContactsPermission()) {
       throw Exception('Contacts permission denied');
     }
 
-    return FlutterContacts.getContacts(withProperties: true, withPhoto: true);
+    return FlutterContacts.getAll(
+      properties: {
+        ContactProperty.phone,
+        ContactProperty.email,
+        ContactProperty.photoThumbnail,
+        ContactProperty.photoFullRes,
+      },
+    );
   }
 
   /* =======================

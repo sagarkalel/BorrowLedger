@@ -18,14 +18,8 @@ class LanguageSelectorCard extends StatelessWidget {
     return BlocBuilder<LocaleCubit, Locale>(
       builder: (context, locale) {
         return Card(
-          elevation: 0,
-          color: colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-          ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(4),
             child: Column(
               children: [
                 _buildLanguageOption(
@@ -87,22 +81,24 @@ class LanguageSelectorCard extends StatelessWidget {
         context.read<LocaleCubit>().setLocale(languageCode);
         showSuccessSnackbar(context, '${tr.languageChangedTo} $label');
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+              ? colorScheme.primary.withValues(alpha: 0.08)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            // Flag emoji
-            Text(flag, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-
-            // Language name
+            SizedBox(
+              width: 34,
+              child: Center(
+                child: Text(flag, style: const TextStyle(fontSize: 20)),
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 label,
@@ -115,14 +111,14 @@ class LanguageSelectorCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Check icon for selected language
             if (isSelected)
               Icon(
                 Icons.check_circle_rounded,
                 color: colorScheme.primary,
-                size: 22,
-              ),
+                size: 20,
+              )
+            else
+              const SizedBox(width: 20),
           ],
         ),
       ),

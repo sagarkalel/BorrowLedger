@@ -1,26 +1,27 @@
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-import '../../data/models/udhari_item_model.dart';
-import '../../data/repositories/udhari_item_repository.dart';
+import '../../data/models/udhari_quantity_model.dart';
+import '../../data/repositories/udhari_quantity_repository.dart';
 
-class UdhariItemSuggestions extends StatefulWidget {
+class UdhariQuantitySuggestions extends StatefulWidget {
   final TextEditingController controller;
-  final VoidCallback? onItemSelected;
+  final VoidCallback? onQuantitySelected;
 
-  const UdhariItemSuggestions({
+  const UdhariQuantitySuggestions({
     super.key,
     required this.controller,
-    this.onItemSelected,
+    this.onQuantitySelected,
   });
 
   @override
-  State<UdhariItemSuggestions> createState() => _UdhariItemSuggestionsState();
+  State<UdhariQuantitySuggestions> createState() =>
+      _UdhariQuantitySuggestionsState();
 }
 
-class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
-  final UdhariItemRepository _repository = UdhariItemRepository();
-  List<UdhariItemModel> _suggestions = [];
+class _UdhariQuantitySuggestionsState extends State<UdhariQuantitySuggestions> {
+  final UdhariQuantityRepository _repository = UdhariQuantityRepository();
+  List<UdhariQuantityModel> _suggestions = [];
   bool _isLoading = true;
   bool _showSuggestions = true;
 
@@ -39,12 +40,7 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
 
   void _onTextChanged() {
     final text = widget.controller.text.trim();
-
-    // Hide suggestions if user has typed something and selected an item
-    if (text.isNotEmpty && !_showSuggestions) {
-      return;
-    }
-
+    if (text.isNotEmpty && !_showSuggestions) return;
     _loadSuggestions();
   }
 
@@ -53,18 +49,18 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
 
     try {
       final text = widget.controller.text.trim();
-      final items = text.isEmpty
-          ? await _repository.getTopItems(limit: 20)
-          : await _repository.searchItems(text, limit: 20);
+      final quantities = text.isEmpty
+          ? await _repository.getTopQuantities(limit: 20)
+          : await _repository.searchQuantities(text, limit: 20);
 
       if (mounted) {
         setState(() {
-          _suggestions = items;
+          _suggestions = quantities;
           _isLoading = false;
           _showSuggestions = true;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _suggestions = [];
@@ -74,12 +70,11 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
     }
   }
 
-  void _selectItem(UdhariItemModel item) {
-    widget.controller.text = item.itemName;
+  void _selectQuantity(UdhariQuantityModel quantity) {
+    widget.controller.text = quantity.quantity;
     setState(() => _showSuggestions = false);
-    widget.onItemSelected?.call();
+    widget.onQuantitySelected?.call();
 
-    // Re-enable suggestions after a delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() => _showSuggestions = true);
@@ -89,10 +84,9 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
 
   @override
   Widget build(BuildContext context) {
-    // Don't show if no suggestions
     if ((_suggestions.isEmpty && !_isLoading) ||
         (_suggestions.length == 1 &&
-            _suggestions.first.itemName == widget.controller.text.trim())) {
+            _suggestions.first.quantity == widget.controller.text.trim())) {
       return const SizedBox.shrink();
     }
 
@@ -107,7 +101,7 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
         Row(
           children: [
             Icon(
-              Icons.lightbulb_outline,
+              Icons.auto_awesome_outlined,
               size: 13,
               color: colorScheme.onSurfaceVariant,
             ),
@@ -131,25 +125,23 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
           ],
         ),
         const SizedBox(height: 5),
-
         if (_isLoading) _buildLoadingShimmer() else _buildSuggestionsList(),
       ],
     );
   }
 
   Widget _buildLoadingShimmer() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: 28,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: 4,
+        itemCount: 3,
         itemBuilder: (context, index) {
           return Container(
             margin: EdgeInsets.only(right: 8),
-            width: 76,
+            width: 62,
             decoration: BoxDecoration(
               color: colorScheme.onSurface.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(999),
@@ -167,18 +159,17 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
         scrollDirection: Axis.horizontal,
         itemCount: _suggestions.length,
         itemBuilder: (context, index) {
-          final item = _suggestions[index];
-          return _buildSuggestionChip(item);
+          return _buildSuggestionChip(_suggestions[index]);
         },
       ),
     );
   }
 
-  Widget _buildSuggestionChip(UdhariItemModel item) {
+  Widget _buildSuggestionChip(UdhariQuantityModel quantity) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final isFrequent = item.usageCount >= 1;
+    final isFrequent = quantity.usageCount >= 1;
     final borderColor = isFrequent
         ? colorScheme.primary.withValues(alpha: 0.28)
         : isDark
@@ -197,14 +188,14 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
           side: BorderSide(color: borderColor),
         ),
         child: InkWell(
-          onTap: () => _selectItem(item),
+          onTap: () => _selectQuantity(quantity),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  item.itemName,
+                  quantity.quantity,
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: isFrequent ? FontWeight.w600 : FontWeight.w500,
@@ -227,7 +218,7 @@ class _UdhariItemSuggestionsState extends State<UdhariItemSuggestions> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '${item.usageCount > 10 ? "10+" : item.usageCount}',
+                      '${quantity.usageCount > 10 ? "10+" : quantity.usageCount}',
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,

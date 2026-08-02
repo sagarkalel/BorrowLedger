@@ -66,11 +66,13 @@ class DatabaseHelper {
       updated_at TEXT NOT NULL,
       item_name TEXT,
       quantity TEXT,
-      expected_date TEXT,
-      paid_amount REAL,
-      is_settlement INTEGER NOT NULL DEFAULT 0,
-      FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
-    )
+	      expected_date TEXT,
+	      paid_amount REAL,
+	      is_settlement INTEGER NOT NULL DEFAULT 0,
+	      source_type TEXT,
+	      source_id INTEGER,
+	      FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
+	    )
   ''');
     log('DatabaseHelper: Transactions table created');
 
@@ -85,6 +87,18 @@ class DatabaseHelper {
     )
   ''');
     log('DatabaseHelper: Udhari items table created');
+
+    // Udhari quantities table
+    await db.execute('''
+    CREATE TABLE udhari_quantities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quantity TEXT NOT NULL UNIQUE,
+      usage_count INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  ''');
+    log('DatabaseHelper: Udhari quantities table created');
 
     // Expenses table
     await db.execute('''
@@ -123,6 +137,7 @@ class DatabaseHelper {
       split_id INTEGER NOT NULL,
       contact_id INTEGER NOT NULL,
       share_amount REAL NOT NULL,
+      expense_paid REAL NOT NULL DEFAULT 0,
       paid REAL NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'pending',
       FOREIGN KEY (split_id) REFERENCES split_expenses (id) ON DELETE CASCADE,
@@ -162,6 +177,9 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_type_category ON transactions(type, transaction_category)',
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_source ON transactions(source_type, source_id)',
+    );
 
     // Contact search index
     await db.execute(
@@ -174,6 +192,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_udhari_items_usage ON udhari_items(usage_count DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_udhari_quantities_quantity ON udhari_quantities(quantity COLLATE NOCASE)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_udhari_quantities_usage ON udhari_quantities(usage_count DESC)',
     );
 
     // Expense indexes
@@ -384,6 +408,87 @@ class DatabaseHelper {
       );
     }
 
+    if (oldVersion < 7) {
+      log('DatabaseHelper: Upgrading to version 7 - Adding udhari_quantities');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS udhari_quantities (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          quantity TEXT NOT NULL UNIQUE,
+          usage_count INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_udhari_quantities_quantity ON udhari_quantities(quantity COLLATE NOCASE)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_udhari_quantities_usage ON udhari_quantities(usage_count DESC)',
+      );
+
+      await db.execute('''
+        INSERT OR IGNORE INTO udhari_quantities (quantity, usage_count, created_at, updated_at)
+        SELECT 
+          TRIM(quantity) as quantity,
+          COUNT(*) as usage_count,
+          datetime('now') as created_at,
+          datetime('now') as updated_at
+        FROM transactions
+        WHERE transaction_category = 'udhari' 
+          AND quantity IS NOT NULL 
+          AND TRIM(quantity) != ''
+        GROUP BY LOWER(TRIM(quantity))
+      ''');
+
+      log('DatabaseHelper: Udhari quantities table added');
+    }
+
+    if (oldVersion < 8) {
+      log(
+        'DatabaseHelper: Upgrading to version 8 - Adding transaction source links',
+      );
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN source_type TEXT',
+        );
+      } catch (e) {
+        log('DatabaseHelper: source_type column may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN source_id INTEGER',
+        );
+      } catch (e) {
+        log('DatabaseHelper: source_id column may already exist: $e');
+      }
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_transactions_source ON transactions(source_type, source_id)',
+      );
+
+      log('DatabaseHelper: Transaction source links added');
+    }
+
+    if (oldVersion < 9) {
+      log(
+        'DatabaseHelper: Upgrading to version 9 - Adding participant expense payments',
+      );
+
+      try {
+        await db.execute(
+          'ALTER TABLE split_participants ADD COLUMN expense_paid REAL NOT NULL DEFAULT 0',
+        );
+      } catch (e) {
+        log('DatabaseHelper: expense_paid column may already exist: $e');
+      }
+
+      log('DatabaseHelper: Participant expense payments added');
+    }
+
     // Ensure all indexes exist (for any version upgrade)
     await _createIndexes(db);
     log('DatabaseHelper: Database upgrade completed');
@@ -535,6 +640,7 @@ class DatabaseHelper {
     await db.delete('transactions');
     await db.delete('contacts');
     await db.delete('udhari_items');
+    await db.delete('udhari_quantities');
     log('DatabaseHelper: All data cleared');
   }
 
@@ -557,6 +663,9 @@ class DatabaseHelper {
     final udhariItems = await db.rawQuery(
       'SELECT COUNT(*) as count FROM udhari_items',
     );
+    final udhariQuantities = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM udhari_quantities',
+    );
 
     return {
       'contacts': (contacts.first['count'] as int?) ?? 0,
@@ -564,6 +673,7 @@ class DatabaseHelper {
       'expenses': (expenses.first['count'] as int?) ?? 0,
       'splits': (splits.first['count'] as int?) ?? 0,
       'udhari_items': (udhariItems.first['count'] as int?) ?? 0,
+      'udhari_quantities': (udhariQuantities.first['count'] as int?) ?? 0,
     };
   }
 }

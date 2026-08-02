@@ -371,6 +371,9 @@ class TransactionRepository {
         COUNT(CASE WHEN t.transaction_category = 'udhari' THEN 1 END) AS udhari_count,
         COALESCE(SUM(CASE WHEN t.transaction_category = 'udhari' AND t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS udhari_given,
         COALESCE(SUM(CASE WHEN t.transaction_category = 'udhari' AND t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS udhari_taken,
+
+        -- Split totals
+        COUNT(CASE WHEN t.transaction_category = 'split' THEN 1 END) AS split_count,
         
         MAX(t.date) AS last_transaction_date
       FROM contacts c

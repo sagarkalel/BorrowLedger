@@ -5,6 +5,7 @@ import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/contact_model.dart';
+import '../widgets/custom_text_field.dart';
 
 class ContactEditScreen extends StatefulWidget {
   final String name;
@@ -50,177 +51,126 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final tr = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[50],
-      appBar: AppBar(title: Text(tr.reviewContact), elevation: 0),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: Text(tr.reviewContact)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar section
               Center(
                 child: Stack(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundImage: _photo != null
+                          ? MemoryImage(_photo!)
+                          : null,
+                      backgroundColor: colorScheme.primary.withValues(
+                        alpha: isDark ? 0.18 : 0.1,
                       ),
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundImage: _photo != null
-                            ? MemoryImage(_photo!)
-                            : null,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.2),
-                        child: _photo == null
-                            ? Text(
-                                _nameController.text.isNotEmpty
-                                    ? _nameController.text[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              )
-                            : null,
-                      ),
+                      child: _photo == null
+                          ? Text(
+                              _nameController.text.isNotEmpty
+                                  ? _nameController.text[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: colorScheme.primary,
+                              ),
+                            )
+                          : null,
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: colorScheme.primary,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark
-                                ? Colors.grey[900]!
-                                : Colors.grey[50]!,
-                            width: 3,
+                            color: theme.scaffoldBackgroundColor,
+                            width: 2,
                           ),
                         ),
                         child: const Icon(
                           Icons.edit_rounded,
                           color: Colors.white,
-                          size: 16,
+                          size: 14,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
-              // Info card
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50.withValues(
-                    alpha: isDark ? 0.1 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: Colors.blue.shade200.withValues(
-                      alpha: isDark ? 0.3 : 1,
-                    ),
+                    color: colorScheme.outline.withValues(alpha: 0.16),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline_rounded,
-                      color: isDark
-                          ? Colors.blue.shade300
-                          : Colors.blue.shade700,
-                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 17,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         tr.reviewAndEditContactDetails,
                         style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? Colors.blue.shade300
-                              : Colors.blue.shade700,
-                          height: 1.4,
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.3,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // Form fields
               Text(
                 tr.contactDetails,
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Name field
-              TextFormField(
+              CustomTextField(
                 controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: tr.name,
-                  hintText: tr.enterContactName,
-                  prefixIcon: const Icon(Icons.person_outline_rounded),
-                  filled: true,
-                  fillColor: isDark ? Colors.grey[850] : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.red.shade400),
-                  ),
-                ),
+                labelText: tr.name,
+                hintText: tr.enterContactName,
+                prefixIcon: Icons.person_outline_rounded,
                 textCapitalization: TextCapitalization.words,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return tr.pleaseEnterContactName;
@@ -229,43 +179,19 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 },
                 onChanged: (value) => setState(() {}),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Phone field
-              TextFormField(
+              CustomTextField(
                 controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: tr.phoneNumber,
-                  hintText: tr.enterPhoneNumber,
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  filled: true,
-                  fillColor: isDark ? Colors.grey[850] : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.red.shade400),
-                  ),
-                ),
+                labelText: tr.phoneNumber,
+                hintText: tr.enterPhoneNumber,
+                prefixIcon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return tr.pleaseEnterPhoneNumber;
@@ -273,43 +199,19 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Email field
-              TextFormField(
+              CustomTextField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: tr.emailOptional,
-                  hintText: tr.enterEmailAddress,
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  filled: true,
-                  fillColor: isDark ? Colors.grey[850] : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.red.shade400),
-                  ),
-                ),
+                labelText: tr.emailOptional,
+                hintText: tr.enterEmailAddress,
+                prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (!value.contains('@') || !value.contains('.')) {
@@ -319,45 +221,21 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-              // Action buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(
-                          color: isDark ? Colors.grey[700]! : Colors.grey[400]!,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        tr.cancel,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
-                        ),
-                      ),
+                      child: Text(tr.cancel),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _saveContact,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -366,7 +244,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                           Text(
                             tr.addContact,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

@@ -42,8 +42,10 @@ class BorrowLedgerApp extends StatelessWidget {
               BlocProvider(create: (context) => ThemeCubit()),
               BlocProvider(create: (context) => LocaleCubit()),
               BlocProvider(
-                create: (_) =>
-                    BorrowLendCubit(context.read<TransactionRepository>()),
+                create: (context) => BorrowLendCubit(
+                  context.read<TransactionRepository>(),
+                  context.read<SplitRepository>(),
+                ),
               ),
               BlocProvider(
                 create: (context) =>

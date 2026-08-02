@@ -23,9 +23,11 @@ void showSuccessSnackbar(
     SnackBar(
       content: Row(
         children: [
-          Icon(Icons.check_circle, color: Colors.white),
-          SizedBox(width: 12),
-          Text(msg),
+          const Icon(Icons.check_circle, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(msg, maxLines: 3, overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
       backgroundColor: AppTheme.success,
@@ -46,9 +48,11 @@ void showWarningSnackbar(
     SnackBar(
       content: Row(
         children: [
-          Icon(Icons.warning_amber_outlined, color: Colors.white),
-          SizedBox(width: 12),
-          Text(msg),
+          const Icon(Icons.warning_amber_outlined, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(msg, maxLines: 3, overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
       backgroundColor: AppTheme.warning,
@@ -69,9 +73,11 @@ void showFailureSnackbar(
     SnackBar(
       content: Row(
         children: [
-          Icon(Icons.cancel, color: Colors.white),
-          SizedBox(width: 12),
-          Text(msg),
+          const Icon(Icons.cancel, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(msg, maxLines: 3, overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
       backgroundColor: AppTheme.errorColor,

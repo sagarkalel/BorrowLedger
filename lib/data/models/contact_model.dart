@@ -7,6 +7,7 @@ class ContactSummary {
   final DateTime? lastTransactionDate;
   final int cashCount;
   final int udhariCount;
+  final int splitCount;
 
   ContactSummary({
     required this.contact,
@@ -17,6 +18,7 @@ class ContactSummary {
     required this.lastTransactionDate,
     this.cashCount = 0,
     this.udhariCount = 0,
+    this.splitCount = 0,
   });
 }
 

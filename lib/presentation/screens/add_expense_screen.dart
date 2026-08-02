@@ -2,12 +2,17 @@ import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../cubit/expense_cubit.dart';
+import '../widgets/app_amount_field.dart';
+import '../widgets/app_date_field.dart';
+import '../widgets/app_dialog_components.dart';
+import '../widgets/app_dropdown_field.dart';
+import '../widgets/app_list_avatar.dart';
+import '../widgets/custom_text_field.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final ExpenseModel? expense; // For editing
@@ -49,77 +54,71 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.expense != null;
+    final colorScheme = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(title: Text(isEditing ? tr.editExpense : tr.addExpense)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Expense indicator
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(10),
+              Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 9,
+                  ),
+                  child: Row(
+                    children: [
+                      AppListAvatar(
+                        label: tr.personalExpense,
+                        centerIcon: Icons.receipt_long_rounded,
+                        indicatorIcon: Icons.currency_rupee,
+                        indicatorColor: colorScheme.secondary,
+                        size: 38,
                       ),
-                      child: const Icon(
-                        Icons.receipt,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tr.personalExpense,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr.personalExpense,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          Text(
-                            tr.trackYourSpending,
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              tr.trackYourSpending,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
               // Amount field
-              TextFormField(
+              AppAmountField(
                 controller: _amountController,
-                decoration: InputDecoration(
-                  labelText: tr.amount,
-                  prefixText: '₹ ',
-                  hintText: '0.00',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
+                labelText: tr.amount,
+                hintText: '0.00',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return tr.pleaseEnterAmount;
@@ -133,34 +132,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // Category selection
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: tr.category,
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: AppConstants.expenseCategories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Row(
-                      children: [
-                        Icon(
-                          getCategoryIcon(category),
-                          size: 20,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(getCategoryLabel(context, category)),
-                      ],
-                    ),
-                  );
-                }).toList(),
+              AppDropdownField<String>(
+                value: _selectedCategory,
+                labelText: tr.category,
+                prefixIcon: Icons.category_rounded,
+                isDense: true,
+                items: AppConstants.expenseCategories
+                    .map(
+                      (category) => AppDropdownItem(
+                        value: category,
+                        label: getCategoryLabel(context, category),
+                        icon: getCategoryIcon(category),
+                        color: getCategoryColor(category),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedCategory = value!;
+                    _selectedCategory = value;
                   });
                 },
                 validator: (value) {
@@ -170,81 +161,61 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // Date picker
-              InkWell(
+              AppDateField(
+                labelText: tr.date,
+                valueText: DateFormat(
+                  AppConstants.dateFormat,
+                ).format(_selectedDate),
                 onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: tr.date,
-                    prefixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        DateFormat(
-                          AppConstants.dateFormat,
-                        ).format(_selectedDate),
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               // Description field
-              TextFormField(
+              CustomTextField(
                 controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: tr.descriptionOptional,
-                  prefixIcon: Icon(Icons.notes),
-                  hintText: tr.whatDidYouSpendOn,
-                ),
+                labelText: tr.descriptionOptional,
+                prefixIcon: Icons.notes_rounded,
+                hintText: tr.whatDidYouSpendOn,
+                isDense: true,
                 maxLines: 3,
                 maxLength: 200,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 10),
 
               // Category quick tips
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.green.withValues(alpha: 0.3),
-                  ),
-                ),
+              AppDialogNotice(
+                color: colorScheme.secondary,
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline, color: Colors.green[700]),
-                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: colorScheme.secondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         tr.chooseRightCategory,
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.green[900],
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
 
               // Save button
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: _saveExpense,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                   child: Text(isEditing ? tr.updateExpense : tr.saveExpense),
                 ),
               ),

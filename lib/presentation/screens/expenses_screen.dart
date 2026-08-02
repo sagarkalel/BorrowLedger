@@ -4,6 +4,10 @@ import 'dart:math' as math;
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
+import 'package:borrow_ledger/presentation/widgets/app_list_avatar.dart';
+import 'package:borrow_ledger/presentation/widgets/app_pill_badge.dart';
+import 'package:borrow_ledger/presentation/widgets/app_search_field.dart';
+import 'package:borrow_ledger/presentation/widgets/app_segmented_control.dart';
 import 'package:borrow_ledger/presentation/widgets/build_summary_card.dart';
 import 'package:borrow_ledger/presentation/widgets/delete_expense_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/expense_details_bottom_sheet.dart';
@@ -15,7 +19,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_constants.dart';
-import '../../core/theme/app_theme.dart';
 import '../../data/repositories/expense_repository.dart';
 import '../cubit/expense_cubit.dart';
 import '../widgets/empty_state_widget.dart';
@@ -144,6 +147,8 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: FloatingTabHeaderDelegate(
+                    minHeight: 60,
+                    maxHeight: 60,
                     child: _buildViewModeSelector(),
                   ),
                 ),
@@ -190,8 +195,14 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
       builder: (context, state) {
         if (_isLoadingStats && state.isLoading) {
           return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.6),
+              ),
+            ),
           );
         }
 
@@ -218,12 +229,12 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
             (thisMonthData['total'] as num?)?.toDouble() ?? 0.0;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
           child: Column(
             children: [
               // Total expenses card
               _buildTotalExpensesCard(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
               // Summary cards row
               IntrinsicHeight(
@@ -235,10 +246,11 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                         amount: thisMonthTotal,
                         isPositive: true,
                         icon: Icons.calendar_month_rounded,
-                        color: Colors.purple,
+                        color: Theme.of(context).colorScheme.secondary,
+                        isCompact: true,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: BuildSummaryCard(
                         title: tr.topCategory,
@@ -247,6 +259,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                         icon: getCategoryIcon(topCategoryName),
                         color: getCategoryColor(topCategoryName),
                         subtitle: getCategoryLabel(context, topCategoryName),
+                        isCompact: true,
                       ),
                     ),
                   ],
@@ -260,258 +273,105 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   }
 
   Widget _buildTotalExpensesCard() {
-    final primaryColor = AppTheme.primaryBlue;
-    final secondaryColor = AppTheme.primaryGreen;
+    final colorScheme = Theme.of(context).colorScheme;
+    final accentColor = colorScheme.secondary;
     final tr = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [primaryColor, secondaryColor, primaryColor],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.3),
-            blurRadius: 16,
-            spreadRadius: 5,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 1.5,
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              child: Icon(
+                Icons.account_balance_wallet_rounded,
+                color: accentColor,
+                size: 21,
+              ),
             ),
-            child: const Icon(
-              Icons.account_balance_wallet_rounded,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      tr.totalExpenses,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        tr.totalExpenses,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      size: 16,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '₹${_totalExpenses.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    height: 1.1,
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.trending_up_rounded,
+                        color: accentColor,
+                        size: 16,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 1,
+                  const SizedBox(height: 4),
+                  Text(
+                    '₹${_totalExpenses.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.category_rounded,
-                  color: Colors.white.withValues(alpha: 0.95),
-                  size: 12,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_categoryData.length} ${tr.categories}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
+            AppPillBadge(
+              label: '${_categoryData.length} ${tr.categories}',
+              icon: Icons.category_rounded,
+              color: accentColor,
+              fontSize: 11,
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildViewModeSelector() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tr = AppLocalizations.of(context)!;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        // Enhanced gradient background
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-              : [const Color(0xFFFFFFFF), const Color(0xFFF5F5F5)],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        // Enhanced shadow with multiple layers
-        boxShadow: [
-          // Main shadow
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-          // Secondary shadow for depth
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-            spreadRadius: -2,
-          ),
-          // Highlight on top (for light mode)
-          if (!isDark)
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.8),
-              blurRadius: 8,
-              offset: const Offset(0, -1),
-              spreadRadius: 0,
-            ),
-        ],
-        // Border for definition
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.05),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildModeButton(
-              label: tr.overview,
-              icon: Icons.dashboard_rounded,
-              mode: ExpenseViewMode.overview,
-            ),
-          ),
-          Expanded(
-            child: _buildModeButton(
-              label: tr.allExpenses,
-              icon: Icons.receipt_long_rounded,
-              mode: ExpenseViewMode.list,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeButton({
-    required String label,
-    required IconData icon,
-    required ExpenseViewMode mode,
-  }) {
-    final isSelected = _viewMode == mode;
-
-    return GestureDetector(
-      onTap: () {
-        if (_viewMode != mode) {
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: AppSegmentedControl<ExpenseViewMode>(
+        selectedValue: _viewMode,
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+        segmentHeight: 44,
+        iconSize: 17,
+        fontSize: 11,
+        onChanged: (mode) {
+          if (_viewMode == mode) return;
           setState(() => _viewMode = mode);
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryGreen : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? Colors.white
-                  : Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[400]
-                  : Colors.grey[700],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected
-                    ? Colors.white
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[400]
-                    : Colors.grey[700],
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+        },
+        items: [
+          AppSegmentedControlItem(
+            value: ExpenseViewMode.overview,
+            label: tr.overview,
+            icon: Icons.dashboard_rounded,
+          ),
+          AppSegmentedControlItem(
+            value: ExpenseViewMode.list,
+            label: tr.allExpenses,
+            icon: Icons.receipt_long_rounded,
+          ),
+        ],
       ),
     );
   }
@@ -542,55 +402,57 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   Widget _buildEmptyOverview() {
     final tr = AppLocalizations.of(context)!;
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryBlue.withValues(alpha: 0.1),
-                    AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.receipt_long_rounded,
-                size: 80,
-                color: AppTheme.primaryBlue.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              tr.startTrackingExpenses,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              tr.addYourFirstExpenseToSeeInsights,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-            ),
-          ],
+    return EmptyStateWidget(
+      icon: Icons.receipt_long_rounded,
+      title: tr.startTrackingExpenses,
+      message: tr.addYourFirstExpenseToSeeInsights,
+      compact: true,
+    );
+  }
+
+  Widget _buildOverviewCard({required Widget child, double vertical = 4}) {
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 12, vertical: vertical),
+      child: Padding(padding: const EdgeInsets.all(14), child: child),
+    );
+  }
+
+  Widget _buildOverviewSectionHeader({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, color: color, size: 18),
         ),
-      ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCategoryPieChart() {
     final tr = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final topCategories = _categoryData.take(5).toList();
     final othersTotal = _categoryData
@@ -608,47 +470,18 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
       });
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-        ),
-      ),
+    return _buildOverviewCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.pie_chart_rounded,
-                  color: AppTheme.primaryBlue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                tr.spendingByCategory,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey[900],
-                ),
-              ),
-            ],
+          _buildOverviewSectionHeader(
+            icon: Icons.pie_chart_rounded,
+            title: tr.spendingByCategory,
+            color: colorScheme.primary,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           SizedBox(
-            height: 220,
+            height: 210,
             child: Row(
               children: [
                 Expanded(
@@ -665,7 +498,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
 
                         return PieChartSectionData(
                           color: category == tr.others
-                              ? Colors.grey
+                              ? colorScheme.outline
                               : getCategoryColor(category),
                           value: total,
                           title: '${percentage.toStringAsFixed(0)}%',
@@ -688,6 +521,9 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: topCategories.map((item) {
                       final category = item['category'] as String;
+                      final categoryLabel = category == tr.others
+                          ? tr.others
+                          : getCategoryLabel(context, category);
                       final total = (item['total'] as num).toDouble();
                       final percentage = (total / _totalExpenses * 100);
 
@@ -700,7 +536,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                               height: 12,
                               decoration: BoxDecoration(
                                 color: category == tr.others
-                                    ? Colors.grey
+                                    ? colorScheme.outline
                                     : getCategoryColor(category),
                                 borderRadius: BorderRadius.circular(3),
                               ),
@@ -711,13 +547,11 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    category,
+                                    categoryLabel,
                                     style: TextStyle(
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.grey[900],
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -726,7 +560,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                                     '${percentage.toStringAsFixed(1)}%',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: Colors.grey[600],
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -749,7 +583,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   Widget _buildMonthlyTrendChart() {
     final tr = AppLocalizations.of(context)!;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     final currentYear = DateTime.now().year;
 
     // Create a complete 12-month data structure
@@ -779,45 +613,17 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     // If all values are 0, set a minimum maxY to avoid division by zero
     final effectiveMaxY = maxY > 0 ? maxY : 1000;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-        ),
-      ),
+    return _buildOverviewCard(
+      vertical: 6,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.trending_up_rounded,
-                  color: AppTheme.primaryGreen,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${tr.monthlyTrend} ($currentYear)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey[900],
-                ),
-              ),
-            ],
+          _buildOverviewSectionHeader(
+            icon: Icons.trending_up_rounded,
+            title: '${tr.monthlyTrend} ($currentYear)',
+            color: colorScheme.secondary,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           SizedBox(
             height: 200,
             child: LineChart(
@@ -830,7 +636,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                       : 250,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                      color: colorScheme.outline.withValues(alpha: 0.16),
                       strokeWidth: 1,
                     );
                   },
@@ -862,7 +668,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                             ).format(DateTime(currentYear, monthIndex + 1)),
                             style: TextStyle(
                               fontSize: 9,
-                              color: Colors.grey[600],
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -882,7 +688,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                             '₹${(value / 1000).toStringAsFixed(0)}k',
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey[600],
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           );
@@ -891,7 +697,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                           '₹${value.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         );
@@ -914,7 +720,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                     }).toList(),
                     isCurved: true,
                     gradient: LinearGradient(
-                      colors: [AppTheme.primaryBlue, AppTheme.primaryGreen],
+                      colors: [colorScheme.primary, colorScheme.secondary],
                     ),
                     barWidth: 3,
                     isStrokeCapRound: true,
@@ -925,7 +731,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                           radius: 3,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: AppTheme.primaryBlue,
+                          strokeColor: colorScheme.primary,
                         );
                       },
                     ),
@@ -933,8 +739,8 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          AppTheme.primaryBlue.withValues(alpha: 0.3),
-                          AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          colorScheme.primary.withValues(alpha: 0.22),
+                          colorScheme.secondary.withValues(alpha: 0.08),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -951,50 +757,24 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   }
 
   Widget _buildCategoryBreakdown() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-        ),
-      ),
+    return _buildOverviewCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.analytics_rounded,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                tr.categoryBreakdown,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey[900],
-                ),
-              ),
-            ],
+          _buildOverviewSectionHeader(
+            icon: Icons.analytics_rounded,
+            title: tr.categoryBreakdown,
+            color: colorScheme.tertiary,
           ),
-          const SizedBox(height: 16),
-          ..._categoryData.map((item) {
+          const SizedBox(height: 14),
+          ..._categoryData.asMap().entries.map((entry) {
+            final item = entry.value;
             final category = item['category'] as String;
+            final categoryLabel = getCategoryLabel(context, category);
+            final categoryColor = getCategoryColor(category);
             final total = (item['total'] as num).toDouble();
             final count = item['count'] as int;
             final percentage = (_totalExpenses > 0)
@@ -1002,24 +782,19 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                 : 0.0;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: EdgeInsets.only(
+                bottom: entry.key == _categoryData.length - 1 ? 0 : 14,
+              ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: getCategoryColor(
-                            category,
-                          ).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          getCategoryIcon(category),
-                          color: getCategoryColor(category),
-                          size: 20,
-                        ),
+                      AppListAvatar(
+                        label: categoryLabel,
+                        centerIcon: getCategoryIcon(category),
+                        indicatorIcon: Icons.currency_rupee,
+                        indicatorColor: categoryColor,
+                        size: 38,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1027,22 +802,19 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              category,
+                              categoryLabel,
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 14,
-                                color: isDark ? Colors.white : Colors.grey[900],
+                                color: colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            //TODO add transaction here
-                            Text(
-                              '$count expense${count > 1 ? 's' : ''}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
+                            AppPillBadge(
+                              label: '$count expense${count > 1 ? 's' : ''}',
+                              icon: Icons.receipt_long_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 10,
                             ),
                           ],
                         ),
@@ -1055,7 +827,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: getCategoryColor(category),
+                              color: categoryColor,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -1063,7 +835,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                             '${percentage.toStringAsFixed(1)}%',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[600],
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1076,12 +848,10 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: percentage / 100,
-                      backgroundColor: isDark
-                          ? Colors.grey[800]
-                          : Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation(
-                        getCategoryColor(category),
+                      backgroundColor: colorScheme.outline.withValues(
+                        alpha: 0.14,
                       ),
+                      valueColor: AlwaysStoppedAnimation(categoryColor),
                       minHeight: 6,
                     ),
                   ),
@@ -1098,38 +868,18 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     final tr = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       margin: const EdgeInsets.only(top: 4),
-      child: TextField(
+      child: AppSearchField(
         controller: _searchController,
-        decoration: InputDecoration(
-          hintText: tr.searchExpenses,
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
-                  onPressed: () {
-                    _searchController.clear();
-                    context.read<ExpenseCubit>().setSearchQuery('');
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[850]
-              : Colors.grey[100],
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
+        hintText: tr.searchExpenses,
+        onClear: () {
+          _searchController.clear();
+          context.read<ExpenseCubit>().setSearchQuery('');
+        },
         onChanged: (value) =>
             context.read<ExpenseCubit>().setSearchQuery(value),
-        onSubmitted: (value) => context.read<ExpenseCubit>().searchExpenses(),
+        onSubmitted: (_) => context.read<ExpenseCubit>().searchExpenses(),
       ),
     );
   }
@@ -1138,37 +888,36 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     final tr = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            FilterChipWidget(
-              label: tr.all,
-              isSelected: _selectedCategory == null,
-              onSelected: () {
-                _selectedCategory = null;
-                _searchController.clear();
-                context.read<ExpenseCubit>().clearFilters();
-              },
-            ),
-            const SizedBox(width: 8),
-            ...AppConstants.expenseCategories.map((category) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChipWidget(
-                  label: getCategoryLabel(context, category),
-                  icon: getCategoryIcon(category),
-                  isSelected: _selectedCategory == category,
-                  onSelected: () {
-                    _selectedCategory = category;
-                    _searchController.clear();
-                    context.read<ExpenseCubit>().setFilterCategory(category);
-                  },
-                ),
-              );
-            }),
-          ],
-        ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      child: Row(
+        children: [
+          FilterChipWidget(
+            label: tr.all,
+            isSelected: _selectedCategory == null,
+            onSelected: () {
+              _selectedCategory = null;
+              _searchController.clear();
+              context.read<ExpenseCubit>().clearFilters();
+            },
+          ),
+          const SizedBox(width: 8),
+          ...AppConstants.expenseCategories.map((category) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChipWidget(
+                label: getCategoryLabel(context, category),
+                icon: getCategoryIcon(category),
+                color: getCategoryColor(category),
+                isSelected: _selectedCategory == category,
+                onSelected: () {
+                  _selectedCategory = category;
+                  _searchController.clear();
+                  context.read<ExpenseCubit>().setFilterCategory(category);
+                },
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -1183,12 +932,20 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
       builder: (context, state) {
         if (state.isLoading) {
           return const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+            hasScrollBody: false,
+            child: Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.6),
+              ),
+            ),
           );
         }
 
         if (state.expenses.isEmpty) {
           return SliverFillRemaining(
+            hasScrollBody: false,
             child: EmptyStateWidget(
               icon: Icons.receipt_outlined,
               title: _hasActiveFilters
@@ -1197,12 +954,13 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
               message: _hasActiveFilters
                   ? tr.tryAdjustingFilters
                   : tr.addFirstExpenseToStartTracking,
+              compact: true,
             ),
           );
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final expense = state.expenses[index];
@@ -1215,41 +973,25 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   }
 
   Widget _buildExpenseCard(ExpenseModel expense) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final categoryColor = getCategoryColor(expense.category);
     final hasDescription =
         expense.description != null && expense.description!.trim().isNotEmpty;
 
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-          width: 1,
-        ),
-      ),
+      margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: () => _showExpenseDetails(expense),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: getCategoryColor(
-                    expense.category,
-                  ).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  getCategoryIcon(expense.category),
-                  color: getCategoryColor(expense.category),
-                  size: 24,
-                ),
+              AppListAvatar(
+                label: getCategoryLabel(context, expense.category),
+                centerIcon: getCategoryIcon(expense.category),
+                indicatorIcon: Icons.currency_rupee,
+                indicatorColor: categoryColor,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1260,11 +1002,13 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                       getCategoryLabel(context, expense.category),
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : Colors.grey[900],
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(
@@ -1272,7 +1016,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                               ? Icons.notes_outlined
                               : Icons.calendar_today_outlined,
                           size: 11,
-                          color: Colors.grey[500],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -1284,7 +1028,8 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                                   ).format(expense.date),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1303,25 +1048,26 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                     '₹${expense.amount.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: getCategoryColor(expense.category),
+                      fontWeight: FontWeight.w800,
+                      color: categoryColor,
                     ),
                   ),
                   const SizedBox(height: 3),
                   if (hasDescription)
-                    Text(
-                      DateFormat('dd MMM').format(expense.date),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
+                    AppPillBadge(
+                      label: DateFormat('dd MMM').format(expense.date),
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 9,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
                     )
                   else
                     Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
-                      color: Colors.grey[400],
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                 ],
               ),

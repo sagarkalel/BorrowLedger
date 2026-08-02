@@ -11,89 +11,51 @@ class DeleteTransactionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     final tr = AppLocalizations.of(context)!;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Warning icon with nested circles
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 54,
+              height: 54,
               decoration: BoxDecoration(
                 color: AppTheme.errorColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.errorColor.withValues(alpha: 0.3),
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.errorColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.delete_rounded,
-                  color: AppTheme.errorColor,
-                  size: 36,
-                ),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: AppTheme.errorColor,
+                size: 28,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Title
             Text(
               tr.deleteTransactionTitle,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.grey[900],
-                letterSpacing: -0.5,
-              ),
+              style: theme.dialogTheme.titleTextStyle,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            // Description
             Text(
               tr.deleteTransactionMessage,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-                height: 1.5,
-              ),
+              style: theme.dialogTheme.contentTextStyle,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Warning box
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppTheme.errorColor.withValues(alpha: 0.05),
+                color: AppTheme.errorColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: AppTheme.errorColor.withValues(alpha: 0.2),
-                  width: 1,
                 ),
               ),
               child: Row(
@@ -109,7 +71,7 @@ class DeleteTransactionDialog extends StatelessWidget {
                       tr.actionCannotBeUndone,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? Colors.red[300] : Colors.red[700],
+                        color: AppTheme.errorColor,
                         fontWeight: FontWeight.w600,
                         height: 1.4,
                       ),
@@ -118,35 +80,17 @@ class DeleteTransactionDialog extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
 
-            // Action buttons
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(
-                        color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Text(
-                      tr.cancel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey[300] : Colors.grey[700],
-                      ),
-                    ),
+                    child: Text(tr.cancel),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -156,19 +100,8 @@ class DeleteTransactionDialog extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.errorColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
-                    child: Text(
-                      tr.delete,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: Text(tr.delete),
                   ),
                 ),
               ],

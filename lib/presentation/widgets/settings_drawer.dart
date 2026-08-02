@@ -6,6 +6,7 @@ import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/splash_screen.dart';
 import 'package:borrow_ledger/presentation/widgets/clear_data_dialog.dart';
+import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
 import 'package:borrow_ledger/presentation/widgets/export_data_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/export_success_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/import_data_dialog.dart';
@@ -34,6 +35,26 @@ class SettingsDrawer extends StatefulWidget {
 }
 
 class _SettingsDrawerState extends State<SettingsDrawer> {
+  static const List<String> _backupInsertOrder = [
+    'contacts',
+    'transactions',
+    'expenses',
+    'split_expenses',
+    'split_participants',
+    'udhari_items',
+    'udhari_quantities',
+  ];
+
+  static const List<String> _backupDeleteOrder = [
+    'split_participants',
+    'split_expenses',
+    'expenses',
+    'transactions',
+    'contacts',
+    'udhari_items',
+    'udhari_quantities',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -42,48 +63,39 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     final tr = AppLocalizations.of(context)!;
 
     return Drawer(
-      child: Container(
-        color: theme.scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            _buildModernHeader(context, colorScheme, isDark),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                children: [
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(tr.appearance, colorScheme),
-                  const SizedBox(height: 8),
-                  _buildThemeCard(context, colorScheme, isDark),
-
-                  // ✅ ADD THIS SECTION HERE:
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(tr.language, colorScheme),
-                  const SizedBox(height: 8),
-                  LanguageSelectorCard(colorScheme: colorScheme),
-
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(tr.dataManagement, colorScheme),
-                  const SizedBox(height: 8),
-                  _buildDataManagementCard(context, colorScheme, isDark),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(tr.information, colorScheme),
-                  const SizedBox(height: 8),
-                  _buildAboutCard(context, colorScheme, isDark),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(tr.dangerZone, colorScheme),
-                  const SizedBox(height: 8),
-                  _buildDangerCard(context, colorScheme, isDark),
-                  const SizedBox(height: 24),
-                ],
-              ),
+      child: Column(
+        children: [
+          _buildModernHeader(context, colorScheme, isDark),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              children: [
+                const SizedBox(height: 12),
+                _buildSectionTitle(tr.appearance, colorScheme),
+                const SizedBox(height: 6),
+                _buildThemeCard(context, colorScheme, isDark),
+                const SizedBox(height: 16),
+                _buildSectionTitle(tr.language, colorScheme),
+                const SizedBox(height: 6),
+                LanguageSelectorCard(colorScheme: colorScheme),
+                const SizedBox(height: 16),
+                _buildSectionTitle(tr.dataManagement, colorScheme),
+                const SizedBox(height: 6),
+                _buildDataManagementCard(context, colorScheme, isDark),
+                const SizedBox(height: 16),
+                _buildSectionTitle(tr.information, colorScheme),
+                const SizedBox(height: 6),
+                _buildAboutCard(context, colorScheme, isDark),
+                const SizedBox(height: 16),
+                _buildSectionTitle(tr.dangerZone, colorScheme),
+                const SizedBox(height: 6),
+                _buildDangerCard(context, colorScheme, isDark),
+                const SizedBox(height: 12),
+              ],
             ),
-            _buildModernFooter(context, colorScheme, isDark),
-          ],
-        ),
+          ),
+          _buildModernFooter(context, colorScheme, isDark),
+        ],
       ),
     );
   }
@@ -96,64 +108,57 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     final tr = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.lendColor, AppTheme.primaryBlue],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.12),
           ),
-        ],
+        ),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    height: 56,
-                    width: 56,
+                    height: 44,
+                    width: 44,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      color: colorScheme.primary.withValues(
+                        alpha: isDark ? 0.18 : 0.1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Image.asset('assets/images/borrow_ledger_icon.jpeg'),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(context),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
               Text(
                 tr.appName,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
                   height: 1.2,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 tr.appSlogan,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white,
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -166,14 +171,14 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
   Widget _buildSectionTitle(String title, ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      padding: const EdgeInsets.only(left: 4),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
           color: colorScheme.onSurfaceVariant,
-          letterSpacing: 1,
+          letterSpacing: 0.6,
         ),
       ),
     );
@@ -188,14 +193,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       builder: (context, themeMode) {
         final tr = AppLocalizations.of(context)!;
         return Card(
-          elevation: 0,
-          color: colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-          ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(4),
             child: Column(
               children: [
                 _buildThemeOption(
@@ -253,40 +252,35 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     final isSelected = value == currentMode;
     return InkWell(
       onTap: () => context.read<ThemeCubit>().setTheme(value),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+              ? colorScheme.primary.withValues(alpha: 0.08)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? colorScheme.primary.withValues(alpha: 0.15)
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: isSelected
-                    ? Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                        width: 1.5,
-                      )
-                    : null,
+                    ? colorScheme.primary.withValues(alpha: 0.14)
+                    : colorScheme.onSurface.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(
                 icon,
                 color: isSelected
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,
-                size: 22,
+                size: 18,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,30 +307,13 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               ),
             ),
             if (isSelected)
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
+              Icon(
+                Icons.check_circle_rounded,
+                color: colorScheme.primary,
+                size: 20,
               )
             else
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-              ),
+              const SizedBox(width: 20),
           ],
         ),
       ),
@@ -350,12 +327,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   ) {
     final tr = AppLocalizations.of(context)!;
     return Card(
-      elevation: 0,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-      ),
       child: Column(
         children: [
           _buildActionTile(
@@ -407,12 +378,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   ) {
     final tr = AppLocalizations.of(context)!;
     return Card(
-      elevation: 0,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-      ),
       child: Column(
         children: [
           _buildActionTile(
@@ -479,8 +444,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       elevation: 0,
       color: AppTheme.errorColor.withValues(alpha: isDark ? 0.1 : 0.05),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: AppTheme.errorColor.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: AppTheme.errorColor.withValues(alpha: 0.22)),
       ),
       child: _buildActionTile(
         context,
@@ -505,24 +470,21 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: color.withValues(alpha: 0.3),
-                  width: 1,
-                ),
+                color: color.withValues(alpha: 0.11),
+                borderRadius: BorderRadius.circular(9),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,18 +492,22 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: colorScheme.onSurface,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11.5,
                       color: colorScheme.onSurfaceVariant,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -550,7 +516,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Icon(
                 Icons.chevron_right_rounded,
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                size: 22,
+                size: 20,
               ),
           ],
         ),
@@ -564,11 +530,11 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     bool isDark,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.2),
+            color: colorScheme.outline.withValues(alpha: 0.12),
             width: 1,
           ),
         ),
@@ -576,12 +542,16 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite_rounded, size: 14, color: Colors.red.shade400),
-          const SizedBox(width: 8),
+          Icon(
+            Icons.code_rounded,
+            size: 14,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
           Text(
             'Developed By: Sagar Kalel',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11.5,
               color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
@@ -628,41 +598,67 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     );
   }
 
+  Map<String, List<Map<String, dynamic>>> _parseBackupRows(String jsonString) {
+    final decoded = json.decode(jsonString);
+    if (decoded is! Map) {
+      throw const FormatException('Selected file is not a valid backup.');
+    }
+
+    final data = decoded['data'];
+    if (data is! Map) {
+      throw const FormatException('Backup file is missing app data.');
+    }
+
+    final rowsByTable = <String, List<Map<String, dynamic>>>{};
+    for (final table in _backupInsertOrder) {
+      final rows = data[table];
+      if (rows == null) {
+        rowsByTable[table] = const [];
+        continue;
+      }
+
+      if (rows is! List) {
+        throw FormatException('Backup table "$table" is invalid.');
+      }
+
+      rowsByTable[table] = rows.map((row) {
+        if (row is! Map) {
+          throw FormatException('Backup table "$table" has invalid records.');
+        }
+        return Map<String, dynamic>.from(row);
+      }).toList();
+    }
+
+    return rowsByTable;
+  }
+
+  String _backupErrorMessage(Object error) {
+    if (error is FormatException) {
+      return error.message;
+    }
+
+    return error.toString().replaceFirst('Exception: ', '');
+  }
+
+  void _dismissLoadingDialog() {
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
   // EXPORT FUNCTIONALITY
   Future<void> _exportData() async {
     developer.log('🚀 Starting export process...');
 
     final tr = AppLocalizations.of(context)!;
+    var loadingShown = false;
     try {
       // Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => Center(
-          child: Card(
-            margin: const EdgeInsets.all(32),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    tr.preparingExport,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        builder: (context) => AppLoadingDialog(message: tr.preparingExport),
       );
+      loadingShown = true;
 
       developer.log('📊 Fetching database data...');
       final dbHelper = DatabaseHelper();
@@ -683,6 +679,12 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final participants = await dbHelper.query('split_participants');
       developer.log('✅ Participants fetched: ${participants.length}');
 
+      final udhariItems = await dbHelper.query('udhari_items');
+      developer.log('✅ Udhari items fetched: ${udhariItems.length}');
+
+      final udhariQuantities = await dbHelper.query('udhari_quantities');
+      developer.log('✅ Udhari quantities fetched: ${udhariQuantities.length}');
+
       final exportData = {
         'app': tr.appName,
         'version': AppConstants.appVersion,
@@ -693,11 +695,15 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           'expenses': expenses,
           'split_expenses': splits,
           'split_participants': participants,
+          'udhari_items': udhariItems,
+          'udhari_quantities': udhariQuantities,
         },
         'stats': {
           'total_transactions': transactions.length,
           'total_expenses': expenses.length,
           'total_splits': splits.length,
+          'total_udhari_items': udhariItems.length,
+          'total_udhari_quantities': udhariQuantities.length,
         },
       };
 
@@ -717,11 +723,11 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           developer.log('📱 Storage permission status: $status');
 
           if (!status.isGranted) {
-            if (mounted) {
-              Navigator.pop(context); // Close loading
-              developer.log('❌ Storage permission denied');
-              showWarningSnackbar(context, tr.storagePermissionDenied);
-            }
+            if (!mounted) return;
+            _dismissLoadingDialog();
+            loadingShown = false;
+            developer.log('❌ Storage permission denied');
+            showWarningSnackbar(context, tr.storagePermissionDenied);
             return;
           }
         }
@@ -765,39 +771,38 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final size = await file.length();
       developer.log('✅ File exists: $exists, Size: $size bytes');
 
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading
-        developer.log('✅ Export completed successfully');
+      if (!mounted) return;
+      _dismissLoadingDialog();
+      loadingShown = false;
+      developer.log('✅ Export completed successfully');
 
-        // Show success dialog
-        showDialog(
-          context: context,
-          builder: (context) => ExportSuccessDialog(
-            fileName: fileName,
-            transactionsCount: transactions.length,
-            splitsCount: splits.length,
-            expensesCount: expenses.length,
-            onShare: () => shareExportedData(file),
-          ),
-        );
-      }
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (context) => ExportSuccessDialog(
+          fileName: fileName,
+          transactionsCount: transactions.length,
+          splitsCount: splits.length,
+          expensesCount: expenses.length,
+          onShare: () => shareExportedData(file),
+        ),
+      );
     } catch (e, stackTrace) {
       developer.log('❌ Export failed: $e');
       developer.log('Stack trace: $stackTrace');
 
-      if (mounted) {
-        Navigator.pop(context); // Close loading
+      if (!mounted) return;
+      if (loadingShown) _dismissLoadingDialog();
 
-        showFailureSnackbar(
-          context,
-          '${tr.exportFailed}: $e',
-          action: SnackBarAction(
-            label: tr.retry,
-            textColor: Colors.white,
-            onPressed: _exportData,
-          ),
-        );
-      }
+      showFailureSnackbar(
+        context,
+        '${tr.exportFailed}: ${_backupErrorMessage(e)}',
+        action: SnackBarAction(
+          label: tr.retry,
+          textColor: Colors.white,
+          onPressed: _exportData,
+        ),
+      );
     }
   }
 
@@ -806,10 +811,11 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     developer.log('🚀 Starting import process...');
 
     final tr = AppLocalizations.of(context)!;
+    var loadingShown = false;
     try {
       // Pick file
       developer.log('📁 Opening file picker...');
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
       );
@@ -822,36 +828,13 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('✅ File selected: ${result.files.single.path}');
 
       // Show loading
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: Card(
-              margin: const EdgeInsets.all(32),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      tr.importingData,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AppLoadingDialog(message: tr.importingData),
+      );
+      loadingShown = true;
 
       developer.log('📖 Reading file...');
       final file = File(result.files.single.path!);
@@ -859,131 +842,75 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('✅ File read, size: ${jsonString.length} chars');
 
       developer.log('🔄 Parsing JSON...');
-      final Map<String, dynamic> importData = json.decode(jsonString);
+      final backupRows = _parseBackupRows(jsonString);
       developer.log('✅ JSON parsed');
 
-      // Validate data structure
-      if (!importData.containsKey('data')) {
-        developer.log('❌ Invalid backup file: missing "data" key');
-        throw Exception('Invalid backup file format - missing data section');
-      }
-
       developer.log('✅ Backup file validated');
-      final data = importData['data'] as Map<String, dynamic>;
       final dbHelper = DatabaseHelper();
 
       // Log what we're about to import
       developer.log('📊 Import contents:');
+      developer.log('  - Contacts: ${backupRows['contacts']?.length ?? 0}');
       developer.log(
-        '  - Contacts: ${(data['contacts'] as List?)?.length ?? 0}',
+        '  - Transactions: ${backupRows['transactions']?.length ?? 0}',
+      );
+      developer.log('  - Expenses: ${backupRows['expenses']?.length ?? 0}');
+      developer.log(
+        '  - Split Expenses: ${backupRows['split_expenses']?.length ?? 0}',
       );
       developer.log(
-        '  - Transactions: ${(data['transactions'] as List?)?.length ?? 0}',
-      );
-      developer.log(
-        '  - Expenses: ${(data['expenses'] as List?)?.length ?? 0}',
-      );
-      developer.log(
-        '  - Split Expenses: ${(data['split_expenses'] as List?)?.length ?? 0}',
-      );
-      developer.log(
-        '  - Participants: ${(data['split_participants'] as List?)?.length ?? 0}',
+        '  - Participants: ${backupRows['split_participants']?.length ?? 0}',
       );
 
-      // Clear existing data
-      developer.log('🗑️ Clearing existing data...');
-      await dbHelper.clearAllData();
-      developer.log('✅ Data cleared');
-
-      // Import all tables
-      developer.log('📥 Importing contacts...');
-      if (data.containsKey('contacts')) {
-        int count = 0;
-        for (var contact in data['contacts'] as List) {
-          await dbHelper.insert('contacts', contact as Map<String, dynamic>);
-          count++;
+      final db = await dbHelper.database;
+      await db.transaction((txn) async {
+        developer.log('🗑️ Clearing existing data...');
+        for (final table in _backupDeleteOrder) {
+          await txn.delete(table);
         }
-        developer.log('✅ Imported $count contacts');
-      }
+        developer.log('✅ Data cleared');
 
-      developer.log('📥 Importing transactions...');
-      if (data.containsKey('transactions')) {
-        int count = 0;
-        for (var transaction in data['transactions'] as List) {
-          await dbHelper.insert(
-            'transactions',
-            transaction as Map<String, dynamic>,
-          );
-          count++;
+        for (final table in _backupInsertOrder) {
+          final rows = backupRows[table] ?? const <Map<String, dynamic>>[];
+          developer.log('📥 Importing $table...');
+          for (final row in rows) {
+            await txn.insert(table, row);
+          }
+          developer.log('✅ Imported ${rows.length} rows into $table');
         }
-        developer.log('✅ Imported $count transactions');
-      }
-
-      developer.log('📥 Importing expenses...');
-      if (data.containsKey('expenses')) {
-        int count = 0;
-        for (var expense in data['expenses'] as List) {
-          await dbHelper.insert('expenses', expense as Map<String, dynamic>);
-          count++;
-        }
-        developer.log('✅ Imported $count expenses');
-      }
-
-      developer.log('📥 Importing split expenses...');
-      if (data.containsKey('split_expenses')) {
-        int count = 0;
-        for (var split in data['split_expenses'] as List) {
-          await dbHelper.insert(
-            'split_expenses',
-            split as Map<String, dynamic>,
-          );
-          count++;
-        }
-        developer.log('✅ Imported $count split expenses');
-      }
-
-      developer.log('📥 Importing split participants...');
-      if (data.containsKey('split_participants')) {
-        int count = 0;
-        for (var participant in data['split_participants'] as List) {
-          await dbHelper.insert(
-            'split_participants',
-            participant as Map<String, dynamic>,
-          );
-          count++;
-        }
-        developer.log('✅ Imported $count participants');
-      }
+      });
 
       // Reload stats
       developer.log('🔄 Reloading statistics...');
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       developer.log('✅ Statistics reloaded');
 
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading
-        Navigator.pop(context); // Close drawer
-        developer.log('✅ Import completed successfully');
+      if (!mounted) return;
+      _dismissLoadingDialog();
+      loadingShown = false;
+      Navigator.pop(context); // Close drawer
+      developer.log('✅ Import completed successfully');
 
-        // Show success dialog
-        showDialog(
-          context: context,
-          builder: (context) => ImportSuccessDialog(
-            transactionsCount: (data['transactions'] as List?)?.length ?? 0,
-            splitsCount: (data['split_expenses'] as List?)?.length ?? 0,
-            expensesCount: (data['expenses'] as List?)?.length ?? 0,
-            onRestart: () => restartApp(context),
-          ),
-        );
-      }
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (context) => ImportSuccessDialog(
+          transactionsCount: backupRows['transactions']?.length ?? 0,
+          splitsCount: backupRows['split_expenses']?.length ?? 0,
+          expensesCount: backupRows['expenses']?.length ?? 0,
+          onRestart: () => restartApp(context),
+        ),
+      );
     } catch (e, stackTrace) {
       developer.log('❌ Import failed: $e');
       developer.log('Stack trace: $stackTrace');
 
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        showFailureSnackbar(context, '${tr.importFailed} $e');
-      }
+      if (!mounted) return;
+      if (loadingShown) _dismissLoadingDialog();
+      showFailureSnackbar(
+        context,
+        '${tr.importFailed}: ${_backupErrorMessage(e)}',
+      );
     }
   }
 
@@ -994,106 +921,79 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.infoColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.help_outline_rounded,
-                color: AppTheme.infoColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(tr.howBackupWorks),
-          ],
+      builder: (context) => AppDialogShell(
+        icon: const AppDialogIcon(
+          icon: Icons.help_outline_rounded,
+          color: AppTheme.infoColor,
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHowItWorksItem(
-                context,
-                Icons.cloud_upload_rounded,
-                tr.exportData,
-                '${tr.createsJsonFile}\n'
-                '• ${tr.allTransactionsLendBorrow}\n'
-                '• ${tr.allPersonalExpenses}\n'
-                '• ${tr.allSplitExpenses}\n'
-                '• ${tr.contactReferences}\n\n'
-                '${tr.fileSavedLocally}',
-                AppTheme.successColor,
-                colorScheme,
-              ),
-              const SizedBox(height: 16),
-              _buildHowItWorksItem(
-                context,
-                Icons.cloud_download_rounded,
-                tr.importData,
-                '${tr.restoresDataFromBackup}\n'
-                '• ${tr.replacesAllCurrentData}\n'
-                '• ${tr.importsAllRecords}\n'
-                '• ${tr.maintainsRelationships}\n\n'
-                '${tr.alwaysExportBeforeImporting}',
-                colorScheme.secondary,
-                colorScheme,
-              ),
-              const SizedBox(height: 16),
-              _buildHowItWorksItem(
-                context,
-                Icons.tips_and_updates_rounded,
-                tr.bestPractices,
-                '• ${tr.exportRegularly}\n'
-                '• ${tr.storeInCloudStorage}\n'
-                '• ${tr.neverDeleteLastBackup}\n'
-                '• ${tr.shareBackupsSecurely}',
-                AppTheme.warningColor,
-                colorScheme,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.3),
+        title: tr.howBackupWorks,
+        content: [
+          _buildHowItWorksItem(
+            context,
+            Icons.cloud_upload_rounded,
+            tr.exportData,
+            '${tr.createsJsonFile}\n'
+            '• ${tr.allTransactionsLendBorrow}\n'
+            '• ${tr.allPersonalExpenses}\n'
+            '• ${tr.allSplitExpenses}\n'
+            '• ${tr.contactReferences}\n\n'
+            '${tr.fileSavedLocally}',
+            AppTheme.successColor,
+            colorScheme,
+          ),
+          const SizedBox(height: 10),
+          _buildHowItWorksItem(
+            context,
+            Icons.cloud_download_rounded,
+            tr.importData,
+            '${tr.restoresDataFromBackup}\n'
+            '• ${tr.replacesAllCurrentData}\n'
+            '• ${tr.importsAllRecords}\n'
+            '• ${tr.maintainsRelationships}\n\n'
+            '${tr.alwaysExportBeforeImporting}',
+            colorScheme.secondary,
+            colorScheme,
+          ),
+          const SizedBox(height: 10),
+          _buildHowItWorksItem(
+            context,
+            Icons.tips_and_updates_rounded,
+            tr.bestPractices,
+            '• ${tr.exportRegularly}\n'
+            '• ${tr.storeInCloudStorage}\n'
+            '• ${tr.neverDeleteLastBackup}\n'
+            '• ${tr.shareBackupsSecurely}',
+            AppTheme.warningColor,
+            colorScheme,
+          ),
+          const SizedBox(height: 10),
+          AppDialogNotice(
+            color: colorScheme.primary,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: colorScheme.primary, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    tr.backupFilesInJson,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        tr.backupFilesInJson,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
         actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr.gotIt),
+          Expanded(
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.gotIt),
+            ),
           ),
         ],
       ),
@@ -1108,13 +1008,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     Color color,
     ColorScheme colorScheme,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
+    return AppDialogNotice(
+      color: color,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1125,8 +1020,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                   color: colorScheme.onSurface,
                 ),
               ),
@@ -1137,8 +1032,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
             content,
             style: TextStyle(
               fontSize: 13,
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
-              height: 1.5,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.4,
             ),
           ),
         ],
@@ -1186,21 +1081,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
-        child: Card(
-          margin: const EdgeInsets.all(32),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppTheme.errorColor),
-                SizedBox(height: 16),
-                Text(tr.deletingData),
-              ],
-            ),
-          ),
-        ),
+      builder: (context) => AppLoadingDialog(
+        message: tr.deletingData,
+        color: AppTheme.errorColor,
       ),
     );
 

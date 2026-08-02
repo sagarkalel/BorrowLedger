@@ -94,6 +94,7 @@ class SplitState {
 class SplitCubit extends Cubit<SplitState> {
   final SplitRepository _repository;
   late Timer timer;
+  bool _hasSyncedSplitTransactions = false;
 
   SplitCubit(this._repository) : super(SplitState());
 
@@ -110,6 +111,11 @@ class SplitCubit extends Cubit<SplitState> {
     );
 
     try {
+      if (!_hasSyncedSplitTransactions) {
+        await _repository.syncAllSplitTransactions();
+        _hasSyncedSplitTransactions = true;
+      }
+
       // Load summary
       final summary = await _repository.getSplitSummary();
       log(
@@ -257,6 +263,7 @@ class SplitCubit extends Cubit<SplitState> {
 
       await _repository.createParticipants(updatedParticipants);
       log('SplitCubit: ${participants.length} participants added');
+      await _repository.syncSplitTransactions(splitId);
 
       emit(
         state.copyWith(successMessage: 'Split expense created successfully'),
@@ -269,10 +276,18 @@ class SplitCubit extends Cubit<SplitState> {
   }
 
   /// Update an existing split expense
-  Future<void> updateSplit(SplitExpenseModel split) async {
+  Future<void> updateSplit(
+    SplitExpenseModel split, [
+    List<SplitParticipantModel>? participants,
+  ]) async {
     log('SplitCubit: Updating split ID: ${split.id}');
     try {
       await _repository.updateSplitExpense(split);
+      if (participants != null && split.id != null) {
+        await _repository.updateSplitParticipants(split.id!, participants);
+      } else if (split.id != null) {
+        await _repository.syncSplitTransactions(split.id!);
+      }
       log('SplitCubit: Split updated successfully');
       emit(
         state.copyWith(successMessage: 'Split expense updated successfully'),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -29,6 +30,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _pulseAnimation;
   late Animation<double> _textFadeAnimation;
   late Animation<Offset> _textSlideAnimation;
+  final List<Timer> _timers = [];
 
   @override
   void initState() {
@@ -114,35 +116,39 @@ class _SplashScreenState extends State<SplashScreen>
     _startAnimations();
 
     // Navigate to main screen after delay
-    Future.delayed(const Duration(milliseconds: 4500), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const MainScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                        CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOut,
-                        ),
-                      ),
-                      child: child,
-                    ),
-                  );
-                },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
-      }
+    _schedule(const Duration(milliseconds: 4500), () {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const MainScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
     });
   }
 
-  void _startAnimations() async {
+  void _schedule(Duration duration, VoidCallback callback) {
+    _timers.add(
+      Timer(duration, () {
+        if (mounted) {
+          callback();
+        }
+      }),
+    );
+  }
+
+  void _startAnimations() {
     // Start main animation
     _mainController.forward();
 
@@ -150,26 +156,26 @@ class _SplashScreenState extends State<SplashScreen>
     _particleController.forward();
 
     // Start pulse effect
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (mounted) {
+    _schedule(const Duration(milliseconds: 1200), () {
       _pulseController.repeat(reverse: true);
-    }
+    });
 
     // Start text animation
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (mounted) {
+    _schedule(const Duration(milliseconds: 1600), () {
       _textController.forward();
-    }
+    });
 
     // Start progress animation
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) {
+    _schedule(const Duration(milliseconds: 2200), () {
       _progressController.forward();
-    }
+    });
   }
 
   @override
   void dispose() {
+    for (final timer in _timers) {
+      timer.cancel();
+    }
     _mainController.dispose();
     _pulseController.dispose();
     _textController.dispose();

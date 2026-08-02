@@ -5,6 +5,7 @@ import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/contact_model.dart';
+import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
 
 // Pagination constants
@@ -189,8 +190,10 @@ class BorrowLendState {
 
 class BorrowLendCubit extends Cubit<BorrowLendState> {
   final TransactionRepository _transactionRepository;
+  final SplitRepository _splitRepository;
   late Timer timer;
-  BorrowLendCubit(this._transactionRepository) : super(BorrowLendState());
+  BorrowLendCubit(this._transactionRepository, this._splitRepository)
+    : super(BorrowLendState());
 
   /// Load all data (dashboard summary + initial transactions)
   Future<void> loadAllData() async {
@@ -205,6 +208,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
+      await _syncSplitTransactions();
+
       // Get dashboard summary with category breakdown
       log('BorrowLendCubit: Fetching dashboard summary...');
       final summary = await _transactionRepository.getDashboardSummary();
@@ -417,6 +422,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           : DateTime.now();
       final cashCount = summary['cash_count'] as int? ?? 0;
       final udhariCount = summary['udhari_count'] as int? ?? 0;
+      final splitCount = summary['split_count'] as int? ?? 0;
       final netBalance = totalLent - totalBorrowed;
 
       contacts.add(
@@ -434,6 +440,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           lastTransactionDate: lastTransactionDate,
           cashCount: cashCount,
           udhariCount: udhariCount,
+          splitCount: splitCount,
         ),
       );
     }
@@ -516,6 +523,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
+      await _syncSplitTransactions();
+
       final transactions = await _loadTransactionsPage(0);
       final totalCount = await _getTransactionCount();
       final hasMoreData =
@@ -548,6 +557,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
         ),
       );
     }
+  }
+
+  Future<void> _syncSplitTransactions() async {
+    await _splitRepository.syncAllSplitTransactions();
   }
 
   /// Load more transactions (pagination)

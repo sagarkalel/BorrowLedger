@@ -18,14 +18,27 @@ class FilterChipWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chipColor = color ?? Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final chipColor = color ?? theme.colorScheme.primary;
+    final borderColor = isSelected
+        ? chipColor.withValues(alpha: 0.32)
+        : colorScheme.outline.withValues(alpha: 0.12);
+    final backgroundColor = isSelected
+        ? chipColor.withValues(alpha: 0.1)
+        : colorScheme.surface;
+    final foregroundColor = isSelected
+        ? chipColor
+        : colorScheme.onSurfaceVariant;
 
     return FilterChip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 16, color: isSelected ? Colors.white : chipColor),
+            Icon(icon, size: 15, color: foregroundColor),
             const SizedBox(width: 4),
           ],
           Text(label),
@@ -33,17 +46,19 @@ class FilterChipWidget extends StatelessWidget {
       ),
       selected: isSelected,
       onSelected: (_) => onSelected(),
-      backgroundColor: Colors.grey[200],
-      selectedColor: chipColor,
-      checkmarkColor: Colors.white,
+      backgroundColor: backgroundColor,
+      selectedColor: backgroundColor,
+      checkmarkColor: chipColor,
+      showCheckmark: false,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        color: foregroundColor,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+        fontSize: 12.5,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: isSelected ? chipColor : Colors.transparent),
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(color: borderColor),
       ),
     );
   }
