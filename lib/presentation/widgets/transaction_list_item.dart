@@ -11,11 +11,13 @@ import 'app_pill_badge.dart';
 class TransactionListItem extends StatelessWidget {
   final TransactionModel transaction;
   final VoidCallback onTap;
+  final bool showContactIdentity;
 
   const TransactionListItem({
     super.key,
     required this.transaction,
     required this.onTap,
+    this.showContactIdentity = true,
   });
 
   @override
@@ -44,6 +46,8 @@ class TransactionListItem extends StatelessWidget {
     final hasPhone =
         transaction.contactPhone != null &&
         transaction.contactPhone!.isNotEmpty;
+    final verticalPadding = showContactIdentity ? 9.0 : 8.0;
+    final avatarSize = showContactIdentity ? 38.0 : 36.0;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -51,7 +55,10 @@ class TransactionListItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          padding: EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: verticalPadding,
+          ),
           child: Row(
             children: [
               // Avatar with category icon
@@ -63,8 +70,9 @@ class TransactionListItem extends StatelessWidget {
                     ? Icons.currency_rupee
                     : Icons.shopping_bag,
                 indicatorColor: categoryColor,
+                size: avatarSize,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Contact Info
               Expanded(
@@ -74,27 +82,29 @@ class TransactionListItem extends StatelessWidget {
                   children: [
                     // Contact name
                     Text(
-                      contactName,
+                      showContactIdentity
+                          ? contactName
+                          : _transactionTitle(context, isCash, isSplit),
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: showContactIdentity ? 14 : 13.5,
                         fontWeight: FontWeight.w700,
                         color: colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
 
                     // Category badge and item info
                     _buildCategoryInfo(context, isCash, isSplit, categoryColor),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
 
                     // Phone, Date, Expected date
                     _buildMetaInfo(context, hasPhone),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Amount and direction
               _buildAmountSection(context, directionColor, isLend),
@@ -103,6 +113,23 @@ class TransactionListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _transactionTitle(BuildContext context, bool isCash, bool isSplit) {
+    final tr = AppLocalizations.of(context)!;
+    if (isSplit) {
+      final splitTitle = transaction.description
+          ?.replaceFirst(RegExp(r'^Split:\s*'), '')
+          .trim();
+      return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
+    }
+    if (!isCash && transaction.itemName?.trim().isNotEmpty == true) {
+      return transaction.itemName!.trim();
+    }
+    if (transaction.description?.trim().isNotEmpty == true) {
+      return transaction.description!.trim();
+    }
+    return isCash ? tr.cash : tr.udhari;
   }
 
   Widget _buildCategoryInfo(
@@ -128,11 +155,14 @@ class TransactionListItem extends StatelessWidget {
               : tr.udhariBadge,
           icon: isSplit ? Icons.call_split_rounded : null,
           color: isSplit ? categoryColor : colorScheme.onSurfaceVariant,
-          fontSize: 9,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          fontSize: 8.5,
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         ),
 
-        if (isSplit && splitTitle != null && splitTitle.isNotEmpty) ...[
+        if (showContactIdentity &&
+            isSplit &&
+            splitTitle != null &&
+            splitTitle.isNotEmpty) ...[
           const SizedBox(width: 6),
           Container(
             width: 2,
@@ -158,7 +188,10 @@ class TransactionListItem extends StatelessWidget {
         ],
 
         // For udhari, show item name
-        if (!isCash && !isSplit && transaction.itemName != null) ...[
+        if (showContactIdentity &&
+            !isCash &&
+            !isSplit &&
+            transaction.itemName != null) ...[
           const SizedBox(width: 6),
           Container(
             width: 2,
@@ -195,13 +228,13 @@ class TransactionListItem extends StatelessWidget {
     return Row(
       children: [
         // Phone
-        if (hasPhone) ...[
-          Icon(Icons.phone, size: 10, color: metaColor),
+        if (showContactIdentity && hasPhone) ...[
+          Icon(Icons.phone, size: 9.5, color: metaColor),
           const SizedBox(width: 3),
           Flexible(
             child: Text(
               transaction.contactPhone!,
-              style: TextStyle(fontSize: 10, color: metaColor),
+              style: TextStyle(fontSize: 9.5, color: metaColor),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -219,11 +252,11 @@ class TransactionListItem extends StatelessWidget {
         ],
 
         // Date
-        Icon(Icons.calendar_today, size: 10, color: metaColor),
+        Icon(Icons.calendar_today, size: 9.5, color: metaColor),
         const SizedBox(width: 3),
         Text(
           DateFormat(AppConstants.dateFormat).format(transaction.date),
-          style: TextStyle(fontSize: 10, color: metaColor),
+          style: TextStyle(fontSize: 9.5, color: metaColor),
         ),
 
         // Expected date
@@ -240,7 +273,7 @@ class TransactionListItem extends StatelessWidget {
           const SizedBox(width: 6),
           Icon(
             transaction.isOverdue ? Icons.warning : Icons.event,
-            size: 10,
+            size: 9.5,
             color: transaction.isOverdue ? Colors.red : metaColor,
           ),
           const SizedBox(width: 2),
@@ -249,7 +282,7 @@ class TransactionListItem extends StatelessWidget {
               AppConstants.dateMonthFormat,
             ).format(transaction.expectedDate!),
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9.5,
               fontWeight: FontWeight.w600,
               color: transaction.isOverdue ? Colors.red : metaColor,
             ),
@@ -275,7 +308,7 @@ class TransactionListItem extends StatelessWidget {
             Text(
               '₹${transaction.amount.toStringAsFixed(2)}',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16.5,
                 fontWeight: FontWeight.w800,
                 color: directionColor,
                 height: 1.1,
@@ -293,7 +326,7 @@ class TransactionListItem extends StatelessWidget {
         const SizedBox(width: 4),
         Icon(
           Icons.chevron_right_rounded,
-          size: 18,
+          size: 16,
           color: colorScheme.onSurfaceVariant,
         ),
       ],

@@ -243,6 +243,14 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Fetching first page of transactions...');
       final transactions = await _loadTransactionsPage(0);
 
+      // Get first page of people summaries so the People tab stays fresh even
+      // when a transaction was added from another screen.
+      log('BorrowLendCubit: Fetching first page of contact summaries...');
+      final contacts = await _loadContactSummariesPage(0);
+      final totalContactsCount = await _getContactSummariesCount();
+      final hasMoreContacts =
+          contacts.length >= PaginationConstants.contactsPageSize;
+
       // Get total count for pagination
       final totalCount = await _getTransactionCount();
       final hasMoreData =
@@ -268,11 +276,15 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           udhariNet: udhariNet,
           transactions: transactions,
           recentTransactions: recentTransactions,
+          contactSummaries: contacts,
           error: null,
           lastUpdate: DateTime.now(),
           currentPage: 0,
           hasMoreData: hasMoreData,
           totalCount: totalCount,
+          currentContactsPage: 0,
+          hasMoreContacts: hasMoreContacts,
+          totalContactsCount: totalContactsCount,
         ),
       );
       log('BorrowLendCubit: Data loaded successfully at ${DateTime.now()}');
@@ -423,6 +435,9 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       final cashCount = summary['cash_count'] as int? ?? 0;
       final udhariCount = summary['udhari_count'] as int? ?? 0;
       final splitCount = summary['split_count'] as int? ?? 0;
+      final splitLent = (summary['split_lent'] as num?)?.toDouble() ?? 0.0;
+      final splitBorrowed =
+          (summary['split_borrowed'] as num?)?.toDouble() ?? 0.0;
       final netBalance = totalLent - totalBorrowed;
 
       contacts.add(
@@ -441,6 +456,9 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           cashCount: cashCount,
           udhariCount: udhariCount,
           splitCount: splitCount,
+          splitLent: splitLent,
+          splitBorrowed: splitBorrowed,
+          splitNet: splitLent - splitBorrowed,
         ),
       );
     }
@@ -701,10 +719,6 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Transaction created successfully');
       emit(state.copyWith(successMessage: 'Transaction created successfully'));
       await loadAllData();
-      // Also reload contacts if in contacts view
-      if (state.activeViewMode == 'contacts') {
-        await loadContactSummaries();
-      }
     } catch (e) {
       log('BorrowLendCubit: Error creating transaction - $e');
       emit(state.copyWith(error: 'Failed to create transaction: $e'));
@@ -719,10 +733,6 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Transaction updated successfully');
       emit(state.copyWith(successMessage: 'Transaction updated successfully'));
       await loadAllData();
-      // Also reload contacts if in contacts view
-      if (state.activeViewMode == 'contacts') {
-        await loadContactSummaries();
-      }
     } catch (e) {
       log('BorrowLendCubit: Error updating transaction - $e');
       emit(state.copyWith(error: 'Failed to update transaction: $e'));
@@ -737,10 +747,6 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Transaction deleted successfully');
       emit(state.copyWith(successMessage: 'Transaction deleted successfully'));
       await loadAllData();
-      // Also reload contacts if in contacts view
-      if (state.activeViewMode == 'contacts') {
-        await loadContactSummaries();
-      }
     } catch (e) {
       log('BorrowLendCubit: Error deleting transaction - $e');
       emit(state.copyWith(error: 'Failed to delete transaction: $e'));
@@ -761,6 +767,24 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     } else {
       emit(state.copyWith(filterType: type, clearSearchQuery: true));
     }
+    loadTransactions();
+  }
+
+  /// Set ledger category filter while keeping the user in the ledger view.
+  void setLedgerCategoryFilter(String? category) {
+    log(
+      'BorrowLendCubit: Setting ledger category filter to: ${category ?? "All"}',
+    );
+
+    emit(
+      state.copyWith(
+        activeViewMode: 'cash_udhari',
+        filterCategory: category,
+        clearFilterCategory: category == null,
+        clearFilterType: true,
+        clearSearchQuery: true,
+      ),
+    );
     loadTransactions();
   }
 
@@ -865,9 +889,6 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
   Future<void> refreshDashboard() async {
     log('BorrowLendCubit: Refreshing dashboard');
     await loadAllData();
-    if (state.activeViewMode == 'contacts') {
-      await loadContactSummaries();
-    }
   }
 
   /// Reset pagination (useful when changing filters)

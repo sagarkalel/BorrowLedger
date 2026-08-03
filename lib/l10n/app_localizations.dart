@@ -310,6 +310,12 @@ abstract class AppLocalizations {
   /// **'Receivable'**
   String get receivable;
 
+  /// No description provided for @direction.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get direction;
+
   /// No description provided for @youPaid.
   ///
   /// In en, this message translates to:
@@ -357,6 +363,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'========== Navigation =========='**
   String get comment_navigation;
+
+  /// No description provided for @people.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get people;
 
   /// No description provided for @borrowLend.
   ///
@@ -439,7 +451,7 @@ abstract class AppLocalizations {
   /// No description provided for @allTransactions.
   ///
   /// In en, this message translates to:
-  /// **'All Transactions'**
+  /// **'All transactions'**
   String get allTransactions;
 
   /// No description provided for @recentTransactions.
@@ -675,6 +687,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Amount'**
   String get amount;
+
+  /// No description provided for @type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get type;
 
   /// No description provided for @amountRequired.
   ///
@@ -1594,11 +1612,65 @@ abstract class AppLocalizations {
   /// **'Settle Split'**
   String get settleSplit;
 
+  /// No description provided for @reviewAndSettleSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Settle Split'**
+  String get reviewAndSettleSplit;
+
   /// No description provided for @notPaidYet.
   ///
   /// In en, this message translates to:
   /// **'Not Paid Yet'**
   String get notPaidYet;
+
+  /// No description provided for @pendingSettlements.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Settlements'**
+  String get pendingSettlements;
+
+  /// No description provided for @partiallySettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Settled'**
+  String get partiallySettled;
+
+  /// No description provided for @settledOrNoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled / No Action'**
+  String get settledOrNoAction;
+
+  /// No description provided for @reviewPendingSettlements.
+  ///
+  /// In en, this message translates to:
+  /// **'Review pending settlements before closing this split.'**
+  String get reviewPendingSettlements;
+
+  /// No description provided for @pendingSettlementsWillBeMarkedComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending settlement(s) will be marked complete.'**
+  String pendingSettlementsWillBeMarkedComplete(Object count);
+
+  /// No description provided for @settlementsToClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements to close'**
+  String get settlementsToClose;
+
+  /// No description provided for @settlingWillCloseThesePayments.
+  ///
+  /// In en, this message translates to:
+  /// **'This will close these payments and remove generated split ledger entries.'**
+  String get settlingWillCloseThesePayments;
+
+  /// No description provided for @allSettlementsAlreadyComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'All settlements are already complete. Mark this split as settled?'**
+  String get allSettlementsAlreadyComplete;
 
   /// No description provided for @yourShare.
   ///
@@ -1630,11 +1702,35 @@ abstract class AppLocalizations {
   /// **'Mark as Received'**
   String get markAsReceived;
 
+  /// No description provided for @markPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Paid'**
+  String get markPaid;
+
+  /// No description provided for @markAsPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Paid'**
+  String get markAsPaid;
+
   /// No description provided for @alreadyPaid.
   ///
   /// In en, this message translates to:
   /// **'Already Paid'**
   String get alreadyPaid;
+
+  /// No description provided for @amountPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount Paid'**
+  String get amountPaid;
+
+  /// No description provided for @paidDuringBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid during bill'**
+  String get paidDuringBill;
 
   /// No description provided for @remaining.
   ///
@@ -1672,6 +1768,34 @@ abstract class AppLocalizations {
   /// **'Pending Payments'**
   String get pendingPayments;
 
+  /// No description provided for @settledAmountLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled {settledAmount} • Left {leftAmount}'**
+  String settledAmountLeft(Object settledAmount, Object leftAmount);
+
+  /// No description provided for @personOwesCounterparty.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} owes {counterpartyName} {amount}'**
+  String personOwesCounterparty(
+    Object personName,
+    Object counterpartyName,
+    Object amount,
+  );
+
+  /// No description provided for @owesCounterparty.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes {counterpartyName} {amount}'**
+  String owesCounterparty(Object counterpartyName, Object amount);
+
+  /// No description provided for @youOwePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'You owe {personName} {amount}'**
+  String youOwePerson(Object personName, Object amount);
+
   /// No description provided for @fullRemainingAmountWillBeMarkedAsReceived.
   ///
   /// In en, this message translates to:
@@ -1683,6 +1807,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only the entered amount will be marked as received.'**
   String get onlyEnteredAmountWillBeMarkedAsReceived;
+
+  /// No description provided for @fullRemainingAmountWillBeMarkedAsPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'The full remaining amount will be marked as paid.'**
+  String get fullRemainingAmountWillBeMarkedAsPaid;
+
+  /// No description provided for @onlyEnteredAmountWillBeMarkedAsPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the entered amount will be marked as paid.'**
+  String get onlyEnteredAmountWillBeMarkedAsPaid;
 
   /// No description provided for @deleteSplitConfirmMessage.
   ///
@@ -3412,6 +3548,12 @@ abstract class AppLocalizations {
   /// **'PAID'**
   String get paidBadge;
 
+  /// No description provided for @noActionBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'NO ACTION'**
+  String get noActionBadge;
+
   /// No description provided for @comment_misc.
   ///
   /// In en, this message translates to:
@@ -3615,6 +3757,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'people'**
   String get peopleSmall;
+
+  /// No description provided for @yourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Profile'**
+  String get yourProfile;
+
+  /// No description provided for @setYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your name'**
+  String get setYourName;
+
+  /// No description provided for @nameUsedInSharedSplits.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in shared splits and reports'**
+  String get nameUsedInSharedSplits;
+
+  /// No description provided for @helpFriendsRecognizeYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Help friends recognize who paid or owes'**
+  String get helpFriendsRecognizeYou;
+
+  /// No description provided for @yourNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Name *'**
+  String get yourNameRequired;
+
+  /// No description provided for @pleaseEnterYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get pleaseEnterYourName;
+
+  /// No description provided for @profileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved'**
+  String get profileSaved;
+
+  /// No description provided for @moreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptions;
+
+  /// No description provided for @sharePdfStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Share PDF Statement'**
+  String get sharePdfStatement;
+
+  /// No description provided for @shareLedgerPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Ledger PDF'**
+  String get shareLedgerPdf;
+
+  /// No description provided for @preparingStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing statement...'**
+  String get preparingStatement;
+
+  /// No description provided for @last15Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 15 days'**
+  String get last15Days;
+
+  /// No description provided for @last3Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 months'**
+  String get last3Months;
+
+  /// No description provided for @last6Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 months'**
+  String get last6Months;
+
+  /// No description provided for @last1Year.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 1 year'**
+  String get last1Year;
+
+  /// No description provided for @customRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get customRange;
+
+  /// No description provided for @borrowLedgerStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'BorrowLedger Statement'**
+  String get borrowLedgerStatement;
+
+  /// No description provided for @borrowLedgerFullStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'BorrowLedger Full Statement'**
+  String get borrowLedgerFullStatement;
+
+  /// No description provided for @period.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get period;
+
+  /// No description provided for @generatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated by'**
+  String get generatedBy;
+
+  /// No description provided for @generatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated on'**
+  String get generatedOn;
+
+  /// No description provided for @opening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening'**
+  String get opening;
+
+  /// No description provided for @closing.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing'**
+  String get closing;
+
+  /// No description provided for @noTransactionsInDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions found for this date range.'**
+  String get noTransactionsInDateRange;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategories;
+
+  /// No description provided for @gaveOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Gave only'**
+  String get gaveOnly;
+
+  /// No description provided for @gotOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Got only'**
+  String get gotOnly;
+
+  /// No description provided for @searchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchLabel;
 
   /// No description provided for @comment_language.
   ///

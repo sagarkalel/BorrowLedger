@@ -114,6 +114,9 @@ class AppLocalizationsMr extends AppLocalizations {
   String get receivable => 'घ्यायचे';
 
   @override
+  String get direction => 'दिशा';
+
+  @override
   String get youPaid => 'तुम्ही दिले';
 
   @override
@@ -136,6 +139,9 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get comment_navigation => '========== Navigation ==========';
+
+  @override
+  String get people => 'लोक';
 
   @override
   String get borrowLend => 'उसने/देणे';
@@ -296,6 +302,9 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get amount => 'रक्कम';
+
+  @override
+  String get type => 'प्रकार';
 
   @override
   String get amountRequired => 'रक्कम *';
@@ -770,7 +779,39 @@ class AppLocalizationsMr extends AppLocalizations {
   String get settleSplit => 'विभाजन सेटल करा';
 
   @override
+  String get reviewAndSettleSplit => 'पहा आणि विभाजन सेटल करा';
+
+  @override
   String get notPaidYet => 'अजून दिलेले नाही';
+
+  @override
+  String get pendingSettlements => 'प्रलंबित सेटलमेंट';
+
+  @override
+  String get partiallySettled => 'आंशिक सेटल';
+
+  @override
+  String get settledOrNoAction => 'सेटल / कृती नाही';
+
+  @override
+  String get reviewPendingSettlements =>
+      'हे स्प्लिट बंद करण्यापूर्वी प्रलंबित सेटलमेंट पहा.';
+
+  @override
+  String pendingSettlementsWillBeMarkedComplete(Object count) {
+    return '$count प्रलंबित सेटलमेंट पूर्ण म्हणून चिन्हांकित होतील.';
+  }
+
+  @override
+  String get settlementsToClose => 'बंद करायचे सेटलमेंट';
+
+  @override
+  String get settlingWillCloseThesePayments =>
+      'हे पेमेंट बंद करेल आणि तयार झालेल्या स्प्लिट लेजर एंट्री काढेल.';
+
+  @override
+  String get allSettlementsAlreadyComplete =>
+      'सर्व सेटलमेंट आधीच पूर्ण आहेत. हे स्प्लिट सेटल म्हणून चिन्हांकित करायचे?';
 
   @override
   String get yourShare => 'तुमचा वाटा';
@@ -788,7 +829,19 @@ class AppLocalizationsMr extends AppLocalizations {
   String get markAsReceived => 'मिळाले म्हणून चिन्हांकित करा';
 
   @override
+  String get markPaid => 'पैसे दिले असे चिन्हांकित करा';
+
+  @override
+  String get markAsPaid => 'पैसे दिले म्हणून चिन्हांकित करा';
+
+  @override
   String get alreadyPaid => 'आधीच पैसे दिले';
+
+  @override
+  String get amountPaid => 'दिलेली रक्कम';
+
+  @override
+  String get paidDuringBill => 'बिलाच्या वेळी पैसे दिले';
 
   @override
   String get remaining => 'उरलेले';
@@ -809,12 +862,44 @@ class AppLocalizationsMr extends AppLocalizations {
   String get pendingPayments => 'प्रलंबित पैसे';
 
   @override
+  String settledAmountLeft(Object settledAmount, Object leftAmount) {
+    return '$settledAmount सेटल • $leftAmount बाकी';
+  }
+
+  @override
+  String personOwesCounterparty(
+    Object personName,
+    Object counterpartyName,
+    Object amount,
+  ) {
+    return '$personName ने $counterpartyName ला $amount द्यायचे आहेत';
+  }
+
+  @override
+  String owesCounterparty(Object counterpartyName, Object amount) {
+    return '$counterpartyName ला $amount द्यायचे आहेत';
+  }
+
+  @override
+  String youOwePerson(Object personName, Object amount) {
+    return 'तुम्ही $personName ला $amount द्यायचे आहेत';
+  }
+
+  @override
   String get fullRemainingAmountWillBeMarkedAsReceived =>
       'उरलेली पूर्ण रक्कम मिळाली म्हणून चिन्हांकित केली जाईल.';
 
   @override
   String get onlyEnteredAmountWillBeMarkedAsReceived =>
       'फक्त टाकलेली रक्कम मिळाली म्हणून चिन्हांकित केली जाईल.';
+
+  @override
+  String get fullRemainingAmountWillBeMarkedAsPaid =>
+      'उरलेली पूर्ण रक्कम दिली म्हणून चिन्हांकित केली जाईल.';
+
+  @override
+  String get onlyEnteredAmountWillBeMarkedAsPaid =>
+      'फक्त टाकलेली रक्कम दिली म्हणून चिन्हांकित केली जाईल.';
 
   @override
   String get deleteSplitConfirmMessage =>
@@ -1715,6 +1800,9 @@ class AppLocalizationsMr extends AppLocalizations {
   String get paidBadge => 'दिलेत';
 
   @override
+  String get noActionBadge => 'कृती नाही';
+
+  @override
   String get comment_misc => '========== Miscellaneous ==========';
 
   @override
@@ -1815,6 +1903,93 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get peopleSmall => 'लोक';
+
+  @override
+  String get yourProfile => 'तुमची प्रोफाइल';
+
+  @override
+  String get setYourName => 'तुमचे नाव सेट करा';
+
+  @override
+  String get nameUsedInSharedSplits =>
+      'शेअर केलेल्या विभाजन आणि रिपोर्टमध्ये वापरले जाईल';
+
+  @override
+  String get helpFriendsRecognizeYou =>
+      'कोणी पैसे दिले किंवा कोणाला द्यायचे आहे हे मित्रांना समजण्यास मदत करा';
+
+  @override
+  String get yourNameRequired => 'तुमचे नाव *';
+
+  @override
+  String get pleaseEnterYourName => 'कृपया तुमचे नाव टाका';
+
+  @override
+  String get profileSaved => 'प्रोफाइल सेव झाली';
+
+  @override
+  String get moreOptions => 'अधिक पर्याय';
+
+  @override
+  String get sharePdfStatement => 'PDF स्टेटमेंट शेअर करा';
+
+  @override
+  String get shareLedgerPdf => 'खाते PDF शेअर करा';
+
+  @override
+  String get preparingStatement => 'स्टेटमेंट तयार होत आहे...';
+
+  @override
+  String get last15Days => 'मागील 15 दिवस';
+
+  @override
+  String get last3Months => 'मागील 3 महिने';
+
+  @override
+  String get last6Months => 'मागील 6 महिने';
+
+  @override
+  String get last1Year => 'मागील 1 वर्ष';
+
+  @override
+  String get customRange => 'कस्टम रेंज';
+
+  @override
+  String get borrowLedgerStatement => 'BorrowLedger स्टेटमेंट';
+
+  @override
+  String get borrowLedgerFullStatement => 'BorrowLedger पूर्ण स्टेटमेंट';
+
+  @override
+  String get period => 'कालावधी';
+
+  @override
+  String get generatedBy => 'तयार केले';
+
+  @override
+  String get generatedOn => 'तयार केलेली तारीख';
+
+  @override
+  String get opening => 'सुरुवातीचे';
+
+  @override
+  String get closing => 'अंतिम';
+
+  @override
+  String get noTransactionsInDateRange =>
+      'या तारीख रेंजमध्ये कोणतेही व्यवहार सापडले नाहीत.';
+
+  @override
+  String get allCategories => 'सर्व कॅटेगरी';
+
+  @override
+  String get gaveOnly => 'फक्त दिले';
+
+  @override
+  String get gotOnly => 'फक्त मिळाले';
+
+  @override
+  String get searchLabel => 'शोध';
 
   @override
   String get comment_language => '========== Language ==========';

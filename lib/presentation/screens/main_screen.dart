@@ -1,6 +1,9 @@
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../cubit/borrow_lend_cubit.dart';
+import '../cubit/split_cubit.dart';
 import '../widgets/settings_drawer.dart';
 import 'borrow_lend_screen.dart';
 import 'expenses_screen.dart';
@@ -28,7 +31,14 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       drawer: const SettingsDrawer(),
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: BlocListener<SplitCubit, SplitState>(
+        listenWhen: (previous, current) =>
+            previous.successMessage == null && current.successMessage != null,
+        listener: (context, state) {
+          context.read<BorrowLendCubit>().loadAllData();
+        },
+        child: IndexedStack(index: _currentIndex, children: _screens),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -40,9 +50,9 @@ class _MainScreenState extends State<MainScreen> {
         selectedFontSize: 28,
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.swap_horiz_rounded),
-            activeIcon: const Icon(Icons.swap_horiz_rounded, size: 28),
-            label: tr.borrowLend,
+            icon: const Icon(Icons.people_outline_rounded),
+            activeIcon: const Icon(Icons.people_rounded, size: 28),
+            label: tr.people,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.pie_chart_rounded),

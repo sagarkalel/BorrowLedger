@@ -1,4 +1,5 @@
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/add_split_screen.dart';
@@ -24,20 +25,6 @@ class SplitsScreen extends StatefulWidget {
 
   @override
   State<SplitsScreen> createState() => _SplitsScreenState();
-}
-
-class _ParticipantSettlementInfo {
-  final bool userReceives;
-  final double totalAmount;
-  final double settledAmount;
-  final double remainingAmount;
-
-  const _ParticipantSettlementInfo({
-    required this.userReceives,
-    required this.totalAmount,
-    required this.settledAmount,
-    required this.remainingAmount,
-  });
 }
 
 class _SplitsScreenState extends State<SplitsScreen>
@@ -270,12 +257,15 @@ class _SplitsScreenState extends State<SplitsScreen>
 
       floatingActionButton: FloatingActionButton(
         heroTag: 'split_fab',
-        onPressed: () {
+        onPressed: () async {
           final cubit = context.read<SplitCubit>();
-          Navigator.push(
+          final result = await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (_) => const AddSplitScreen()),
-          ).then((_) => cubit.loadSplits());
+          );
+          if (result == true) {
+            await cubit.loadSplits();
+          }
         },
         child: const Icon(Icons.add),
       ),
@@ -464,84 +454,7 @@ class _SplitsScreenState extends State<SplitsScreen>
   // Helper to calculate balance (what user gets back or needs to give)
   double _calculateBalance(SplitExpenseModel split) {
     final participants = split.participants ?? [];
-    final settlements = _buildParticipantSettlements(split, participants);
-    final receivable = settlements
-        .where((s) => s.userReceives)
-        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
-    final payable = settlements
-        .where((s) => !s.userReceives)
-        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
-    return receivable > 0 ? receivable : -payable;
-  }
-
-  List<_ParticipantSettlementInfo> _buildParticipantSettlements(
-    SplitExpenseModel split,
-    List<SplitParticipantModel> participants,
-  ) {
-    final totalShares = participants.fold<double>(
-      0,
-      (sum, p) => sum + p.shareAmount,
-    );
-    final userShare = split.totalAmount - totalShares;
-    var userNet = split.paidByUser - userShare;
-    const tolerance = 0.01;
-    final settlements = <_ParticipantSettlementInfo>[];
-
-    if (userNet > tolerance) {
-      for (final participant in participants) {
-        final participantOwes =
-            participant.shareAmount - participant.expensePaid;
-        final allocated = participantOwes > 0
-            ? (participantOwes < userNet ? participantOwes : userNet)
-            : 0.0;
-        final remaining = allocated - participant.paid;
-        settlements.add(
-          _ParticipantSettlementInfo(
-            userReceives: true,
-            totalAmount: allocated,
-            settledAmount: participant.paid > allocated
-                ? allocated
-                : participant.paid,
-            remainingAmount: remaining <= tolerance ? 0 : remaining,
-          ),
-        );
-        userNet -= allocated;
-      }
-    } else if (userNet < -tolerance) {
-      var userOwes = -userNet;
-      for (final participant in participants) {
-        final participantCredit =
-            participant.expensePaid - participant.shareAmount;
-        final allocated = participantCredit > 0
-            ? (participantCredit < userOwes ? participantCredit : userOwes)
-            : 0.0;
-        final remaining = allocated - participant.paid;
-        settlements.add(
-          _ParticipantSettlementInfo(
-            userReceives: false,
-            totalAmount: allocated,
-            settledAmount: participant.paid > allocated
-                ? allocated
-                : participant.paid,
-            remainingAmount: remaining <= tolerance ? 0 : remaining,
-          ),
-        );
-        userOwes -= allocated;
-      }
-    } else {
-      for (final _ in participants) {
-        settlements.add(
-          const _ParticipantSettlementInfo(
-            userReceives: true,
-            totalAmount: 0,
-            settledAmount: 0,
-            remainingAmount: 0,
-          ),
-        );
-      }
-    }
-
-    return settlements;
+    return SplitSettlementCalculator.userBalance(split, participants);
   }
 
   // IMPROVED SPLIT CARD - Shows total and what you get back/need to give
@@ -566,7 +479,10 @@ class _SplitsScreenState extends State<SplitsScreen>
         ? AppTheme.moneyInColor
         : AppTheme.moneyOutColor;
 
-    final settlements = _buildParticipantSettlements(split, participants);
+    final settlements = SplitSettlementCalculator.calculate(
+      split,
+      participants,
+    );
     final totalPendingCount = settlements
         .where((s) => s.remainingAmount > 0 && s.settledAmount == 0)
         .length;

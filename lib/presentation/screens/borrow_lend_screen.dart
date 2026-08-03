@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
+import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
 import 'package:borrow_ledger/presentation/widgets/app_pill_badge.dart';
 import 'package:borrow_ledger/presentation/widgets/app_segmented_control.dart';
 import 'package:borrow_ledger/presentation/widgets/app_search_field.dart';
@@ -11,9 +13,17 @@ import 'package:borrow_ledger/presentation/widgets/floating_tab_header_delegate.
 import 'package:borrow_ledger/presentation/widgets/settings_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/models/transaction_model.dart';
+import '../../data/repositories/transaction_repository.dart';
+import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
 import '../widgets/contact_summary_card.dart';
 import '../widgets/empty_state_widget.dart';
@@ -24,6 +34,18 @@ import 'contact_wise_transactions_screen.dart';
 import 'split_detail_screen.dart';
 
 enum BorrowLendViewMode { contacts, cash, udhari, transactions }
+
+class _LedgerRangeOption {
+  final String label;
+  final DateTimeRange? range;
+  final bool isCustom;
+
+  const _LedgerRangeOption({
+    required this.label,
+    this.range,
+    this.isCustom = false,
+  });
+}
 
 class MergedBorrowLendScreen extends StatefulWidget {
   const MergedBorrowLendScreen({super.key});
@@ -121,6 +143,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               state.contactBalanceFilter != 'all');
     } else {
       return (state.filterType != null) ||
+          (state.filterCategory != null &&
+              state.filterCategory != 'cash_udhari') ||
           (state.searchQuery != null && state.searchQuery!.isNotEmpty);
     }
   }
@@ -133,7 +157,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     return Scaffold(
       drawer: const SettingsDrawer(),
       appBar: AppBar(
-        title: Text(tr.moneyTracker),
+        title: Text(tr.people),
         actions: [
           BlocBuilder<BorrowLendCubit, BorrowLendState>(
             builder: (context, state) {
@@ -157,6 +181,27 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               }
               return const SizedBox.shrink();
             },
+          ),
+          PopupMenuButton<String>(
+            tooltip: tr.moreOptions,
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              if (value == 'share_ledger') {
+                _shareLedgerStatement();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'share_ledger',
+                child: Row(
+                  children: [
+                    const Icon(Icons.ios_share_rounded, size: 20),
+                    const SizedBox(width: 12),
+                    Text(tr.shareLedgerPdf),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -214,6 +259,533 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _shareLedgerStatement() async {
+    final range = await _pickLedgerRange();
+    if (range == null || !mounted) return;
+
+    final tr = AppLocalizations.of(context)!;
+    final state = context.read<BorrowLendCubit>().state;
+    final transactionRepo = context.read<TransactionRepository>();
+    final profileRepo = context.read<UserProfileRepository>();
+    var loadingShown = false;
+
+    try {
+      loadingShown = true;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppLoadingDialog(message: tr.preparingStatement),
+      );
+
+      final profile = await profileRepo.getProfile();
+      final ownerName = profile.name.trim().isEmpty
+          ? tr.appName
+          : profile.name.trim();
+      final transactions = await _loadLedgerStatementTransactions(
+        transactionRepo,
+        state,
+      );
+      final file = await _createLedgerStatementPdf(
+        range: range,
+        ownerName: ownerName,
+        transactions: transactions,
+        state: state,
+      );
+
+      if (!mounted) return;
+      if (loadingShown) {
+        Navigator.pop(context);
+        loadingShown = false;
+      }
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text:
+              '${tr.borrowLedgerFullStatement} (${_formatDate(range.start)} - ${_formatDate(range.end)})',
+          subject: tr.borrowLedgerFullStatement,
+        ),
+      );
+    } catch (e) {
+      if (mounted && loadingShown) {
+        Navigator.pop(context);
+      }
+      if (mounted) {
+        showFailureSnackbar(context, '${tr.shareFailed} $e');
+      }
+    }
+  }
+
+  Future<List<TransactionModel>> _loadLedgerStatementTransactions(
+    TransactionRepository repo,
+    BorrowLendState state,
+  ) async {
+    final category = _statementCategoryFilter(state);
+    final type = _viewMode == BorrowLendViewMode.contacts
+        ? null
+        : state.filterType;
+    final query = _viewMode == BorrowLendViewMode.contacts
+        ? null
+        : state.searchQuery?.trim();
+
+    if (query != null && query.isNotEmpty) {
+      return repo.searchTransactions(query, category: category, type: type);
+    }
+    if (category != null && type != null) {
+      return repo.getTransactionsByCategoryAndType(category, type);
+    }
+    if (category != null) {
+      return repo.getTransactionsByCategory(category);
+    }
+    if (type != null) {
+      return repo.getTransactionsByType(type);
+    }
+    return repo.getAllTransactions();
+  }
+
+  String? _statementCategoryFilter(BorrowLendState state) {
+    switch (_viewMode) {
+      case BorrowLendViewMode.cash:
+        return AppConstants.categoryCash;
+      case BorrowLendViewMode.udhari:
+        return AppConstants.categoryUdhari;
+      case BorrowLendViewMode.contacts:
+      case BorrowLendViewMode.transactions:
+        return state.filterCategory == 'cash_udhari'
+            ? null
+            : state.filterCategory;
+    }
+  }
+
+  Future<DateTimeRange?> _pickLedgerRange() async {
+    final tr = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final options = [
+      _LedgerRangeOption(
+        label: tr.thisWeek,
+        range: DateTimeRange(
+          start: today.subtract(Duration(days: today.weekday - 1)),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(
+        label: tr.last15Days,
+        range: DateTimeRange(
+          start: today.subtract(const Duration(days: 14)),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(
+        label: tr.thisMonth,
+        range: DateTimeRange(
+          start: DateTime(today.year, today.month),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(
+        label: tr.last3Months,
+        range: DateTimeRange(
+          start: DateTime(today.year, today.month - 2),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(
+        label: tr.last6Months,
+        range: DateTimeRange(
+          start: DateTime(today.year, today.month - 5),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(
+        label: tr.last1Year,
+        range: DateTimeRange(
+          start: DateTime(today.year - 1, today.month, today.day),
+          end: _endOfDay(today),
+        ),
+      ),
+      _LedgerRangeOption(label: tr.customRange, isCustom: true),
+    ];
+
+    final selected = await showModalBottomSheet<_LedgerRangeOption>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: options.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              final option = options[index];
+              return ListTile(
+                leading: Icon(
+                  option.isCustom
+                      ? Icons.date_range_rounded
+                      : Icons.calendar_month_rounded,
+                ),
+                title: Text(option.label),
+                subtitle: option.range == null
+                    ? null
+                    : Text(
+                        '${_formatDate(option.range!.start)} - ${_formatDate(option.range!.end)}',
+                      ),
+                onTap: () => Navigator.pop(context, option),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return null;
+    if (!selected.isCustom) return selected.range;
+    if (!mounted) return null;
+
+    final customRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(
+        start: today.subtract(const Duration(days: 29)),
+        end: today,
+      ),
+    );
+
+    if (customRange == null) return null;
+    return DateTimeRange(
+      start: DateTime(
+        customRange.start.year,
+        customRange.start.month,
+        customRange.start.day,
+      ),
+      end: _endOfDay(customRange.end),
+    );
+  }
+
+  Future<File> _createLedgerStatementPdf({
+    required DateTimeRange range,
+    required String ownerName,
+    required List<TransactionModel> transactions,
+    required BorrowLendState state,
+  }) async {
+    final tr = AppLocalizations.of(context)!;
+    final periodTransactions = transactions
+        .where(
+          (transaction) =>
+              !transaction.date.isBefore(range.start) &&
+              !transaction.date.isAfter(range.end),
+        )
+        .toList();
+    final openingTransactions = transactions
+        .where((transaction) => transaction.date.isBefore(range.start))
+        .toList();
+    final openingBalance = _ledgerNet(openingTransactions);
+    final periodLent = _ledgerSumByType(
+      periodTransactions,
+      AppConstants.typeLend,
+    );
+    final periodBorrowed = _ledgerSumByType(
+      periodTransactions,
+      AppConstants.typeBorrow,
+    );
+    final closingBalance = openingBalance + periodLent - periodBorrowed;
+    final generatedAt = DateTime.now();
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageTheme: _ledgerPageTheme(),
+        build: (context) => [
+          _ledgerStatementHeader(
+            ownerName: ownerName,
+            range: range,
+            filterLabel: _ledgerFilterLabel(state, tr),
+            generatedAt: generatedAt,
+            tr: tr,
+          ),
+          pw.SizedBox(height: 16),
+          _ledgerSummaryGrid(
+            openingBalance: openingBalance,
+            periodLent: periodLent,
+            periodBorrowed: periodBorrowed,
+            closingBalance: closingBalance,
+            tr: tr,
+          ),
+          pw.SizedBox(height: 18),
+          pw.Text(
+            '${tr.transactions} (${periodTransactions.length})',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
+          if (periodTransactions.isEmpty)
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(14),
+              decoration: _ledgerBoxDecoration(PdfColors.grey200),
+              child: pw.Text(tr.noTransactionsInDateRange),
+            )
+          else
+            _ledgerTransactionTable(periodTransactions, tr),
+        ],
+      ),
+    );
+
+    final dir = await getTemporaryDirectory();
+    final start = _fileDatePart(range.start);
+    final end = _fileDatePart(range.end);
+    final filter = _safeFilePart(_ledgerFilterLabel(state, tr));
+    final file = File(
+      '${dir.path}/BorrowLedger_Ledger_${filter}_${start}_to_$end.pdf',
+    );
+    await file.writeAsBytes(await pdf.save(), flush: true);
+    return file;
+  }
+
+  pw.Widget _ledgerStatementHeader({
+    required String ownerName,
+    required DateTimeRange range,
+    required String filterLabel,
+    required DateTime generatedAt,
+    required AppLocalizations tr,
+  }) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(18),
+      decoration: _ledgerBoxDecoration(PdfColors.lightGreen100),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            tr.borrowLedgerFullStatement,
+            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            '${tr.period}: ${_formatDate(range.start)} - ${_formatDate(range.end)}',
+          ),
+          pw.Text('${tr.filter}: $filterLabel'),
+          pw.Text('${tr.generatedBy}: $ownerName'),
+          pw.Text('${tr.generatedOn}: ${_formatDateTime(generatedAt)}'),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _ledgerSummaryGrid({
+    required double openingBalance,
+    required double periodLent,
+    required double periodBorrowed,
+    required double closingBalance,
+    required AppLocalizations tr,
+  }) {
+    return pw.Row(
+      children: [
+        _ledgerMetric(tr.opening, openingBalance),
+        pw.SizedBox(width: 8),
+        _ledgerMetric(tr.youGave, periodLent),
+        pw.SizedBox(width: 8),
+        _ledgerMetric(tr.youGot, periodBorrowed),
+        pw.SizedBox(width: 8),
+        _ledgerMetric(tr.closing, closingBalance),
+      ],
+    );
+  }
+
+  pw.Widget _ledgerMetric(String label, double amount) {
+    final color = amount >= 0 ? PdfColors.green700 : PdfColors.deepOrange700;
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(10),
+        decoration: _ledgerBoxDecoration(PdfColors.grey100),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+            ),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              _ledgerMoney(amount),
+              style: pw.TextStyle(
+                fontSize: 13,
+                fontWeight: pw.FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _ledgerTransactionTable(
+    List<TransactionModel> transactions,
+    AppLocalizations tr,
+  ) {
+    return pw.TableHelper.fromTextArray(
+      headers: [
+        tr.date,
+        tr.contact,
+        tr.type,
+        tr.category,
+        tr.details,
+        tr.amount,
+      ],
+      data: transactions.map((transaction) {
+        return [
+          _formatDate(transaction.date),
+          transaction.contactName ?? '-',
+          transaction.type == AppConstants.typeLend ? tr.youGave : tr.youGot,
+          _ledgerCategoryLabel(transaction.category, tr),
+          _ledgerTransactionDetails(transaction),
+          _ledgerMoney(
+            transaction.type == AppConstants.typeLend
+                ? transaction.amount
+                : -transaction.amount,
+          ),
+        ];
+      }).toList(),
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      cellStyle: const pw.TextStyle(fontSize: 7.5),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+      rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      oddRowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellAlignments: const {5: pw.Alignment.centerRight},
+      columnWidths: const {
+        0: pw.FixedColumnWidth(56),
+        2: pw.FixedColumnWidth(36),
+        3: pw.FixedColumnWidth(44),
+        5: pw.FixedColumnWidth(58),
+      },
+    );
+  }
+
+  pw.PageTheme _ledgerPageTheme() {
+    return pw.PageTheme(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(28),
+      buildBackground: (_) => pw.FullPage(
+        ignoreMargins: true,
+        child: pw.Container(color: PdfColors.white),
+      ),
+    );
+  }
+
+  pw.BoxDecoration _ledgerBoxDecoration(PdfColor color) {
+    return pw.BoxDecoration(
+      color: color,
+      borderRadius: pw.BorderRadius.circular(8),
+      border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+    );
+  }
+
+  double _ledgerNet(List<TransactionModel> transactions) {
+    return transactions.fold<double>(0, (sum, transaction) {
+      return sum +
+          (transaction.type == AppConstants.typeLend
+              ? transaction.amount
+              : -transaction.amount);
+    });
+  }
+
+  double _ledgerSumByType(List<TransactionModel> transactions, String type) {
+    return transactions
+        .where((transaction) => transaction.type == type)
+        .fold<double>(0, (sum, transaction) => sum + transaction.amount);
+  }
+
+  String _ledgerFilterLabel(BorrowLendState state, AppLocalizations tr) {
+    final labels = <String>[];
+    switch (_viewMode) {
+      case BorrowLendViewMode.contacts:
+        labels.add(tr.allTransactions);
+      case BorrowLendViewMode.transactions:
+        labels.add(tr.allCategories);
+      case BorrowLendViewMode.cash:
+        labels.add(tr.cash);
+      case BorrowLendViewMode.udhari:
+        labels.add(tr.udhari);
+    }
+
+    if (_viewMode == BorrowLendViewMode.transactions) {
+      if (state.filterCategory == AppConstants.categoryCash) {
+        labels
+          ..clear()
+          ..add(tr.cash);
+      } else if (state.filterCategory == AppConstants.categoryUdhari) {
+        labels
+          ..clear()
+          ..add(tr.udhari);
+      }
+    }
+
+    if (_viewMode != BorrowLendViewMode.contacts) {
+      if (state.filterType == AppConstants.typeLend) labels.add(tr.gaveOnly);
+      if (state.filterType == AppConstants.typeBorrow) labels.add(tr.gotOnly);
+      if (state.searchQuery?.trim().isNotEmpty == true) {
+        labels.add('${tr.searchLabel}: ${state.searchQuery!.trim()}');
+      }
+    }
+
+    return labels.join(' | ');
+  }
+
+  String _ledgerCategoryLabel(String category, AppLocalizations tr) {
+    switch (category) {
+      case AppConstants.categoryCash:
+        return tr.cash;
+      case AppConstants.categoryUdhari:
+        return tr.udhari;
+      case AppConstants.categorySplit:
+        return tr.split;
+      default:
+        return category;
+    }
+  }
+
+  String _ledgerTransactionDetails(TransactionModel transaction) {
+    if (transaction.isSettlement) return 'Settlement';
+    final parts = [
+      if (transaction.description?.trim().isNotEmpty == true)
+        transaction.description!.trim(),
+      if (transaction.itemName?.trim().isNotEmpty == true)
+        transaction.itemName!.trim(),
+      if (transaction.quantity?.trim().isNotEmpty == true)
+        transaction.quantity!.trim(),
+    ];
+    return parts.isEmpty ? '-' : parts.join(' | ');
+  }
+
+  String _ledgerMoney(double amount) {
+    final sign = amount < 0 ? '-' : '';
+    return '${sign}INR ${amount.abs().toStringAsFixed(2)}';
+  }
+
+  String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
+
+  String _formatDateTime(DateTime date) =>
+      DateFormat('dd MMM yyyy, hh:mm a').format(date);
+
+  DateTime _endOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+  }
+
+  String _fileDatePart(DateTime date) => DateFormat('ddMMMyyyy').format(date);
+
+  String _safeFilePart(String value) {
+    final safe = value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return safe.isEmpty ? 'ledger' : safe;
   }
 
   Widget _buildLoadingMoreIndicator() {
@@ -427,22 +999,12 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         items: [
           AppSegmentedControlItem(
             value: BorrowLendViewMode.contacts,
-            label: tr.contacts,
+            label: tr.people,
             icon: Icons.people_outline_rounded,
           ),
           AppSegmentedControlItem(
-            value: BorrowLendViewMode.cash,
-            label: tr.cash,
-            icon: Icons.currency_rupee_rounded,
-          ),
-          AppSegmentedControlItem(
-            value: BorrowLendViewMode.udhari,
-            label: tr.udhari,
-            icon: Icons.shopping_basket_outlined,
-          ),
-          AppSegmentedControlItem(
             value: BorrowLendViewMode.transactions,
-            label: tr.transactions,
+            label: tr.ledger,
             icon: Icons.receipt_long,
           ),
         ],
@@ -465,12 +1027,12 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     switch (mode) {
       case BorrowLendViewMode.contacts:
         cubit.setViewMode('contacts');
+      case BorrowLendViewMode.transactions:
+        cubit.setViewMode('cash_udhari');
       case BorrowLendViewMode.cash:
         cubit.setViewMode('cash');
       case BorrowLendViewMode.udhari:
         cubit.setViewMode('udhari');
-      case BorrowLendViewMode.transactions:
-        cubit.setViewMode('cash_udhari');
     }
   }
 
@@ -607,60 +1169,179 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
     return BlocBuilder<BorrowLendCubit, BorrowLendState>(
       builder: (context, state) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        return Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          child: Row(
-            children: [
-              FilterChipWidget(
-                label: tr.all,
-                isSelected: state.filterType == null,
-                onSelected: () {
-                  _searchController.clear();
-                  log('MergedBorrowLendScreen: Clearing type filter');
-                  context.read<BorrowLendCubit>().setFilterType(null);
-                },
-              ),
-              const SizedBox(width: 8),
-              FilterChipWidget(
-                label: isAllTransactionsView ? tr.receivable : tr.youGave,
-                icon: isAllTransactionsView
-                    ? Icons.call_received
-                    : Icons.call_made,
-                color: isAllTransactionsView
-                    ? AppTheme.moneyInColor
-                    : AppTheme.moneyOutColor,
-                isSelected: state.filterType == AppConstants.typeLend,
-                onSelected: () {
-                  _searchController.clear();
-                  log('MergedBorrowLendScreen: Setting filter to Lend');
-                  context.read<BorrowLendCubit>().setFilterType(
-                    AppConstants.typeLend,
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-              FilterChipWidget(
-                label: isAllTransactionsView ? tr.payable : tr.youGot,
-                icon: isAllTransactionsView
-                    ? Icons.call_made
-                    : Icons.call_received,
-                color: isAllTransactionsView
-                    ? AppTheme.moneyOutColor
-                    : AppTheme.moneyInColor,
-                isSelected: state.filterType == AppConstants.typeBorrow,
-                onSelected: () {
-                  _searchController.clear();
-                  log('MergedBorrowLendScreen: Setting filter to Borrow');
-                  context.read<BorrowLendCubit>().setFilterType(
-                    AppConstants.typeBorrow,
-                  );
-                },
-              ),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterGroup(
+                  label: tr.category,
+                  children: [
+                    FilterChipWidget(
+                      label: tr.all,
+                      icon: Icons.category_outlined,
+                      isSelected:
+                          state.filterCategory == null ||
+                          state.filterCategory == 'cash_udhari',
+                      onSelected: () {
+                        _searchController.clear();
+                        log('MergedBorrowLendScreen: Clearing category filter');
+                        context.read<BorrowLendCubit>().setLedgerCategoryFilter(
+                          null,
+                        );
+                      },
+                    ),
+                    FilterChipWidget(
+                      label: tr.cash,
+                      icon: Icons.currency_rupee_rounded,
+                      color: AppTheme.cashColor,
+                      isSelected:
+                          state.filterCategory == AppConstants.categoryCash,
+                      onSelected: () {
+                        _searchController.clear();
+                        log('MergedBorrowLendScreen: Filtering ledger by Cash');
+                        context.read<BorrowLendCubit>().setLedgerCategoryFilter(
+                          AppConstants.categoryCash,
+                        );
+                      },
+                    ),
+                    FilterChipWidget(
+                      label: tr.udhari,
+                      icon: Icons.shopping_basket_outlined,
+                      color: AppTheme.udhariColor,
+                      isSelected:
+                          state.filterCategory == AppConstants.categoryUdhari,
+                      onSelected: () {
+                        _searchController.clear();
+                        log(
+                          'MergedBorrowLendScreen: Filtering ledger by Udhari',
+                        );
+                        context.read<BorrowLendCubit>().setLedgerCategoryFilter(
+                          AppConstants.categoryUdhari,
+                        );
+                      },
+                    ),
+                    FilterChipWidget(
+                      label: tr.split,
+                      icon: Icons.call_split_rounded,
+                      color: AppTheme.splitColor,
+                      isSelected:
+                          state.filterCategory == AppConstants.categorySplit,
+                      onSelected: () {
+                        _searchController.clear();
+                        log(
+                          'MergedBorrowLendScreen: Filtering ledger by Split',
+                        );
+                        context.read<BorrowLendCubit>().setLedgerCategoryFilter(
+                          AppConstants.categorySplit,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 10),
+                _buildFilterGroup(
+                  label: tr.direction,
+                  children: [
+                    FilterChipWidget(
+                      label: tr.all,
+                      isSelected: state.filterType == null,
+                      onSelected: () {
+                        _searchController.clear();
+                        log('MergedBorrowLendScreen: Clearing type filter');
+                        context.read<BorrowLendCubit>().setFilterType(null);
+                      },
+                    ),
+                    FilterChipWidget(
+                      label: isAllTransactionsView ? tr.receivable : tr.youGave,
+                      icon: isAllTransactionsView
+                          ? Icons.call_received
+                          : Icons.call_made,
+                      color: isAllTransactionsView
+                          ? AppTheme.moneyInColor
+                          : AppTheme.moneyOutColor,
+                      isSelected: state.filterType == AppConstants.typeLend,
+                      onSelected: () {
+                        _searchController.clear();
+                        log('MergedBorrowLendScreen: Setting filter to Lend');
+                        context.read<BorrowLendCubit>().setFilterType(
+                          AppConstants.typeLend,
+                        );
+                      },
+                    ),
+                    FilterChipWidget(
+                      label: isAllTransactionsView ? tr.payable : tr.youGot,
+                      icon: isAllTransactionsView
+                          ? Icons.call_made
+                          : Icons.call_received,
+                      color: isAllTransactionsView
+                          ? AppTheme.moneyOutColor
+                          : AppTheme.moneyInColor,
+                      isSelected: state.filterType == AppConstants.typeBorrow,
+                      onSelected: () {
+                        _searchController.clear();
+                        log('MergedBorrowLendScreen: Setting filter to Borrow');
+                        context.read<BorrowLendCubit>().setFilterType(
+                          AppConstants.typeBorrow,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilterGroup({
+    required String label,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: isDark ? 0.18 : 0.12),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: colorScheme.onSurfaceVariant,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(width: 7),
+          Container(
+            width: 1,
+            height: 20,
+            color: colorScheme.outline.withValues(alpha: 0.12),
+          ),
+          const SizedBox(width: 7),
+          Row(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                children[i],
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -735,6 +1416,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   cashCount: contactSummary.cashCount,
                   udhariCount: contactSummary.udhariCount,
                   splitCount: contactSummary.splitCount,
+                  splitNet: contactSummary.splitNet,
                   onTap: () async {
                     log(
                       'MergedBorrowLendScreen: Opening contact details for ${contactSummary.contact.name}',
@@ -776,15 +1458,18 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           final String emptyMessage;
 
           final hasFilters = _hasActiveFilters(state);
+          final categoryFilter = state.filterCategory;
 
-          if (_viewMode == BorrowLendViewMode.cash) {
+          if (_viewMode == BorrowLendViewMode.cash ||
+              categoryFilter == AppConstants.categoryCash) {
             emptyTitle = hasFilters
                 ? tr.noMatchingCashTransactions
                 : tr.noCashTransactions;
             emptyMessage = hasFilters
                 ? tr.tryAdjustingFilters
                 : tr.addYourFirstCashTransaction;
-          } else if (_viewMode == BorrowLendViewMode.udhari) {
+          } else if (_viewMode == BorrowLendViewMode.udhari ||
+              categoryFilter == AppConstants.categoryUdhari) {
             emptyTitle = hasFilters
                 ? tr.noMatchingUdhariTransactions
                 : tr.noUdhariTransactions;
@@ -803,9 +1488,14 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              icon: _viewMode == BorrowLendViewMode.cash
+              icon:
+                  _viewMode == BorrowLendViewMode.cash ||
+                      categoryFilter == AppConstants.categoryCash
                   ? Icons.currency_rupee
-                  : Icons.shopping_basket,
+                  : _viewMode == BorrowLendViewMode.udhari ||
+                        categoryFilter == AppConstants.categoryUdhari
+                  ? Icons.shopping_basket
+                  : Icons.receipt_long,
               title: emptyTitle,
               message: emptyMessage,
               compact: true,

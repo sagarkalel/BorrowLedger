@@ -25,6 +25,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/database/database_helper.dart';
+import '../../data/models/user_profile_model.dart';
+import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/theme_cubit.dart';
 
 class SettingsDrawer extends StatefulWidget {
@@ -35,6 +37,8 @@ class SettingsDrawer extends StatefulWidget {
 }
 
 class _SettingsDrawerState extends State<SettingsDrawer> {
+  UserProfileModel _userProfile = const UserProfileModel(name: '');
+
   static const List<String> _backupInsertOrder = [
     'contacts',
     'transactions',
@@ -56,6 +60,18 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final profile = await context.read<UserProfileRepository>().getProfile();
+    if (!mounted) return;
+    setState(() => _userProfile = profile);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -71,6 +87,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               children: [
                 const SizedBox(height: 12),
+                _buildSectionTitle(tr.yourProfile, colorScheme),
+                const SizedBox(height: 6),
+                _buildProfileCard(context, colorScheme),
+                const SizedBox(height: 16),
                 _buildSectionTitle(tr.appearance, colorScheme),
                 const SizedBox(height: 6),
                 _buildThemeCard(context, colorScheme, isDark),
@@ -182,6 +202,43 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         ),
       ),
     );
+  }
+
+  Widget _buildProfileCard(BuildContext context, ColorScheme colorScheme) {
+    final tr = AppLocalizations.of(context)!;
+    final hasName = _userProfile.hasName;
+    final title = hasName ? _userProfile.name : tr.setYourName;
+    final subtitle = hasName
+        ? (_userProfile.phone ?? tr.nameUsedInSharedSplits)
+        : tr.helpFriendsRecognizeYou;
+
+    return Card(
+      child: _buildActionTile(
+        context,
+        Icons.account_circle_rounded,
+        title,
+        subtitle,
+        colorScheme.primary,
+        colorScheme,
+        onTap: () => _showProfileDialog(context),
+      ),
+    );
+  }
+
+  Future<void> _showProfileDialog(BuildContext context) async {
+    final tr = AppLocalizations.of(context)!;
+    final repository = context.read<UserProfileRepository>();
+    final profile = await showDialog<UserProfileModel>(
+      context: context,
+      builder: (_) => _UserProfileDialog(
+        initialProfile: _userProfile,
+        repository: repository,
+      ),
+    );
+
+    if (profile == null || !mounted || !context.mounted) return;
+    setState(() => _userProfile = profile);
+    showSuccessSnackbar(context, tr.profileSaved);
   }
 
   Widget _buildThemeCard(
@@ -1101,5 +1158,145 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         showFailureSnackbar(context, '${tr.failedToDelete} $e');
       }
     }
+  }
+}
+
+class _UserProfileDialog extends StatefulWidget {
+  final UserProfileModel initialProfile;
+  final UserProfileRepository repository;
+
+  const _UserProfileDialog({
+    required this.initialProfile,
+    required this.repository,
+  });
+
+  @override
+  State<_UserProfileDialog> createState() => _UserProfileDialogState();
+}
+
+class _UserProfileDialogState extends State<_UserProfileDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialProfile.name);
+    _phoneController = TextEditingController(text: widget.initialProfile.phone);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+      contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
+      actionsPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      title: Text(
+        tr.yourProfile,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              style: const TextStyle(fontSize: 15, height: 1.15),
+              decoration: _profileInputDecoration(
+                labelText: tr.yourNameRequired,
+                icon: Icons.person_outline_rounded,
+              ),
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return tr.pleaseEnterYourName;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _phoneController,
+              style: const TextStyle(fontSize: 15, height: 1.15),
+              decoration: _profileInputDecoration(
+                labelText: tr.phone,
+                hintText: tr.phoneNumberOptional,
+                icon: Icons.phone_outlined,
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            minimumSize: const Size(80, 42),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+          ),
+          child: Text(tr.cancel),
+        ),
+        FilledButton(
+          onPressed: _isSaving ? null : _saveProfile,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(92, 42),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+          ),
+          child: _isSaving
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(tr.save),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _profileInputDecoration({
+    required String labelText,
+    required IconData icon,
+    String? hintText,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      isDense: true,
+      labelStyle: const TextStyle(fontSize: 14),
+      hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      prefixIcon: Icon(icon, size: 19),
+      prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: 42),
+    );
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    final profile = UserProfileModel(
+      name: _nameController.text,
+      phone: _phoneController.text,
+    );
+
+    await widget.repository.saveProfile(profile);
+
+    if (!mounted) return;
+    Navigator.pop(context, profile);
   }
 }

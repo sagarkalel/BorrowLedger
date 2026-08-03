@@ -59,6 +59,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(isEditing ? tr.editExpense : tr.addExpense)),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: FilledButton(
+          onPressed: _saveExpense,
+          child: Text(isEditing ? tr.updateExpense : tr.saveExpense),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         child: Form(
@@ -207,16 +214,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saveExpense,
-                  child: Text(isEditing ? tr.updateExpense : tr.saveExpense),
                 ),
               ),
             ],

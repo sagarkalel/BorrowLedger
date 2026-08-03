@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/constants/app_text_styles.dart';
+import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -20,6 +21,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/split_repository.dart';
+import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/split_cubit.dart';
 
 class SplitDetailScreen extends StatefulWidget {
@@ -29,20 +31,6 @@ class SplitDetailScreen extends StatefulWidget {
 
   @override
   State<SplitDetailScreen> createState() => _SplitDetailScreenState();
-}
-
-class _ParticipantSettlement {
-  final SplitParticipantModel participant;
-  final bool userReceives;
-  final double totalAmount;
-  final double remainingAmount;
-
-  const _ParticipantSettlement({
-    required this.participant,
-    required this.userReceives,
-    required this.totalAmount,
-    required this.remainingAmount,
-  });
 }
 
 class _SplitDetailScreenState extends State<SplitDetailScreen> {
@@ -100,7 +88,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final statusColor = AppTheme.getStatusColor(split.status);
     final participants = split.participants ?? [];
 
-    final settlements = _buildParticipantSettlements(split, participants);
+    final settlements = SplitSettlementCalculator.calculate(
+      split,
+      participants,
+      unknownName: tr.unknown,
+    );
     final fullyPendingParticipants = settlements
         .where((s) => s.remainingAmount > 0 && s.participant.paid == 0)
         .toList();
@@ -158,13 +150,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               ),
             ),
 
-            // Not Paid Yet section
+            // Pending settlements section
             if (fullyPendingParticipants.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 5, 12, 4),
                   child: Text(
-                    tr.notPaidYet,
+                    tr.pendingSettlements,
                     style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.grey[500] : Colors.grey[600],
@@ -194,13 +186,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 4)),
             ],
 
-            // Partially paid participants
+            // Partially settled participants
             if (partiallyPaidParticipants.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 5, 12, 4),
                   child: Text(
-                    tr.partialSettlement,
+                    tr.partiallySettled,
                     style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.grey[500] : Colors.grey[600],
@@ -230,13 +222,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 4)),
             ],
 
-            // Paid participants
+            // Settled or no-action participants
             if (paidParticipants.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 5, 12, 4),
                   child: Text(
-                    tr.paid,
+                    tr.settledOrNoAction,
                     style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.grey[500] : Colors.grey[600],
@@ -268,10 +260,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                   child: FilledButton.icon(
                     onPressed: _showSettleConfirmation,
-                    icon: const Icon(Icons.check_circle_rounded, size: 20),
-                    label: Text(tr.markAsSettled),
+                    icon: const Icon(Icons.fact_check_rounded, size: 20),
+                    label: Text(tr.reviewAndSettleSplit),
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.successColor,
+                      backgroundColor: AppTheme.warningColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -407,8 +399,8 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     List<SplitParticipantModel> participants,
     bool isDark,
   ) {
-    final userShare = _calculateUserShare(split, participants);
-    final balance = _calculateBalance(split, participants);
+    final userShare = SplitSettlementCalculator.userShare(split, participants);
+    final balance = SplitSettlementCalculator.userBalance(split, participants);
     final isPositive = balance > 0;
     final isSettled = split.status == AppConstants.statusSettled;
     final tr = AppLocalizations.of(context)!;
@@ -417,7 +409,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         ? AppTheme.successColor
         : AppTheme.warningColor;
 
-    final settlements = _buildParticipantSettlements(split, participants);
+    final settlements = SplitSettlementCalculator.calculate(
+      split,
+      participants,
+      unknownName: tr.unknown,
+    );
     final totalReceived = settlements.fold<double>(
       0,
       (sum, s) =>
@@ -670,7 +666,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
 
   // Compact participant card
   Widget _buildCompactParticipantCard(
-    _ParticipantSettlement settlement,
+    SplitSettlementResult settlement,
     bool isDark, {
     VoidCallback? onMarkPaid,
   }) {
@@ -686,9 +682,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final actionIcon = settlement.userReceives
         ? Icons.call_received_rounded
         : Icons.call_made_rounded;
-    final actionLabel = settlement.userReceives ? tr.markReceived : 'Mark Paid';
-    final settledText = settlement.userReceives ? 'Received' : 'Paid';
-    final outstandingText = settlement.userReceives ? 'Owes you' : 'You owe';
+    final actionLabel = settlement.userReceives ? tr.markReceived : tr.markPaid;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -727,13 +721,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _participantSubtitle(
-                          participant,
-                          remaining,
-                          settledText,
-                          outstandingText,
-                          tr.shareAmount,
-                        ),
+                        _participantSubtitle(settlement, tr.shareAmount),
                         style: AppTextStyles.caption.copyWith(
                           color: isPartiallyPaid
                               ? actionColor
@@ -752,7 +740,9 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                 const SizedBox(width: 8),
                 if (isPaid)
                   AppPillBadge(
-                    label: tr.paidBadge,
+                    label: settlement.totalAmount > 0
+                        ? tr.settledBadge
+                        : tr.noActionBadge,
                     icon: Icons.check_circle,
                     color: AppTheme.success,
                     fontSize: 10,
@@ -796,115 +786,39 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
   }
 
-  double _calculateUserShare(
-    SplitExpenseModel split,
-    List<SplitParticipantModel> participants,
-  ) {
-    final totalShares = participants.fold<double>(
-      0,
-      (sum, p) => sum + p.shareAmount,
-    );
-    return split.totalAmount - totalShares;
-  }
-
-  double _calculateBalance(
-    SplitExpenseModel split,
-    List<SplitParticipantModel> participants,
-  ) {
-    final settlements = _buildParticipantSettlements(split, participants);
-    final receivable = settlements
-        .where((s) => s.userReceives)
-        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
-    final payable = settlements
-        .where((s) => !s.userReceives)
-        .fold<double>(0, (sum, s) => sum + s.remainingAmount);
-    return receivable > 0 ? receivable : -payable;
-  }
-
-  List<_ParticipantSettlement> _buildParticipantSettlements(
-    SplitExpenseModel split,
-    List<SplitParticipantModel> participants,
-  ) {
-    final userShare = _calculateUserShare(split, participants);
-    var userNet = split.paidByUser - userShare;
-    const tolerance = 0.01;
-    final settlements = <_ParticipantSettlement>[];
-
-    if (userNet > tolerance) {
-      for (final participant in participants) {
-        final participantOwes =
-            participant.shareAmount - participant.expensePaid;
-        final allocated = participantOwes > 0
-            ? (participantOwes < userNet ? participantOwes : userNet)
-            : 0.0;
-        final remaining = allocated - participant.paid;
-        settlements.add(
-          _ParticipantSettlement(
-            participant: participant,
-            userReceives: true,
-            totalAmount: allocated,
-            remainingAmount: remaining <= tolerance ? 0 : remaining,
-          ),
-        );
-        userNet -= allocated;
-      }
-    } else if (userNet < -tolerance) {
-      var userOwes = -userNet;
-      for (final participant in participants) {
-        final participantCredit =
-            participant.expensePaid - participant.shareAmount;
-        final allocated = participantCredit > 0
-            ? (participantCredit < userOwes ? participantCredit : userOwes)
-            : 0.0;
-        final remaining = allocated - participant.paid;
-        settlements.add(
-          _ParticipantSettlement(
-            participant: participant,
-            userReceives: false,
-            totalAmount: allocated,
-            remainingAmount: remaining <= tolerance ? 0 : remaining,
-          ),
-        );
-        userOwes -= allocated;
-      }
-    } else {
-      for (final participant in participants) {
-        settlements.add(
-          _ParticipantSettlement(
-            participant: participant,
-            userReceives: true,
-            totalAmount: 0,
-            remainingAmount: 0,
-          ),
-        );
-      }
-    }
-
-    return settlements;
-  }
-
   String _participantSubtitle(
-    SplitParticipantModel participant,
-    double remaining,
-    String settledText,
-    String outstandingText,
+    SplitSettlementResult settlement,
     String shareLabel,
   ) {
+    final participant = settlement.participant;
+    final remaining = settlement.remainingAmount;
     if (remaining > 0) {
       if (participant.paid > 0) {
-        return '$settledText ₹${participant.paid.toStringAsFixed(2)} • Left ₹${remaining.toStringAsFixed(2)}';
+        return AppLocalizations.of(context)!.settledAmountLeft(
+          '₹${participant.paid.toStringAsFixed(2)}',
+          '₹${remaining.toStringAsFixed(2)}',
+        );
       }
-      return '$outstandingText ₹${remaining.toStringAsFixed(2)}';
+      if (settlement.participantOwes) {
+        return AppLocalizations.of(context)!.owesCounterparty(
+          settlement.counterpartyName,
+          '₹${remaining.toStringAsFixed(2)}',
+        );
+      }
+      return AppLocalizations.of(context)!.youOwePerson(
+        participant.contactName ?? AppLocalizations.of(context)!.unknown,
+        '₹${remaining.toStringAsFixed(2)}',
+      );
     }
 
     if (participant.expensePaid > 0) {
-      return '$shareLabel: ₹${participant.shareAmount.toStringAsFixed(2)} • Paid bill ₹${participant.expensePaid.toStringAsFixed(2)}';
+      return '$shareLabel: ₹${participant.shareAmount.toStringAsFixed(2)} • ${AppLocalizations.of(context)!.paidDuringBill} ₹${participant.expensePaid.toStringAsFixed(2)}';
     }
 
     return '$shareLabel: ₹${participant.shareAmount.toStringAsFixed(2)}';
   }
 
-  void _showSettleParticipantDialog(_ParticipantSettlement settlement) {
+  void _showSettleParticipantDialog(SplitSettlementResult settlement) {
     final participant = settlement.participant;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final formKey = GlobalKey<FormState>();
@@ -921,8 +835,19 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
           final color = userReceives
               ? AppTheme.moneyInColor
               : AppTheme.moneyOutColor;
-          final title = userReceives ? tr.markAsReceived : 'Mark as Paid';
-          final amountLabel = userReceives ? tr.amountReceived : 'Amount Paid';
+          final title = userReceives ? tr.markAsReceived : tr.markAsPaid;
+          final amountLabel = userReceives ? tr.amountReceived : tr.amountPaid;
+          final remainingText = '₹${remaining.toStringAsFixed(2)}';
+          final directionText = settlement.participantOwes
+              ? tr.personOwesCounterparty(
+                  participant.contactName ?? tr.unknown,
+                  settlement.counterpartyName,
+                  remainingText,
+                )
+              : tr.youOwePerson(
+                  participant.contactName ?? tr.unknown,
+                  remainingText,
+                );
 
           return AppDialogShell(
             icon: AppDialogIcon(
@@ -932,7 +857,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
             title: title,
             content: [
               Text(
-                participant.contactName ?? '-',
+                directionText,
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -952,14 +877,14 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                     if (participant.expensePaid > 0) ...[
                       const SizedBox(height: 6),
                       _buildDialogAmountRow(
-                        'Paid during bill',
+                        tr.paidDuringBill,
                         '₹${participant.expensePaid.toStringAsFixed(2)}',
                       ),
                     ],
                     if (participant.paid > 0) ...[
                       const SizedBox(height: 6),
                       _buildDialogAmountRow(
-                        userReceives ? tr.alreadyPaid : 'Already paid',
+                        tr.alreadyPaid,
                         '₹${participant.paid.toStringAsFixed(2)}',
                       ),
                     ],
@@ -1109,10 +1034,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                         isFullAmount
                             ? userReceives
                                   ? tr.fullRemainingAmountWillBeMarkedAsReceived
-                                  : 'Full remaining amount will be marked as paid.'
+                                  : tr.fullRemainingAmountWillBeMarkedAsPaid
                             : userReceives
                             ? tr.onlyEnteredAmountWillBeMarkedAsReceived
-                            : 'Only the entered amount will be marked as paid.',
+                            : tr.onlyEnteredAmountWillBeMarkedAsPaid,
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1212,6 +1137,50 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
   }
 
+  Widget _buildPendingSettlementPreview(
+    SplitSettlementResult settlement,
+    AppLocalizations tr,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final participantName = settlement.participant.contactName ?? tr.unknown;
+    final amount = '₹${settlement.remainingAmount.toStringAsFixed(2)}';
+    final text = settlement.participantOwes
+        ? tr.personOwesCounterparty(
+            participantName,
+            settlement.counterpartyName,
+            amount,
+          )
+        : tr.youOwePerson(participantName, amount);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            settlement.userReceives
+                ? Icons.call_received_rounded
+                : Icons.call_made_rounded,
+            size: 15,
+            color: AppTheme.warningColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.25,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAmountTypeButton({
     required String label,
     required IconData icon,
@@ -1259,19 +1228,26 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
   void _showSettleConfirmation() {
     final participants = _split?.participants ?? [];
 
+    final tr = AppLocalizations.of(context)!;
     final settlements = _split == null
-        ? <_ParticipantSettlement>[]
-        : _buildParticipantSettlements(_split!, participants);
+        ? <SplitSettlementResult>[]
+        : SplitSettlementCalculator.calculate(
+            _split!,
+            participants,
+            unknownName: tr.unknown,
+          );
 
     final allPaid = settlements.every((s) => s.remainingAmount <= 0);
 
-    final pendingCount = settlements.where((s) => s.remainingAmount > 0).length;
+    final pendingSettlements = settlements
+        .where((s) => s.remainingAmount > 0)
+        .toList();
+    final pendingCount = pendingSettlements.length;
 
-    final totalPending = settlements.fold<double>(
+    final totalPending = pendingSettlements.fold<double>(
       0,
       (sum, s) => sum + s.remainingAmount,
     );
-    final tr = AppLocalizations.of(context)!;
 
     if (!allPaid) {
       showDialog(
@@ -1284,7 +1260,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
           title: tr.pendingPayments,
           content: [
             Text(
-              '$pendingCount participant${pendingCount > 1 ? 's' : ''} haven\'t fully paid yet.',
+              tr.reviewPendingSettlements,
               style: TextStyle(
                 fontSize: 13,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1295,30 +1271,52 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
             const SizedBox(height: 12),
             AppDialogNotice(
               color: AppTheme.warningColor,
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    size: 20,
+                  _buildDialogAmountRow(
+                    tr.totalPending,
+                    '₹${totalPending.toStringAsFixed(2)}',
                     color: AppTheme.warningColor,
+                    isStrong: true,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildDialogAmountRow(
-                      tr.totalPending,
-                      '₹${totalPending.toStringAsFixed(2)}',
-                      color: AppTheme.warningColor,
-                      isStrong: true,
+                  const SizedBox(height: 8),
+                  Divider(
+                    color: AppTheme.warningColor.withValues(alpha: 0.18),
+                    height: 1,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    tr.settlementsToClose,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...pendingSettlements.map(
+                    (settlement) =>
+                        _buildPendingSettlementPreview(settlement, tr),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              tr.doYouWantToMarkSettled,
+              tr.pendingSettlementsWillBeMarkedComplete(pendingCount),
               style: TextStyle(
                 fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              tr.settlingWillCloseThesePayments,
+              style: TextStyle(
+                fontSize: 11,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.35,
               ),
@@ -1362,7 +1360,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         title: tr.settleSplit,
         content: [
           Text(
-            tr.allParticipantHasPaidTheirShareMarkAsSetteled,
+            tr.allSettlementsAlreadyComplete,
             style: TextStyle(
               fontSize: 13,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1414,6 +1412,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     var loadingShown = false;
 
     try {
+      final profile = await context.read<UserProfileRepository>().getProfile();
+      final ownerName = _profileDisplayName(profile.name);
+      if (!mounted) return;
+
       loadingShown = true;
       showDialog(
         context: context,
@@ -1421,7 +1423,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         builder: (_) => const AppLoadingDialog(message: 'Preparing invoice...'),
       );
 
-      final file = await _createSplitInvoiceImage(split);
+      final file = await _createSplitInvoiceImage(split, ownerName);
 
       if (mounted && loadingShown) {
         Navigator.pop(context);
@@ -1431,7 +1433,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'Split invoice: ${split.title}',
+          text: 'Split invoice from $ownerName: ${split.title}',
           subject: 'Split Invoice - ${split.title}',
         ),
       );
@@ -1445,11 +1447,18 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     }
   }
 
-  Future<File> _createSplitInvoiceImage(SplitExpenseModel split) async {
+  Future<File> _createSplitInvoiceImage(
+    SplitExpenseModel split,
+    String ownerName,
+  ) async {
     final participants = split.participants ?? [];
-    final settlements = _buildParticipantSettlements(split, participants);
-    final userShare = _calculateUserShare(split, participants);
-    final balance = _calculateBalance(split, participants);
+    final settlements = SplitSettlementCalculator.calculate(
+      split,
+      participants,
+      userName: ownerName,
+    );
+    final userShare = SplitSettlementCalculator.userShare(split, participants);
+    final balance = SplitSettlementCalculator.userBalance(split, participants);
     final paidByOthers = participants.fold<double>(
       0,
       (sum, participant) => sum + participant.expensePaid,
@@ -1573,10 +1582,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         126,
       ),
       label: balance.abs() < 0.01
-          ? 'Your balance'
+          ? '${_possessive(ownerName)} balance'
           : balance >= 0
-          ? 'You will get'
-          : 'You will give',
+          ? '$ownerName gets'
+          : '$ownerName gives',
       value: _money(balance.abs()),
       color: balance.abs() < 0.01 ? mutedColor : balanceColor,
       textColor: textColor,
@@ -1588,7 +1597,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawMetricCard(
       canvas,
       Rect.fromLTWH(pagePadding, y, miniCardWidth, 104),
-      label: 'You paid',
+      label: '$ownerName paid',
       value: _money(split.paidByUser),
       color: primaryColor,
       textColor: textColor,
@@ -1598,7 +1607,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawMetricCard(
       canvas,
       Rect.fromLTWH(pagePadding + miniCardWidth + 16, y, miniCardWidth, 104),
-      label: 'Your share',
+      label: '${_possessive(ownerName)} share',
       value: _money(userShare),
       color: colorScheme.secondary,
       textColor: textColor,
@@ -1673,13 +1682,15 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         rowColor,
         textColor,
         mutedColor,
+        ownerName,
+        settlement?.userReceives,
       );
       y += rowHeight;
     }
 
     _drawText(
       canvas,
-      'Generated ${DateFormat(AppConstants.dateTimeFormat).format(DateTime.now())}',
+      'Generated by $ownerName • ${DateFormat(AppConstants.dateTimeFormat).format(DateTime.now())}',
       Offset(pagePadding, height - 52),
       fontSize: 18,
       fontWeight: FontWeight.w500,
@@ -1699,6 +1710,16 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
   }
 
   String _money(double amount) => '₹${amount.toStringAsFixed(2)}';
+
+  String _profileDisplayName(String name) {
+    final trimmed = name.trim();
+    return trimmed.isEmpty ? 'You' : trimmed;
+  }
+
+  String _possessive(String name) {
+    if (name == 'You') return 'Your';
+    return name.endsWith('s') ? "$name'" : "$name's";
+  }
 
   String _safeFilePart(String value) {
     final safe = value
@@ -1877,6 +1898,8 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     Color rowColor,
     Color textColor,
     Color mutedColor,
+    String ownerName,
+    bool? userReceives,
   ) {
     _drawRoundedRect(
       canvas,
@@ -1885,7 +1908,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       radius: 16,
       strokeColor: mutedColor.withValues(alpha: 0.08),
     );
-    final balanceText = remaining <= 0 ? 'Settled' : _money(remaining);
+    final balanceText = remaining <= 0
+        ? 'Settled'
+        : userReceives == false
+        ? '$ownerName owes ${_money(remaining)}'
+        : 'Owes $ownerName ${_money(remaining)}';
     final paidTotal = participant.expensePaid + participant.paid;
     _drawText(
       canvas,
@@ -1927,7 +1954,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       canvas,
       balanceText,
       Offset(rect.left + rect.width * 0.79, rect.top + 27),
-      fontSize: 20,
+      fontSize: remaining <= 0 ? 20 : 16,
       fontWeight: FontWeight.w800,
       color: rowColor,
       maxWidth: rect.width * 0.18,

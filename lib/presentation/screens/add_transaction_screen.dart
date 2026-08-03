@@ -186,6 +186,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               : (isLend ? tr.youGaveOnUdhari : tr.youTookOnUdhari),
         ),
       ),
+      bottomNavigationBar: _isLoadingContacts
+          ? null
+          : SafeArea(
+              minimum: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: _buildSubmitButton(
+                label: isEditing ? tr.updateTransaction : tr.saveTransaction,
+                color: actionColor,
+                onPressed: _saveTransaction,
+              ),
+            ),
       body: _isLoadingContacts
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -433,16 +443,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       maxLength: 200,
                     ),
                     const SizedBox(height: 14),
-
-                    // Save button
-                    _buildSubmitButton(
-                      label: isEditing
-                          ? tr.updateTransaction
-                          : tr.saveTransaction,
-                      color: actionColor,
-                      onPressed: _saveTransaction,
-                    ),
-                    const SizedBox(height: 4),
                   ],
                 ),
               ),

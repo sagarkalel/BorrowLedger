@@ -13,6 +13,7 @@ class ContactSummaryCard extends StatelessWidget {
   final int cashCount;
   final int udhariCount;
   final int splitCount;
+  final double splitNet;
   final VoidCallback onTap;
 
   const ContactSummaryCard({
@@ -24,6 +25,7 @@ class ContactSummaryCard extends StatelessWidget {
     this.cashCount = 0,
     this.udhariCount = 0,
     this.splitCount = 0,
+    this.splitNet = 0,
     required this.onTap,
   });
 
@@ -47,7 +49,7 @@ class ContactSummaryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           child: Row(
             children: [
               // Avatar with status indicator
@@ -57,8 +59,9 @@ class ContactSummaryCard extends StatelessWidget {
                     ? Icons.call_received
                     : Icons.call_made,
                 indicatorColor: directionColor,
+                size: 38,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Contact Info
               Expanded(
@@ -69,19 +72,23 @@ class ContactSummaryCard extends StatelessWidget {
                     Text(
                       contactName,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     _buildMetaInfo(context),
+                    if (splitCount > 0 && splitNet.abs() >= 0.01) ...[
+                      const SizedBox(height: 4),
+                      _buildSplitDueHint(context, tr),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Amount and direction
               _buildAmountSection(context, directionColor, isPositive, tr),
@@ -95,6 +102,7 @@ class ContactSummaryCard extends StatelessWidget {
   Widget _buildMetaInfo(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final metaColor = colorScheme.onSurfaceVariant;
+    final tr = AppLocalizations.of(context)!;
 
     return Row(
       children: [
@@ -125,14 +133,15 @@ class ContactSummaryCard extends StatelessWidget {
         // Category breakdown
         if (cashCount > 0 || udhariCount > 0 || splitCount > 0) ...[
           if (cashCount > 0) ...[
-            _buildCategoryBadge(context, 'Cash', cashCount),
+            _buildCategoryBadge(context, tr.cash, cashCount),
             if (udhariCount > 0 || splitCount > 0) const SizedBox(width: 4),
           ],
           if (udhariCount > 0) ...[
-            _buildCategoryBadge(context, 'Udhari', udhariCount),
+            _buildCategoryBadge(context, tr.udhari, udhariCount),
             if (splitCount > 0) const SizedBox(width: 4),
           ],
-          if (splitCount > 0) _buildCategoryBadge(context, 'Split', splitCount),
+          if (splitCount > 0)
+            _buildCategoryBadge(context, tr.splits, splitCount),
         ] else ...[
           // Fallback to total count
           Icon(Icons.receipt_long, size: 10, color: metaColor),
@@ -146,6 +155,31 @@ class ContactSummaryCard extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildSplitDueHint(BuildContext context, AppLocalizations tr) {
+    final isPositive = splitNet > 0;
+    final color = isPositive ? AppTheme.moneyInColor : AppTheme.moneyOutColor;
+
+    return Row(
+      children: [
+        Icon(Icons.call_split_rounded, size: 11, color: color),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            '${tr.splits}: ${isPositive ? tr.youWillGet : tr.youWillGive} ₹${splitNet.abs().toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 10,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -191,7 +225,7 @@ class ContactSummaryCard extends StatelessWidget {
                 Text(
                   '₹',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: directionColor,
                   ),
@@ -199,27 +233,27 @@ class ContactSummaryCard extends StatelessWidget {
                 Text(
                   netBalance.abs().toStringAsFixed(2),
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: directionColor,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             // Direction badge
             AppPillBadge(
               label: isPositive ? tr.youWillGet : tr.youWillGive,
               icon: isPositive ? Icons.call_received : Icons.call_made,
               color: directionColor,
-              fontSize: 8,
+              fontSize: 7.5,
             ),
           ],
         ),
         const SizedBox(width: 4),
         Icon(
           Icons.chevron_right_rounded,
-          size: 18,
+          size: 16,
           color: colorScheme.onSurfaceVariant,
         ),
       ],

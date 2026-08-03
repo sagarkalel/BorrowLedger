@@ -320,7 +320,26 @@ class SplitRepository {
       [AppConstants.sourceTypeSplit, splitId, AppConstants.categorySplit],
     );
     final pendingCount = pendingTransactions.first['count'] as int? ?? 0;
-    final allPaid = pendingCount == 0;
+    final participantDebtResult = await _dbHelper.rawQuery(
+      '''
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN share_amount > expense_paid + paid
+          THEN share_amount - expense_paid - paid
+          ELSE 0
+        END
+      ), 0) as pending_participant_debt
+      FROM split_participants
+      WHERE split_id = ?
+    ''',
+      [splitId],
+    );
+    final pendingParticipantDebt =
+        (participantDebtResult.first['pending_participant_debt'] as num?)
+            ?.toDouble() ??
+        0.0;
+    const tolerance = 0.01;
+    final allPaid = pendingCount == 0 && pendingParticipantDebt <= tolerance;
 
     if (allPaid) {
       await _dbHelper.update(

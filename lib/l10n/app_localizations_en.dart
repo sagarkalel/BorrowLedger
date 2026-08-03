@@ -114,6 +114,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receivable => 'Receivable';
 
   @override
+  String get direction => 'Direction';
+
+  @override
   String get youPaid => 'You Paid';
 
   @override
@@ -136,6 +139,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comment_navigation => '========== Navigation ==========';
+
+  @override
+  String get people => 'People';
 
   @override
   String get borrowLend => 'Borrow/Lend';
@@ -177,7 +183,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transactionDeleted => 'Transaction deleted';
 
   @override
-  String get allTransactions => 'All Transactions';
+  String get allTransactions => 'All transactions';
 
   @override
   String get recentTransactions => 'Recent Transactions';
@@ -296,6 +302,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get amount => 'Amount';
+
+  @override
+  String get type => 'Type';
 
   @override
   String get amountRequired => 'Amount *';
@@ -770,7 +779,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settleSplit => 'Settle Split';
 
   @override
+  String get reviewAndSettleSplit => 'Review & Settle Split';
+
+  @override
   String get notPaidYet => 'Not Paid Yet';
+
+  @override
+  String get pendingSettlements => 'Pending Settlements';
+
+  @override
+  String get partiallySettled => 'Partially Settled';
+
+  @override
+  String get settledOrNoAction => 'Settled / No Action';
+
+  @override
+  String get reviewPendingSettlements =>
+      'Review pending settlements before closing this split.';
+
+  @override
+  String pendingSettlementsWillBeMarkedComplete(Object count) {
+    return '$count pending settlement(s) will be marked complete.';
+  }
+
+  @override
+  String get settlementsToClose => 'Settlements to close';
+
+  @override
+  String get settlingWillCloseThesePayments =>
+      'This will close these payments and remove generated split ledger entries.';
+
+  @override
+  String get allSettlementsAlreadyComplete =>
+      'All settlements are already complete. Mark this split as settled?';
 
   @override
   String get yourShare => 'Your Share';
@@ -788,7 +829,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markAsReceived => 'Mark as Received';
 
   @override
+  String get markPaid => 'Mark Paid';
+
+  @override
+  String get markAsPaid => 'Mark as Paid';
+
+  @override
   String get alreadyPaid => 'Already Paid';
+
+  @override
+  String get amountPaid => 'Amount Paid';
+
+  @override
+  String get paidDuringBill => 'Paid during bill';
 
   @override
   String get remaining => 'Remaining';
@@ -809,12 +862,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pendingPayments => 'Pending Payments';
 
   @override
+  String settledAmountLeft(Object settledAmount, Object leftAmount) {
+    return 'Settled $settledAmount • Left $leftAmount';
+  }
+
+  @override
+  String personOwesCounterparty(
+    Object personName,
+    Object counterpartyName,
+    Object amount,
+  ) {
+    return '$personName owes $counterpartyName $amount';
+  }
+
+  @override
+  String owesCounterparty(Object counterpartyName, Object amount) {
+    return 'Owes $counterpartyName $amount';
+  }
+
+  @override
+  String youOwePerson(Object personName, Object amount) {
+    return 'You owe $personName $amount';
+  }
+
+  @override
   String get fullRemainingAmountWillBeMarkedAsReceived =>
       'The full remaining amount will be marked as received.';
 
   @override
   String get onlyEnteredAmountWillBeMarkedAsReceived =>
       'Only the entered amount will be marked as received.';
+
+  @override
+  String get fullRemainingAmountWillBeMarkedAsPaid =>
+      'The full remaining amount will be marked as paid.';
+
+  @override
+  String get onlyEnteredAmountWillBeMarkedAsPaid =>
+      'Only the entered amount will be marked as paid.';
 
   @override
   String get deleteSplitConfirmMessage =>
@@ -1716,6 +1801,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paidBadge => 'PAID';
 
   @override
+  String get noActionBadge => 'NO ACTION';
+
+  @override
   String get comment_misc => '========== Miscellaneous ==========';
 
   @override
@@ -1816,6 +1904,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get peopleSmall => 'people';
+
+  @override
+  String get yourProfile => 'Your Profile';
+
+  @override
+  String get setYourName => 'Set your name';
+
+  @override
+  String get nameUsedInSharedSplits => 'Used in shared splits and reports';
+
+  @override
+  String get helpFriendsRecognizeYou =>
+      'Help friends recognize who paid or owes';
+
+  @override
+  String get yourNameRequired => 'Your Name *';
+
+  @override
+  String get pleaseEnterYourName => 'Please enter your name';
+
+  @override
+  String get profileSaved => 'Profile saved';
+
+  @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get sharePdfStatement => 'Share PDF Statement';
+
+  @override
+  String get shareLedgerPdf => 'Share Ledger PDF';
+
+  @override
+  String get preparingStatement => 'Preparing statement...';
+
+  @override
+  String get last15Days => 'Last 15 days';
+
+  @override
+  String get last3Months => 'Last 3 months';
+
+  @override
+  String get last6Months => 'Last 6 months';
+
+  @override
+  String get last1Year => 'Last 1 year';
+
+  @override
+  String get customRange => 'Custom range';
+
+  @override
+  String get borrowLedgerStatement => 'BorrowLedger Statement';
+
+  @override
+  String get borrowLedgerFullStatement => 'BorrowLedger Full Statement';
+
+  @override
+  String get period => 'Period';
+
+  @override
+  String get generatedBy => 'Generated by';
+
+  @override
+  String get generatedOn => 'Generated on';
+
+  @override
+  String get opening => 'Opening';
+
+  @override
+  String get closing => 'Closing';
+
+  @override
+  String get noTransactionsInDateRange =>
+      'No transactions found for this date range.';
+
+  @override
+  String get allCategories => 'All categories';
+
+  @override
+  String get gaveOnly => 'Gave only';
+
+  @override
+  String get gotOnly => 'Got only';
+
+  @override
+  String get searchLabel => 'Search';
 
   @override
   String get comment_language => '========== Language ==========';

@@ -9,6 +9,7 @@ import 'data/repositories/contact_repository.dart';
 import 'data/repositories/expense_repository.dart';
 import 'data/repositories/split_repository.dart';
 import 'data/repositories/transaction_repository.dart';
+import 'data/repositories/user_profile_repository.dart';
 import 'presentation/cubit/contact_cubit.dart';
 import 'presentation/cubit/expense_cubit.dart';
 import 'presentation/cubit/locale_cubit.dart';
@@ -34,6 +35,7 @@ class BorrowLedgerApp extends StatelessWidget {
         RepositoryProvider(create: (context) => ContactRepository()),
         RepositoryProvider(create: (context) => ExpenseRepository()),
         RepositoryProvider(create: (context) => SplitRepository()),
+        RepositoryProvider(create: (context) => UserProfileRepository()),
       ],
       child: Builder(
         builder: (context) {

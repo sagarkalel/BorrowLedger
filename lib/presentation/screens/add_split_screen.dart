@@ -89,6 +89,13 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       appBar: AppBar(
         title: Text(isEditing ? tr.editSplitExpense : tr.splitExpense),
       ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: FilledButton(
+          onPressed: _saveSplit,
+          child: Text(isEditing ? tr.updateSplit : tr.createSplit),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         child: Form(
@@ -222,26 +229,12 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               ),
               const SizedBox(height: 10),
 
-              _buildPaymentCoverageSummary(context),
-              const SizedBox(height: 10),
-
               AppDateField(
                 labelText: tr.dateRequired,
                 valueText: DateFormat(
                   AppConstants.dateFormat,
                 ).format(_selectedDate),
                 onTap: () => _selectDate(context),
-              ),
-              const SizedBox(height: 10),
-
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: tr.descriptionOptional,
-                prefixIcon: Icons.notes_rounded,
-                hintText: tr.whatWasThisExpenseFor,
-                isDense: true,
-                maxLines: 2,
-                maxLength: 200,
               ),
               const SizedBox(height: 10),
 
@@ -436,15 +429,19 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   ],
                 ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saveSplit,
-                  child: Text(isEditing ? tr.updateSplit : tr.createSplit),
-                ),
+              _buildPaymentCoverageSummary(context),
+              const SizedBox(height: 10),
+
+              CustomTextField(
+                controller: _descriptionController,
+                labelText: tr.descriptionOptional,
+                prefixIcon: Icons.notes_rounded,
+                hintText: tr.whatWasThisExpenseFor,
+                isDense: true,
+                maxLines: 2,
+                maxLength: 200,
               ),
               const SizedBox(height: 4),
             ],
@@ -848,7 +845,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     }
   }
 
-  void _saveSplit() {
+  Future<void> _saveSplit() async {
     final tr = AppLocalizations.of(context)!;
     if (_formKey.currentState!.validate()) {
       if (_participants.isEmpty) {
@@ -915,13 +912,16 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         );
       }).toList();
 
+      final splitCubit = context.read<SplitCubit>();
       if (widget.split == null) {
-        context.read<SplitCubit>().createSplit(split, participants);
+        await splitCubit.createSplit(split, participants);
       } else {
-        context.read<SplitCubit>().updateSplit(split, participants);
+        await splitCubit.updateSplit(split, participants);
       }
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     }
   }
 }

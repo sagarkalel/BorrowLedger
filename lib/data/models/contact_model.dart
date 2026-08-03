@@ -8,6 +8,9 @@ class ContactSummary {
   final int cashCount;
   final int udhariCount;
   final int splitCount;
+  final double splitLent;
+  final double splitBorrowed;
+  final double splitNet;
 
   ContactSummary({
     required this.contact,
@@ -19,6 +22,9 @@ class ContactSummary {
     this.cashCount = 0,
     this.udhariCount = 0,
     this.splitCount = 0,
+    this.splitLent = 0,
+    this.splitBorrowed = 0,
+    this.splitNet = 0,
   });
 }
 

@@ -374,6 +374,8 @@ class TransactionRepository {
 
         -- Split totals
         COUNT(CASE WHEN t.transaction_category = 'split' THEN 1 END) AS split_count,
+        COALESCE(SUM(CASE WHEN t.transaction_category = 'split' AND t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS split_lent,
+        COALESCE(SUM(CASE WHEN t.transaction_category = 'split' AND t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS split_borrowed,
         
         MAX(t.date) AS last_transaction_date
       FROM contacts c
