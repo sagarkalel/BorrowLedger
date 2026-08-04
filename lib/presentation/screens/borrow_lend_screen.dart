@@ -539,7 +539,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     final end = _fileDatePart(range.end);
     final filter = _safeFilePart(_ledgerFilterLabel(state, tr));
     final file = File(
-      '${dir.path}/BorrowLedger_Ledger_${filter}_${start}_to_$end.pdf',
+      '${dir.path}/HisaabMate_Ledger_${filter}_${start}_to_$end.pdf',
     );
     await file.writeAsBytes(await pdf.save(), flush: true);
     return file;

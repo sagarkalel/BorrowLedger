@@ -28,6 +28,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       drawer: const SettingsDrawer(),
@@ -39,32 +41,43 @@ class _MainScreenState extends State<MainScreen> {
         },
         child: IndexedStack(index: _currentIndex, children: _screens),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 28,
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.people_outline_rounded),
-            activeIcon: const Icon(Icons.people_rounded, size: 28),
-            label: tr.people,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: isDark ? 0.08 : 0.06,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.pie_chart_rounded),
-            activeIcon: const Icon(Icons.pie_chart_rounded, size: 28),
-            label: tr.splits,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.receipt_long_rounded),
-            activeIcon: const Icon(Icons.receipt_long_rounded, size: 28),
-            label: tr.expenses,
-          ),
-        ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedFontSize: 28,
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people_outline_rounded),
+              activeIcon: const Icon(Icons.people_rounded, size: 28),
+              label: tr.people,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.pie_chart_rounded),
+              activeIcon: const Icon(Icons.pie_chart_rounded, size: 28),
+              label: tr.splits,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.receipt_long_rounded),
+              activeIcon: const Icon(Icons.receipt_long_rounded, size: 28),
+              label: tr.expenses,
+            ),
+          ],
+        ),
       ),
       // floatingActionButton: FloatingActionButton(
       //   heroTag: 'main_fab_$_currentIndex',

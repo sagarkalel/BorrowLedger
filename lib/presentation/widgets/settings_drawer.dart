@@ -154,7 +154,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Image.asset('assets/images/borrow_ledger_icon.jpeg'),
+                    child: Image.asset('assets/images/hisaab_mate_icon.png'),
                   ),
                   const Spacer(),
                   IconButton(
@@ -1119,8 +1119,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'BorrowLedger Backup File\nExported on: $formattedDate',
-          subject: 'BorrowLedger Backup ($formattedDate)',
+          text: 'HisaabMate Backup File\nExported on: $formattedDate',
+          subject: 'HisaabMate Backup ($formattedDate)',
         ),
       );
       developer.log('✅ Share dialog opened');

@@ -1499,7 +1499,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawText(
       canvas,
-      'BorrowLedger',
+      'HisaabMate',
       Offset(pagePadding + 34, y + 24),
       fontSize: 28,
       fontWeight: FontWeight.w800,

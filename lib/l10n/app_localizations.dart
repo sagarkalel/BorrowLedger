@@ -109,13 +109,13 @@ abstract class AppLocalizations {
   /// Application name
   ///
   /// In en, this message translates to:
-  /// **'BorrowLedger'**
+  /// **'HisaabMate'**
   String get appName;
 
   /// Application tagline
   ///
   /// In en, this message translates to:
-  /// **'Track • Manage • Settle'**
+  /// **'Track • Split • Settle'**
   String get appSlogan;
 
   /// No description provided for @comment_common.
@@ -3857,13 +3857,13 @@ abstract class AppLocalizations {
   /// No description provided for @borrowLedgerStatement.
   ///
   /// In en, this message translates to:
-  /// **'BorrowLedger Statement'**
+  /// **'HisaabMate Statement'**
   String get borrowLedgerStatement;
 
   /// No description provided for @borrowLedgerFullStatement.
   ///
   /// In en, this message translates to:
-  /// **'BorrowLedger Full Statement'**
+  /// **'HisaabMate Full Statement'**
   String get borrowLedgerFullStatement;
 
   /// No description provided for @period.

@@ -12,10 +12,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comment_app_info => '========== App Information ==========';
 
   @override
-  String get appName => 'BorrowLedger';
+  String get appName => 'HisaabMate';
 
   @override
-  String get appSlogan => 'Track • Manage • Settle';
+  String get appSlogan => 'Track • Split • Settle';
 
   @override
   String get comment_common => '========== Common ==========';
@@ -1955,10 +1955,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customRange => 'Custom range';
 
   @override
-  String get borrowLedgerStatement => 'BorrowLedger Statement';
+  String get borrowLedgerStatement => 'HisaabMate Statement';
 
   @override
-  String get borrowLedgerFullStatement => 'BorrowLedger Full Statement';
+  String get borrowLedgerFullStatement => 'HisaabMate Full Statement';
 
   @override
   String get period => 'Period';

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,7 +21,6 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _pulseController;
   late AnimationController _textController;
   late AnimationController _progressController;
-  late AnimationController _particleController;
 
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -57,12 +55,6 @@ class _SplashScreenState extends State<SplashScreen>
     // Progress animation controller
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 2800),
-      vsync: this,
-    );
-
-    // Particle controller
-    _particleController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
 
@@ -152,9 +144,6 @@ class _SplashScreenState extends State<SplashScreen>
     // Start main animation
     _mainController.forward();
 
-    // Start particle animation
-    _particleController.forward();
-
     // Start pulse effect
     _schedule(const Duration(milliseconds: 1200), () {
       _pulseController.repeat(reverse: true);
@@ -180,7 +169,6 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseController.dispose();
     _textController.dispose();
     _progressController.dispose();
-    _particleController.dispose();
     super.dispose();
   }
 
@@ -193,42 +181,33 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryGreen.withValues(alpha: 0.9),
-              AppTheme.primaryGreen.withValues(alpha: 0.7),
-              AppTheme.lightGreen.withValues(alpha: 0.6),
-              AppTheme.primaryBlue.withValues(alpha: 0.75),
-              AppTheme.primaryBlue.withValues(alpha: 0.9),
+              const Color(0xFFF7FBFA),
+              const Color(0xFFEFF7F5),
+              AppTheme.lightGreen.withValues(alpha: 0.14),
+              AppTheme.primaryBlue.withValues(alpha: 0.12),
             ],
-            stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+            stops: const [0.0, 0.45, 0.75, 1.0],
           ),
         ),
         child: Stack(
           children: [
             // Radial gradient overlay for depth
-            Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.2,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.1),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.15),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.0, -0.18),
+                    radius: 0.9,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.86),
+                      Colors.white.withValues(alpha: 0.42),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.48, 1.0],
+                  ),
                 ),
               ),
             ),
-
-            // Animated background particles
-            ...List.generate(8, (index) {
-              return _buildFloatingCircle(index);
-            }),
-
-            // Additional decorative elements
-            ...List.generate(12, (index) {
-              return _buildParticle(index);
-            }),
 
             // Main content
             Center(
@@ -253,7 +232,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: _buildAnimatedLogo(),
                   ),
 
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 34),
 
                   // Animated text
                   SlideTransition(
@@ -274,7 +253,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 34),
 
                   // Loading indicator - minimal
                   FadeTransition(
@@ -295,7 +274,7 @@ class _SplashScreenState extends State<SplashScreen>
       TextSpan(
         children: [
           TextSpan(
-            text: "Borrow",
+            text: "Hisaab",
             style: TextStyle(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color.fromARGB(255, 132, 185, 71)
@@ -303,24 +282,16 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
           TextSpan(
-            text: "Ledger",
+            text: "Mate",
             style: TextStyle(color: Color.fromARGB(255, 71, 158, 206)),
           ),
         ],
       ),
-      // 'BorrowLedger',
+      // 'HisaabMate',
       style: TextStyle(
-        fontSize: 38,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.5,
-        // color: Colors.white,
-        shadows: [
-          Shadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
+        fontSize: 36,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0,
       ),
     );
   }
@@ -332,61 +303,54 @@ class _SplashScreenState extends State<SplashScreen>
         return Transform.scale(
           scale: _pulseAnimation.value,
           child: Container(
-            width: 160,
-            height: 160,
+            width: 148,
+            height: 148,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              // color: AppTheme.lightGreen,
+              borderRadius: BorderRadius.circular(34),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 10),
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.12),
+                  blurRadius: 22,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 12),
                 ),
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  blurRadius: 40,
-                  spreadRadius: 10,
+                  color: Colors.white.withValues(alpha: 0.72),
+                  blurRadius: 18,
+                  spreadRadius: 1,
                   offset: const Offset(0, 0),
                 ),
               ],
             ),
-            child: Container(
-              margin: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.lightGreen, width: 1),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/borrow_ledger_icon.jpeg',
-                  width: 154,
-                  height: 154,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppTheme.primaryGreen,
-                            AppTheme.lightGreen,
-                            AppTheme.primaryBlue,
-                          ],
-                        ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(34),
+              child: Image.asset(
+                'assets/images/hisaab_mate_icon.png',
+                width: 148,
+                height: 148,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryGreen,
+                          AppTheme.lightGreen,
+                          AppTheme.primaryBlue,
+                        ],
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.menu_book_rounded,
-                          size: 70,
-                          color: Colors.white.withValues(alpha: 0.95),
-                        ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.currency_rupee_rounded,
+                        size: 70,
+                        color: Colors.white.withValues(alpha: 0.95),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -402,9 +366,9 @@ class _SplashScreenState extends State<SplashScreen>
       animation: _progressController,
       builder: (context, child) {
         if (isIOS) {
-          return const CupertinoActivityIndicator(
+          return CupertinoActivityIndicator(
             radius: 16,
-            color: Colors.white,
+            color: AppTheme.primaryGreen,
           );
         } else {
           return Column(
@@ -415,9 +379,11 @@ class _SplashScreenState extends State<SplashScreen>
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: _progressController.value,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    backgroundColor: AppTheme.primaryGreen.withValues(
+                      alpha: 0.14,
+                    ),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
+                      AppTheme.primaryGreen,
                     ),
                     minHeight: 3,
                   ),
@@ -435,107 +401,10 @@ class _SplashScreenState extends State<SplashScreen>
     return Text(
       tr.appSlogan,
       style: TextStyle(
-        fontSize: 14,
-        color: Colors.white,
-        letterSpacing: 2,
+        fontSize: 13,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        letterSpacing: 1.4,
         fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  Widget _buildFloatingCircle(int index) {
-    final random = math.Random(index);
-    final size = 80.0 + random.nextDouble() * 140;
-    final duration = 4000 + random.nextInt(3000);
-    final left = random.nextDouble() * MediaQuery.of(context).size.width;
-    final top = random.nextDouble() * MediaQuery.of(context).size.height;
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: TweenAnimationBuilder<double>(
-        duration: Duration(milliseconds: duration),
-        tween: Tween(begin: 0.0, end: 1.0),
-        builder: (context, value, child) {
-          return Opacity(
-            opacity: (0.08 + math.sin(value * math.pi * 2) * 0.08).clamp(
-              0.0,
-              0.15,
-            ),
-            child: Transform.translate(
-              offset: Offset(
-                math.sin(value * math.pi * 2) * 30,
-                math.cos(value * math.pi * 2) * 30,
-              ),
-              child: Transform.scale(
-                scale: 1.0 + math.sin(value * math.pi * 4) * 0.1,
-                child: Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.25),
-                        Colors.white.withValues(alpha: 0.05),
-                        Colors.transparent,
-                      ],
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        onEnd: () {
-          if (mounted) {
-            setState(() {});
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildParticle(int index) {
-    final random = math.Random(index + 100);
-    final size = 3.0 + random.nextDouble() * 6;
-    final duration = 2000 + random.nextInt(2000);
-    final left = random.nextDouble() * MediaQuery.of(context).size.width;
-    final top = random.nextDouble() * MediaQuery.of(context).size.height;
-    final delay = random.nextInt(1000);
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: AnimatedBuilder(
-        animation: _particleController,
-        builder: (context, child) {
-          final adjustedValue =
-              ((_particleController.value * duration + delay) % duration) /
-              duration;
-          return Opacity(
-            opacity: (math.sin(adjustedValue * math.pi)).clamp(0.0, 0.6),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }

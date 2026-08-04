@@ -22,6 +22,7 @@ class AppTheme {
   static const Color darkBackground = Color(0xFF121212);
   static const Color darkSurface = Color(0xFF1E1E1E);
   static const Color darkCard = Color(0xFF2C2C2C);
+  static const Color darkNavigationSurface = Color(0xFF242826);
 
   // Status colors
   static const Color success = Color(0xFF4CAF50);
@@ -477,13 +478,13 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: darkSurface,
+      backgroundColor: darkNavigationSurface,
       selectedItemColor: primaryGreen,
-      unselectedItemColor: Colors.grey[500],
+      unselectedItemColor: Colors.grey[400],
       selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
       unselectedLabelStyle: TextStyle(fontSize: 11),
       type: BottomNavigationBarType.fixed,
-      elevation: 8,
+      elevation: 0,
     ),
   );
 }

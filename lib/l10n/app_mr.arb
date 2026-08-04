@@ -1,10 +1,10 @@
 {
   "@@locale": "mr",
-  "appName": "Borrow Ledger",
+  "appName": "HisaabMate",
   "@appName": {
     "description": "अ‍ॅपचे नाव"
   },
-  "appSlogan": "ट्रॅक • व्यवस्थापन • सेटल",
+  "appSlogan": "Track • Split • Hisaab",
   "@appSlogan": {
     "description": "अ‍ॅप स्लोगन"
   },
@@ -674,8 +674,8 @@
   "last6Months": "मागील 6 महिने",
   "last1Year": "मागील 1 वर्ष",
   "customRange": "कस्टम रेंज",
-  "borrowLedgerStatement": "BorrowLedger स्टेटमेंट",
-  "borrowLedgerFullStatement": "BorrowLedger पूर्ण स्टेटमेंट",
+  "borrowLedgerStatement": "HisaabMate स्टेटमेंट",
+  "borrowLedgerFullStatement": "HisaabMate पूर्ण स्टेटमेंट",
   "period": "कालावधी",
   "generatedBy": "तयार केले",
   "generatedOn": "तयार केलेली तारीख",
