@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../cubit/split_cubit.dart';
+import '../widgets/app_loading_state.dart';
 import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
 import '../widgets/app_search_field.dart';
@@ -103,7 +104,7 @@ class _SplitsScreenState extends State<SplitsScreen>
         },
         builder: (context, state) {
           if (state.isLoading && state.splits.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppPageLoadingState(compact: true);
           }
 
           return RefreshIndicator(
@@ -206,32 +207,12 @@ class _SplitsScreenState extends State<SplitsScreen>
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           if (index == state.splits.length) {
-                            // Loading indicator at the end
-                            if (state.isLoadingMore) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            } else if (!state.hasMoreData &&
-                                state.splits.length > 10) {
-                              return Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Center(
-                                  child: Text(
-                                    tr.noMoreSplits,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.grey[600]
-                                          : Colors.grey[500],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
+                            return AppLoadMoreFooter(
+                              isLoading: state.isLoadingMore,
+                              hasMoreData: state.hasMoreData,
+                              hasItems: state.splits.isNotEmpty,
+                              itemCount: state.splits.length,
+                            );
                           }
 
                           final split = state.splits[index];
@@ -258,14 +239,10 @@ class _SplitsScreenState extends State<SplitsScreen>
       floatingActionButton: FloatingActionButton(
         heroTag: 'split_fab',
         onPressed: () async {
-          final cubit = context.read<SplitCubit>();
-          final result = await Navigator.push<bool>(
+          await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (_) => const AddSplitScreen()),
           );
-          if (result == true) {
-            await cubit.loadSplits();
-          }
         },
         child: const Icon(Icons.add),
       ),

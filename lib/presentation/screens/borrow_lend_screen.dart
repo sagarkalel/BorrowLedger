@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -21,13 +22,16 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/models/split_model.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
-import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
+import '../widgets/app_loading_state.dart';
 import '../widgets/contact_summary_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
+import '../widgets/share_name_prompt.dart';
 import '../widgets/transaction_list_item.dart';
 import 'transaction_details_screen.dart';
 import 'contact_wise_transactions_screen.dart';
@@ -56,6 +60,8 @@ class MergedBorrowLendScreen extends StatefulWidget {
 
 class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  static const String _splitHistoryDescriptionPrefix = 'Split history: ';
+
   @override
   bool get wantKeepAlive => true;
 
@@ -94,7 +100,6 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     log('MergedBorrowLendScreen: Loading initial data');
     final cubit = context.read<BorrowLendCubit>();
     cubit.loadAllData();
-    cubit.loadContactSummaries();
   }
 
   @override
@@ -130,9 +135,6 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     log('MergedBorrowLendScreen: Refreshing all data');
     final cubit = context.read<BorrowLendCubit>();
     await cubit.loadAllData();
-    if (_viewMode == BorrowLendViewMode.contacts) {
-      await cubit.loadContactSummaries();
-    }
   }
 
   bool _hasActiveFilters(BorrowLendState state) {
@@ -157,7 +159,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     return Scaffold(
       drawer: const SettingsDrawer(),
       appBar: AppBar(
-        title: Text(tr.people),
+        title: Text(tr.home),
         actions: [
           BlocBuilder<BorrowLendCubit, BorrowLendState>(
             builder: (context, state) {
@@ -268,10 +270,12 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     final tr = AppLocalizations.of(context)!;
     final state = context.read<BorrowLendCubit>().state;
     final transactionRepo = context.read<TransactionRepository>();
-    final profileRepo = context.read<UserProfileRepository>();
     var loadingShown = false;
 
     try {
+      final ownerName = await ensureShareOwnerName(context);
+      if (ownerName == null || !mounted) return;
+
       loadingShown = true;
       showDialog(
         context: context,
@@ -279,10 +283,6 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         builder: (_) => AppLoadingDialog(message: tr.preparingStatement),
       );
 
-      final profile = await profileRepo.getProfile();
-      final ownerName = profile.name.trim().isEmpty
-          ? tr.appName
-          : profile.name.trim();
       final transactions = await _loadLedgerStatementTransactions(
         transactionRepo,
         state,
@@ -330,19 +330,109 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         ? null
         : state.searchQuery?.trim();
 
+    if (category == null || category == AppConstants.categorySplit) {
+      final realTransactions = category == AppConstants.categorySplit
+          ? await repo.getTransactionsByCategory(AppConstants.categorySplit)
+          : await repo.getAllTransactions();
+      final splitHistoryRows = await _loadLedgerSplitHistoryRows(
+        realTransactions,
+      );
+      final merged = [...realTransactions, ...splitHistoryRows]
+        ..sort((a, b) {
+          final dateCompare = b.date.compareTo(a.date);
+          if (dateCompare != 0) return dateCompare;
+          return (b.id ?? 0).compareTo(a.id ?? 0);
+        });
+
+      return merged.where((transaction) {
+        return _matchesLedgerStatementFilters(
+          transaction,
+          category: category,
+          type: type,
+          query: query,
+        );
+      }).toList();
+    }
+
     if (query != null && query.isNotEmpty) {
       return repo.searchTransactions(query, category: category, type: type);
     }
-    if (category != null && type != null) {
+    if (type != null) {
       return repo.getTransactionsByCategoryAndType(category, type);
     }
-    if (category != null) {
-      return repo.getTransactionsByCategory(category);
+    return repo.getTransactionsByCategory(category);
+  }
+
+  Future<List<TransactionModel>> _loadLedgerSplitHistoryRows(
+    List<TransactionModel> realTransactions,
+  ) async {
+    final splitRepo = context.read<SplitRepository>();
+    final existingSplitIds = realTransactions
+        .where(
+          (transaction) =>
+              transaction.category == AppConstants.categorySplit &&
+              transaction.sourceType == AppConstants.sourceTypeSplit &&
+              transaction.sourceId != null,
+        )
+        .map((transaction) => transaction.sourceId!)
+        .toSet();
+    final splits = await splitRepo.getAllSplits(limit: 100000, offset: 0);
+    final rows = <TransactionModel>[];
+
+    for (final split in splits) {
+      final splitId = split.id;
+      if (splitId == null || existingSplitIds.contains(splitId)) continue;
+
+      final participants =
+          split.participants ?? const <SplitParticipantModel>[];
+      for (final participant in participants) {
+        final netAmount = participant.shareAmount - participant.expensePaid;
+        final displayAmount = netAmount.abs() >= 0.01
+            ? netAmount.abs()
+            : participant.shareAmount;
+
+        rows.add(
+          TransactionModel(
+            type: netAmount >= 0
+                ? AppConstants.typeLend
+                : AppConstants.typeBorrow,
+            category: AppConstants.categorySplit,
+            contactId: participant.contactId,
+            amount: displayAmount,
+            description: '$_splitHistoryDescriptionPrefix${split.title}',
+            date: split.date,
+            isSettlement: true,
+            sourceType: AppConstants.sourceTypeSplit,
+            sourceId: splitId,
+            contactName: participant.contactName,
+          ),
+        );
+      }
     }
-    if (type != null) {
-      return repo.getTransactionsByType(type);
-    }
-    return repo.getAllTransactions();
+
+    return rows;
+  }
+
+  bool _matchesLedgerStatementFilters(
+    TransactionModel transaction, {
+    required String? category,
+    required String? type,
+    required String? query,
+  }) {
+    if (category != null && transaction.category != category) return false;
+    if (type != null && transaction.type != type) return false;
+
+    final normalizedQuery = query?.trim().toLowerCase();
+    if (normalizedQuery == null || normalizedQuery.isEmpty) return true;
+
+    return (transaction.description ?? '').toLowerCase().contains(
+          normalizedQuery,
+        ) ||
+        (transaction.contactName ?? '').toLowerCase().contains(
+          normalizedQuery,
+        ) ||
+        (transaction.itemName ?? '').toLowerCase().contains(normalizedQuery) ||
+        transaction.category.toLowerCase().contains(normalizedQuery);
   }
 
   String? _statementCategoryFilter(BorrowLendState state) {
@@ -494,11 +584,12 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     );
     final closingBalance = openingBalance + periodLent - periodBorrowed;
     final generatedAt = DateTime.now();
+    final pdfTheme = await PdfReportTheme.load();
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: _ledgerPageTheme(),
+        pageTheme: _ledgerPageTheme(pdfTheme),
         build: (context) => [
           _ledgerStatementHeader(
             ownerName: ownerName,
@@ -554,22 +645,54 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   }) {
     return pw.Container(
       width: double.infinity,
-      padding: const pw.EdgeInsets.all(18),
-      decoration: _ledgerBoxDecoration(PdfColors.lightGreen100),
-      child: pw.Column(
+      padding: const pw.EdgeInsets.only(bottom: 14),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300)),
+      ),
+      child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            tr.borrowLedgerFullStatement,
-            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  tr.borrowLedgerFullStatement,
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'HisaabMate',
+                  style: pw.TextStyle(
+                    fontSize: 13,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            '${tr.period}: ${_formatDate(range.start)} - ${_formatDate(range.end)}',
+          pw.SizedBox(width: 16),
+          pw.Container(
+            width: 220,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text('${tr.generatedBy}: $ownerName'),
+                pw.SizedBox(height: 3),
+                pw.Text('${tr.generatedOn}: ${_formatDateTime(generatedAt)}'),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '${tr.period}: ${_formatDate(range.start)} - ${_formatDate(range.end)}',
+                  textAlign: pw.TextAlign.right,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text('${tr.filter}: $filterLabel'),
+              ],
+            ),
           ),
-          pw.Text('${tr.filter}: $filterLabel'),
-          pw.Text('${tr.generatedBy}: $ownerName'),
-          pw.Text('${tr.generatedOn}: ${_formatDateTime(generatedAt)}'),
         ],
       ),
     );
@@ -582,44 +705,21 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     required double closingBalance,
     required AppLocalizations tr,
   }) {
-    return pw.Row(
-      children: [
-        _ledgerMetric(tr.opening, openingBalance),
-        pw.SizedBox(width: 8),
-        _ledgerMetric(tr.youGave, periodLent),
-        pw.SizedBox(width: 8),
-        _ledgerMetric(tr.youGot, periodBorrowed),
-        pw.SizedBox(width: 8),
-        _ledgerMetric(tr.closing, closingBalance),
+    return pw.TableHelper.fromTextArray(
+      headers: [tr.opening, tr.youGave, tr.youGot, tr.closing],
+      data: [
+        [
+          _ledgerMoney(openingBalance),
+          _ledgerMoney(periodLent),
+          _ledgerMoney(periodBorrowed),
+          _ledgerMoney(closingBalance),
+        ],
       ],
-    );
-  }
-
-  pw.Widget _ledgerMetric(String label, double amount) {
-    final color = amount >= 0 ? PdfColors.green700 : PdfColors.deepOrange700;
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.all(10),
-        decoration: _ledgerBoxDecoration(PdfColors.grey100),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              label,
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              _ledgerMoney(amount),
-              style: pw.TextStyle(
-                fontSize: 13,
-                fontWeight: pw.FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+      cellStyle: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+      cellAlignment: pw.Alignment.center,
     );
   }
 
@@ -637,40 +737,57 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         tr.amount,
       ],
       data: transactions.map((transaction) {
+        final isSplitHistory = _isSplitHistoryOnly(transaction);
         return [
           _formatDate(transaction.date),
           transaction.contactName ?? '-',
-          transaction.type == AppConstants.typeLend ? tr.youGave : tr.youGot,
+          isSplitHistory
+              ? tr.settledBadge
+              : transaction.type == AppConstants.typeLend
+              ? tr.youGave
+              : tr.youGot,
           _ledgerCategoryLabel(transaction.category, tr),
-          _ledgerTransactionDetails(transaction),
-          _ledgerMoney(
-            transaction.type == AppConstants.typeLend
-                ? transaction.amount
-                : -transaction.amount,
-          ),
+          _ledgerTransactionDetails(transaction, tr),
+          isSplitHistory
+              ? tr.settled
+              : _ledgerMoney(
+                  transaction.type == AppConstants.typeLend
+                      ? transaction.amount
+                      : -transaction.amount,
+                ),
         ];
       }).toList(),
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
       headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-      cellStyle: const pw.TextStyle(fontSize: 7.5),
+      cellStyle: const pw.TextStyle(fontSize: 7),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
       oddRowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      headerAlignment: pw.Alignment.centerLeft,
       cellAlignment: pw.Alignment.centerLeft,
-      cellAlignments: const {5: pw.Alignment.centerRight},
+      cellAlignments: const {
+        0: pw.Alignment.centerLeft,
+        1: pw.Alignment.centerLeft,
+        2: pw.Alignment.centerLeft,
+        3: pw.Alignment.centerLeft,
+        4: pw.Alignment.centerLeft,
+        5: pw.Alignment.centerRight,
+      },
       columnWidths: const {
-        0: pw.FixedColumnWidth(56),
-        2: pw.FixedColumnWidth(36),
+        0: pw.FixedColumnWidth(54),
+        1: pw.FixedColumnWidth(74),
+        2: pw.FixedColumnWidth(50),
         3: pw.FixedColumnWidth(44),
-        5: pw.FixedColumnWidth(58),
+        5: pw.FixedColumnWidth(62),
       },
     );
   }
 
-  pw.PageTheme _ledgerPageTheme() {
+  pw.PageTheme _ledgerPageTheme(pw.ThemeData theme) {
     return pw.PageTheme(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(28),
+      theme: theme,
       buildBackground: (_) => pw.FullPage(
         ignoreMargins: true,
         child: pw.Container(color: PdfColors.white),
@@ -688,6 +805,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   double _ledgerNet(List<TransactionModel> transactions) {
     return transactions.fold<double>(0, (sum, transaction) {
+      if (_isSplitHistoryOnly(transaction)) return sum;
       return sum +
           (transaction.type == AppConstants.typeLend
               ? transaction.amount
@@ -697,8 +815,19 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   double _ledgerSumByType(List<TransactionModel> transactions, String type) {
     return transactions
-        .where((transaction) => transaction.type == type)
+        .where(
+          (transaction) =>
+              !_isSplitHistoryOnly(transaction) && transaction.type == type,
+        )
         .fold<double>(0, (sum, transaction) => sum + transaction.amount);
+  }
+
+  bool _isSplitHistoryOnly(TransactionModel transaction) {
+    return transaction.category == AppConstants.categorySplit &&
+        transaction.isSettlement &&
+        transaction.sourceType == AppConstants.sourceTypeSplit &&
+        transaction.description?.startsWith(_splitHistoryDescriptionPrefix) ==
+            true;
   }
 
   String _ledgerFilterLabel(BorrowLendState state, AppLocalizations tr) {
@@ -750,7 +879,16 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     }
   }
 
-  String _ledgerTransactionDetails(TransactionModel transaction) {
+  String _ledgerTransactionDetails(
+    TransactionModel transaction,
+    AppLocalizations tr,
+  ) {
+    if (_isSplitHistoryOnly(transaction)) {
+      final splitTitle = transaction.description
+          ?.replaceFirst(_splitHistoryDescriptionPrefix, '')
+          .trim();
+      return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
+    }
     if (transaction.isSettlement) return 'Settlement';
     final parts = [
       if (transaction.description?.trim().isNotEmpty == true)
@@ -792,48 +930,26 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     return BlocBuilder<BorrowLendCubit, BorrowLendState>(
       builder: (context, state) {
         if (_viewMode == BorrowLendViewMode.contacts) {
-          if (state.isLoadingMoreContacts) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            );
-          }
+          return AppLoadMoreFooter(
+            isLoading: state.isLoadingMoreContacts,
+            hasMoreData: state.hasMoreContacts,
+            hasItems: state.contactSummaries.isNotEmpty,
+            itemCount: state.contactSummaries.length,
+          );
         } else {
-          if (state.isLoadingMore) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            );
-          }
+          return AppLoadMoreFooter(
+            isLoading: state.isLoadingMore,
+            hasMoreData: state.hasMoreData,
+            hasItems: state.transactions.isNotEmpty,
+            itemCount: state.transactions.length,
+          );
         }
-        return const SizedBox.shrink();
       },
     );
   }
 
   Widget _buildInitialLoadingSliver() {
-    return const SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2.6),
-        ),
-      ),
-    );
+    return const AppSliverLoadingState(compact: true);
   }
 
   Widget _buildDashboardSummary() {
@@ -1361,7 +1477,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
     return BlocBuilder<BorrowLendCubit, BorrowLendState>(
       builder: (context, state) {
-        if (state.isLoadingContacts && state.contactSummaries.isEmpty) {
+        if ((state.isLoadingContacts || state.isLoading) &&
+            state.contactSummaries.isEmpty) {
           return _buildInitialLoadingSliver();
         }
 

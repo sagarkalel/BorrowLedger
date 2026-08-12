@@ -64,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.people_outline_rounded),
               activeIcon: const Icon(Icons.people_rounded, size: 28),
-              label: tr.people,
+              label: tr.home,
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.pie_chart_rounded),

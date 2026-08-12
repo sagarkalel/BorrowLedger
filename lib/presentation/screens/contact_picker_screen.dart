@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +9,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 
 import '../../data/models/contact_model.dart';
 import '../../data/repositories/contact_repository.dart';
+import '../widgets/app_loading_state.dart';
 import '../widgets/app_search_field.dart';
 import '../widgets/empty_state_widget.dart';
 import 'contact_edit_screen.dart';
@@ -18,12 +22,16 @@ class ContactPickerScreen extends StatefulWidget {
 }
 
 class _ContactPickerScreenState extends State<ContactPickerScreen> {
+  static const int _displayPageSize = 40;
+
   List<Contact> _phoneContacts = [];
   List<Contact> _filteredContacts = [];
   Set<String> _existingPhones = {}; // Track existing contact phone numbers
   Map<String, ContactModel> _existingContactsByPhone = {};
   bool _isLoading = true;
   bool _isLoadingExisting = true;
+  bool _isLoadingMore = false;
+  int _visibleContactCount = _displayPageSize;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -33,6 +41,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
     super.initState();
     _loadExistingContacts();
     _loadContacts();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -40,6 +49,42 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  List<Contact> get _visibleContacts =>
+      _filteredContacts.take(_visibleContactCount).toList();
+
+  bool get _hasMoreVisibleContacts =>
+      _visibleContactCount < _filteredContacts.length;
+
+  void _onScroll() {
+    if (!_scrollController.hasClients ||
+        _isLoading ||
+        _isLoadingMore ||
+        !_hasMoreVisibleContacts) {
+      return;
+    }
+
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreVisibleContacts();
+    }
+  }
+
+  Future<void> _loadMoreVisibleContacts() async {
+    if (_isLoadingMore || !_hasMoreVisibleContacts) return;
+
+    setState(() => _isLoadingMore = true);
+    await AppLoadingDelay.loadMore();
+    if (!mounted) return;
+
+    setState(() {
+      _visibleContactCount = math.min(
+        _visibleContactCount + _displayPageSize,
+        _filteredContacts.length,
+      );
+      _isLoadingMore = false;
+    });
   }
 
   /// Load existing contacts from database to check duplicates
@@ -132,6 +177,10 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
                 (a, b) => (a.displayName ?? '').compareTo(b.displayName ?? ''),
               );
         _filteredContacts = _phoneContacts;
+        _visibleContactCount = math.min(
+          _displayPageSize,
+          _filteredContacts.length,
+        );
         _isLoading = false;
       });
     } catch (e) {
@@ -158,6 +207,10 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
           return name.contains(searchLower) || phoneMatch;
         }).toList();
       }
+      _visibleContactCount = math.min(
+        _displayPageSize,
+        _filteredContacts.length,
+      );
     });
   }
 
@@ -193,23 +246,9 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
               color: Colors.transparent,
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(
-                        theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    tr.checkingExistingContacts,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    ),
+                  AppInlineLoadingState(
+                    message: tr.checkingExistingContacts,
+                    padding: EdgeInsets.zero,
                   ),
                 ],
               ),
@@ -241,7 +280,7 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
           // Contact list
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppPageLoadingState(compact: true)
                 : _filteredContacts.isEmpty
                 ? EmptyStateWidget(
                     icon: Icons.person_search_rounded,
@@ -251,13 +290,23 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
                     message: _searchQuery.isEmpty
                         ? tr.noContactsAvailableInPhone
                         : tr.tryDifferentSearchTerm,
+                    compact: true,
                   )
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                    itemCount: _filteredContacts.length,
+                    itemCount: _visibleContacts.length + 1,
                     itemBuilder: (context, index) {
-                      final contact = _filteredContacts[index];
+                      if (index == _visibleContacts.length) {
+                        return AppLoadMoreFooter(
+                          isLoading: _isLoadingMore,
+                          hasMoreData: _hasMoreVisibleContacts,
+                          hasItems: _visibleContacts.isNotEmpty,
+                          itemCount: _visibleContacts.length,
+                        );
+                      }
+
+                      final contact = _visibleContacts[index];
                       final isExisting = _isContactExisting(contact);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),

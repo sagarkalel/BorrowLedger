@@ -6,6 +6,8 @@ class SplitExpenseModel {
   final String? description;
   final DateTime date;
   final String status; // pending, settled
+  final String settlementRouteMode;
+  final int? settlementMediatorContactId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -20,6 +22,8 @@ class SplitExpenseModel {
     this.description,
     required this.date,
     required this.status,
+    this.settlementRouteMode = 'optimized',
+    this.settlementMediatorContactId,
     DateTime? createdAt,
     DateTime? updatedAt,
     this.participants,
@@ -35,6 +39,8 @@ class SplitExpenseModel {
       'description': description,
       'date': date.toIso8601String(),
       'status': status,
+      'settlement_route_mode': settlementRouteMode,
+      'settlement_mediator_contact_id': settlementMediatorContactId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -49,6 +55,10 @@ class SplitExpenseModel {
       description: map['description'] as String?,
       date: DateTime.parse(map['date'] as String),
       status: map['status'] as String,
+      settlementRouteMode:
+          map['settlement_route_mode'] as String? ?? 'optimized',
+      settlementMediatorContactId:
+          map['settlement_mediator_contact_id'] as int?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -62,6 +72,9 @@ class SplitExpenseModel {
     String? description,
     DateTime? date,
     String? status,
+    String? settlementRouteMode,
+    int? settlementMediatorContactId,
+    bool clearSettlementMediatorContactId = false,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<SplitParticipantModel>? participants,
@@ -74,6 +87,10 @@ class SplitExpenseModel {
       description: description ?? this.description,
       date: date ?? this.date,
       status: status ?? this.status,
+      settlementRouteMode: settlementRouteMode ?? this.settlementRouteMode,
+      settlementMediatorContactId: clearSettlementMediatorContactId
+          ? null
+          : (settlementMediatorContactId ?? this.settlementMediatorContactId),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       participants: participants ?? this.participants,

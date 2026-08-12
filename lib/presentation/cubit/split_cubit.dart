@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/utils/app_loading_delay.dart';
 import '../../data/repositories/split_repository.dart';
 
 // Pagination constants for splits
@@ -111,6 +112,10 @@ class SplitCubit extends Cubit<SplitState> {
     );
 
     try {
+      final loadingDelay = state.splits.isEmpty
+          ? AppLoadingDelay.initial()
+          : AppLoadingDelay.refresh();
+
       if (!_hasSyncedSplitTransactions) {
         await _repository.syncAllSplitTransactions();
         _hasSyncedSplitTransactions = true;
@@ -129,6 +134,8 @@ class SplitCubit extends Cubit<SplitState> {
           splits.length >= SplitPaginationConstants.defaultPageSize;
 
       log('SplitCubit: Loaded ${splits.length} splits (total: $totalCount)');
+
+      await loadingDelay;
 
       emit(
         state.copyWith(
@@ -167,7 +174,9 @@ class SplitCubit extends Cubit<SplitState> {
     emit(state.copyWith(isLoadingMore: true, error: null));
 
     try {
+      final loadingDelay = AppLoadingDelay.loadMore();
       final newSplits = await _loadSplitsPage(nextPage);
+      await loadingDelay;
 
       if (newSplits.isEmpty) {
         log('SplitCubit: No more splits to load');
@@ -253,17 +262,13 @@ class SplitCubit extends Cubit<SplitState> {
   ) async {
     log('SplitCubit: Creating split - ${split.title}');
     try {
-      final splitId = await _repository.createSplitExpense(split);
+      final splitId = await _repository.createSplitWithParticipants(
+        split,
+        participants,
+      );
       log('SplitCubit: Split created with ID: $splitId');
-
-      // Update participants with the split ID
-      final updatedParticipants = participants
-          .map((p) => p.copyWith(splitId: splitId))
-          .toList();
-
-      await _repository.createParticipants(updatedParticipants);
       log('SplitCubit: ${participants.length} participants added');
-      await _repository.syncSplitTransactions(splitId);
+      _hasSyncedSplitTransactions = true;
 
       emit(
         state.copyWith(successMessage: 'Split expense created successfully'),
@@ -282,12 +287,8 @@ class SplitCubit extends Cubit<SplitState> {
   ]) async {
     log('SplitCubit: Updating split ID: ${split.id}');
     try {
-      await _repository.updateSplitExpense(split);
-      if (participants != null && split.id != null) {
-        await _repository.updateSplitParticipants(split.id!, participants);
-      } else if (split.id != null) {
-        await _repository.syncSplitTransactions(split.id!);
-      }
+      await _repository.updateSplitWithParticipants(split, participants);
+      _hasSyncedSplitTransactions = true;
       log('SplitCubit: Split updated successfully');
       emit(
         state.copyWith(successMessage: 'Split expense updated successfully'),
@@ -304,6 +305,7 @@ class SplitCubit extends Cubit<SplitState> {
     log('SplitCubit: Deleting split ID: $id');
     try {
       await _repository.deleteSplit(id);
+      _hasSyncedSplitTransactions = true;
       log('SplitCubit: Split deleted successfully');
       emit(
         state.copyWith(successMessage: 'Split expense deleted successfully'),
@@ -320,6 +322,7 @@ class SplitCubit extends Cubit<SplitState> {
     log('SplitCubit: Marking participant $participantId as paid');
     try {
       await _repository.markParticipantAsPaid(participantId, amount);
+      _hasSyncedSplitTransactions = true;
       log('SplitCubit: Participant marked as paid');
       emit(state.copyWith(successMessage: 'Marked as paid'));
       await loadSplits();
@@ -335,6 +338,7 @@ class SplitCubit extends Cubit<SplitState> {
     log('SplitCubit: Settling split ID: $splitId');
     try {
       await _repository.settleSplit(splitId);
+      _hasSyncedSplitTransactions = true;
       log(
         'SplitCubit: Split settled successfully - all participants marked as paid',
       );

@@ -37,11 +37,13 @@ class ContactSummaryCard extends StatelessWidget {
 
     // netBalance > 0 means you'll GET money (they owe you) - Green
     // netBalance < 0 means you'll GIVE money (you owe them) - Orange
-    final isPositive = netBalance >= 0;
-    final directionColor = isPositive
-        ? AppTheme
-              .moneyInColor // Green - you'll get
-        : AppTheme.moneyOutColor; // Orange - you'll give
+    final isSettled = netBalance.abs() < 0.01;
+    final isPositive = netBalance > 0;
+    final directionColor = isSettled
+        ? colorScheme.onSurfaceVariant
+        : isPositive
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -55,10 +57,13 @@ class ContactSummaryCard extends StatelessWidget {
               // Avatar with status indicator
               AppListAvatar(
                 label: contactName,
-                indicatorIcon: isPositive
+                indicatorIcon: isSettled
+                    ? Icons.done_all_rounded
+                    : isPositive
                     ? Icons.call_received
                     : Icons.call_made,
                 indicatorColor: directionColor,
+                isSubtleIndicator: isSettled,
                 size: 38,
               ),
               const SizedBox(width: 10),
@@ -211,6 +216,7 @@ class ContactSummaryCard extends StatelessWidget {
     AppLocalizations tr,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isSettled = netBalance.abs() < 0.01;
 
     return Row(
       children: [
@@ -223,28 +229,37 @@ class ContactSummaryCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '₹',
+                  isSettled ? '₹0' : '₹',
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: directionColor,
-                  ),
-                ),
-                Text(
-                  netBalance.abs().toStringAsFixed(2),
-                  style: TextStyle(
-                    fontSize: 16,
+                    fontSize: isSettled ? 16 : 12,
                     fontWeight: FontWeight.w800,
                     color: directionColor,
                   ),
                 ),
+                if (!isSettled)
+                  Text(
+                    netBalance.abs().toStringAsFixed(2),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: directionColor,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 3),
             // Direction badge
             AppPillBadge(
-              label: isPositive ? tr.youWillGet : tr.youWillGive,
-              icon: isPositive ? Icons.call_received : Icons.call_made,
+              label: isSettled
+                  ? tr.settled
+                  : isPositive
+                  ? tr.youWillGet
+                  : tr.youWillGive,
+              icon: isSettled
+                  ? Icons.done_all_rounded
+                  : isPositive
+                  ? Icons.call_received
+                  : Icons.call_made,
               color: directionColor,
               fontSize: 7.5,
             ),

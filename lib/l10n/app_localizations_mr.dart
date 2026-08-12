@@ -102,6 +102,9 @@ class AppLocalizationsMr extends AppLocalizations {
   String get unknown => 'अज्ञात';
 
   @override
+  String get you => 'तुम्ही';
+
+  @override
   String get youWillGet => 'तुम्हाला मिळेल';
 
   @override
@@ -139,6 +142,9 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get comment_navigation => '========== Navigation ==========';
+
+  @override
+  String get home => 'होम';
 
   @override
   String get people => 'लोक';
@@ -455,6 +461,17 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get thisContactIsAlreadyAdded => 'हा संपर्क आधीच जोडला आहे';
+
+  @override
+  String get phoneAlreadySavedTitle => 'फोन आधीच सेव आहे';
+
+  @override
+  String phoneAlreadySavedMessage(Object contactName) {
+    return 'हा नंबर $contactName या नावाने आधीच सेव आहे. या स्प्लिटसाठी तोच संपर्क वापरायचा?';
+  }
+
+  @override
+  String get useExistingContact => 'आधीचा वापरा';
 
   @override
   String get contactsAlreadyAddedMarked =>
@@ -804,6 +821,29 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get settlementsToClose => 'बंद करायचे सेटलमेंट';
+
+  @override
+  String get settlementRoute => 'हिशोबाचा मार्ग';
+
+  @override
+  String get optimizedRoute => 'ऑप्टिमाइझ्ड';
+
+  @override
+  String get settleViaPerson => 'व्यक्तीमार्फत';
+
+  @override
+  String get routeThroughTrustedPerson => 'पेमेंट विश्वासू व्यक्तीमार्फत करा.';
+
+  @override
+  String get selectRoutePerson => 'मार्गासाठी व्यक्ती निवडा';
+
+  @override
+  String get routePlanOnly =>
+      'हे फक्त सुचवलेला पेमेंट मार्ग बदलते. प्रत्यक्ष पेमेंट झाल्यावरच paid मार्क करा.';
+
+  @override
+  String get settlementRouteCompleted =>
+      'सेटलमेंट याच मार्गाने पूर्ण केले गेले.';
 
   @override
   String get settlingWillCloseThesePayments =>
@@ -1840,6 +1880,15 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get showLess => 'कमी दाखवा';
+
+  @override
+  String get allCaughtUp => 'सगळं पूर्ण';
+
+  @override
+  String get noMoreData => 'आणखी डेटा नाही';
+
+  @override
+  String get noMoreRecords => 'आणखी रेकॉर्ड नाहीत';
 
   @override
   String get viewAll => 'सर्व पहा';

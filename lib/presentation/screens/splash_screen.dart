@@ -183,8 +183,8 @@ class _SplashScreenState extends State<SplashScreen>
             colors: [
               const Color(0xFFF7FBFA),
               const Color(0xFFEFF7F5),
-              AppTheme.lightGreen.withValues(alpha: 0.14),
-              AppTheme.primaryBlue.withValues(alpha: 0.12),
+              AppTheme.lightGreen.withValues(alpha: 0.4),
+              AppTheme.primaryBlue.withValues(alpha: 0.3),
             ],
             stops: const [0.0, 0.45, 0.75, 1.0],
           ),

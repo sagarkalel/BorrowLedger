@@ -1,10 +1,12 @@
 import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +16,7 @@ import '../../data/models/contact_model.dart';
 import '../../data/repositories/contact_repository.dart';
 import '../../data/repositories/udhari_item_repository.dart';
 import '../../data/repositories/udhari_quantity_repository.dart';
+import '../widgets/app_loading_state.dart';
 import '../widgets/app_amount_field.dart';
 import '../widgets/app_date_field.dart';
 import '../widgets/app_segmented_control.dart';
@@ -197,7 +200,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
             ),
       body: _isLoadingContacts
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppPageLoadingState(compact: true)
           : SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(12, 10, 12, 16 + bottomInset),
               child: Form(
@@ -336,6 +339,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         hintText: tr.enterPhoneNumber,
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
+                        inputFormatters: FormInputUtils.phoneInputFormatters,
+                        validator: (value) {
+                          if (!FormInputUtils.isValidOptionalPhone(value)) {
+                            return tr.invalidPhone;
+                          }
+                          return null;
+                        },
                       ),
                     ],
                     const SizedBox(height: 10),
@@ -593,6 +603,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     String? prefixText,
     IconData? prefixIcon,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     TextCapitalization textCapitalization = TextCapitalization.sentences,
     int? maxLines = 1,
@@ -605,6 +616,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       prefixText: prefixText,
       prefixIcon: prefixIcon,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       validator: validator,
       textCapitalization: textCapitalization,
       maxLines: maxLines,
@@ -787,6 +799,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
         if (name.isEmpty) {
           showFailureSnackbar(context, tr.pleaseEnterContactName);
+          return;
+        }
+        if (!FormInputUtils.isValidOptionalPhone(phone)) {
+          showFailureSnackbar(context, tr.invalidPhone);
           return;
         }
 

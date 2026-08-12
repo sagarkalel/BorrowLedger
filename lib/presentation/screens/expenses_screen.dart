@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
+import 'package:borrow_ledger/presentation/widgets/app_loading_state.dart';
 import 'package:borrow_ledger/presentation/widgets/app_list_avatar.dart';
 import 'package:borrow_ledger/presentation/widgets/app_pill_badge.dart';
 import 'package:borrow_ledger/presentation/widgets/app_search_field.dart';
@@ -41,6 +42,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
 
   ExpenseViewMode _viewMode = ExpenseViewMode.overview;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String? _selectedCategory;
 
   // Statistics data
@@ -55,12 +57,25 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
     });
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_viewMode != ExpenseViewMode.list || !_scrollController.hasClients) {
+      return;
+    }
+
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<ExpenseCubit>().loadMoreExpenses();
+    }
   }
 
   Future<void> _refreshData() async {
@@ -139,6 +154,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
           return RefreshIndicator(
             onRefresh: _refreshData,
             child: CustomScrollView(
+              controller: _scrollController,
               slivers: [
                 // Dashboard Summary
                 SliverToBoxAdapter(child: _buildDashboardSummary()),
@@ -196,13 +212,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
         if (_isLoadingStats && state.isLoading) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 2.6),
-              ),
-            ),
+            child: Center(child: AppInlineLoadingState()),
           );
         }
 
@@ -377,6 +387,10 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
   }
 
   List<Widget> _buildOverviewContent() {
+    if (_isLoadingStats) {
+      return [const AppSliverLoadingState(compact: true)];
+    }
+
     if (_totalExpenses == 0 && _categoryData.isEmpty) {
       return [SliverFillRemaining(child: _buildEmptyOverview())];
     }
@@ -928,19 +942,12 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     return BlocBuilder<ExpenseCubit, ExpenseState>(
       buildWhen: (previous, current) =>
           previous.expenses != current.expenses ||
-          previous.isLoading != current.isLoading,
+          previous.isLoading != current.isLoading ||
+          previous.isLoadingMore != current.isLoadingMore ||
+          previous.hasMoreData != current.hasMoreData,
       builder: (context, state) {
-        if (state.isLoading) {
-          return const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 2.6),
-              ),
-            ),
-          );
+        if (state.isLoading && state.expenses.isEmpty) {
+          return const AppSliverLoadingState(compact: true);
         }
 
         if (state.expenses.isEmpty) {
@@ -963,9 +970,18 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
+              if (index == state.expenses.length) {
+                return AppLoadMoreFooter(
+                  isLoading: state.isLoadingMore,
+                  hasMoreData: state.hasMoreData,
+                  hasItems: state.expenses.isNotEmpty,
+                  itemCount: state.expenses.length,
+                );
+              }
+
               final expense = state.expenses[index];
               return _buildExpenseCard(expense);
-            }, childCount: state.expenses.length),
+            }, childCount: state.expenses.length + 1),
           ),
         );
       },

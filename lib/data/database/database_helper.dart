@@ -124,6 +124,8 @@ class DatabaseHelper {
       description TEXT,
       date TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
+      settlement_route_mode TEXT NOT NULL DEFAULT 'optimized',
+      settlement_mediator_contact_id INTEGER,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
@@ -214,6 +216,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_expenses_status ON split_expenses(status)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_expenses_route ON split_expenses(settlement_route_mode, settlement_mediator_contact_id)',
     );
 
     // Split participants indexes
@@ -489,6 +494,36 @@ class DatabaseHelper {
       log('DatabaseHelper: Participant expense payments added');
     }
 
+    if (oldVersion < 10) {
+      log(
+        'DatabaseHelper: Upgrading to version 10 - Adding split settlement routing',
+      );
+
+      try {
+        await db.execute(
+          'ALTER TABLE split_expenses ADD COLUMN settlement_route_mode TEXT NOT NULL DEFAULT "optimized"',
+        );
+      } catch (e) {
+        log('DatabaseHelper: settlement_route_mode may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE split_expenses ADD COLUMN settlement_mediator_contact_id INTEGER',
+        );
+      } catch (e) {
+        log(
+          'DatabaseHelper: settlement_mediator_contact_id may already exist: $e',
+        );
+      }
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_split_expenses_route ON split_expenses(settlement_route_mode, settlement_mediator_contact_id)',
+      );
+
+      log('DatabaseHelper: Split settlement routing added');
+    }
+
     // Ensure all indexes exist (for any version upgrade)
     await _createIndexes(db);
     log('DatabaseHelper: Database upgrade completed');
@@ -581,6 +616,11 @@ class DatabaseHelper {
       log('DatabaseHelper: Query was: $query');
       rethrow;
     }
+  }
+
+  Future<T> transaction<T>(Future<T> Function(Transaction txn) action) async {
+    final db = await database;
+    return db.transaction(action);
   }
 
   Future<int> rawInsert(String query, [List<Object?>? arguments]) async {

@@ -102,6 +102,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get unknown => 'अज्ञात';
 
   @override
+  String get you => 'आप';
+
+  @override
   String get youWillGet => 'आपको मिलेगा';
 
   @override
@@ -139,6 +142,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get comment_navigation => '========== Navigation ==========';
+
+  @override
+  String get home => 'होम';
 
   @override
   String get people => 'लोग';
@@ -455,6 +461,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get thisContactIsAlreadyAdded => 'यह संपर्क पहले से जोड़ा हुआ है';
+
+  @override
+  String get phoneAlreadySavedTitle => 'फोन पहले से सेव है';
+
+  @override
+  String phoneAlreadySavedMessage(Object contactName) {
+    return 'यह नंबर $contactName के नाम से पहले से सेव है। इस स्प्लिट के लिए वही संपर्क इस्तेमाल करें?';
+  }
+
+  @override
+  String get useExistingContact => 'मौजूदा इस्तेमाल करें';
 
   @override
   String get contactsAlreadyAddedMarked =>
@@ -803,6 +820,30 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settlementsToClose => 'बंद किए जाने वाले सेटलमेंट';
+
+  @override
+  String get settlementRoute => 'हिसाब का रास्ता';
+
+  @override
+  String get optimizedRoute => 'ऑप्टिमाइज़्ड';
+
+  @override
+  String get settleViaPerson => 'किसी व्यक्ति के जरिए';
+
+  @override
+  String get routeThroughTrustedPerson =>
+      'भुगतान किसी भरोसेमंद व्यक्ति के जरिए कराएं।';
+
+  @override
+  String get selectRoutePerson => 'रास्ते के लिए व्यक्ति चुनें';
+
+  @override
+  String get routePlanOnly =>
+      'यह सिर्फ सुझाया गया भुगतान रास्ता बदलता है। असल में भुगतान होने के बाद ही paid मार्क करें।';
+
+  @override
+  String get settlementRouteCompleted =>
+      'सेटलमेंट इसी रास्ते से पूरा किया गया था।';
 
   @override
   String get settlingWillCloseThesePayments =>
@@ -1839,6 +1880,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get showLess => 'कम दिखाएं';
+
+  @override
+  String get allCaughtUp => 'सब पूरा';
+
+  @override
+  String get noMoreData => 'और डेटा नहीं';
+
+  @override
+  String get noMoreRecords => 'और रिकॉर्ड नहीं';
 
   @override
   String get viewAll => 'सभी देखें';

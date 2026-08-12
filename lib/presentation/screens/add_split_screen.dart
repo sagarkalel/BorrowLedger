@@ -1,4 +1,6 @@
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
+import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +18,33 @@ import '../widgets/app_date_field.dart';
 import '../widgets/app_dialog_components.dart';
 import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
+import '../widgets/app_segmented_control.dart';
 import '../widgets/custom_text_field.dart';
 import 'contact_picker_screen.dart';
+
+class _SettlementRouteStep {
+  final String fromName;
+  final String toName;
+  final double amount;
+
+  const _SettlementRouteStep({
+    required this.fromName,
+    required this.toName,
+    required this.amount,
+  });
+}
+
+class _AddParticipantSheetResult {
+  final bool shouldPickPhoneContact;
+  final ContactModel? manualContact;
+
+  const _AddParticipantSheetResult.phoneContacts()
+    : shouldPickPhoneContact = true,
+      manualContact = null;
+
+  const _AddParticipantSheetResult.manual(this.manualContact)
+    : shouldPickPhoneContact = false;
+}
 
 class AddSplitScreen extends StatefulWidget {
   final SplitExpenseModel? split;
@@ -38,6 +65,8 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   DateTime _selectedDate = DateTime.now();
   final List<ParticipantData> _participants = [];
   bool _splitEqually = true;
+  String _settlementRouteMode = AppConstants.splitRouteOptimized;
+  int? _settlementMediatorContactId;
 
   @override
   void initState() {
@@ -50,6 +79,8 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       _paidByUserController.text = widget.split!.paidByUser.toString();
       _descriptionController.text = widget.split!.description ?? '';
       _selectedDate = widget.split!.date;
+      _settlementRouteMode = widget.split!.settlementRouteMode;
+      _settlementMediatorContactId = widget.split!.settlementMediatorContactId;
 
       // Load participants
       if (widget.split!.participants != null) {
@@ -66,6 +97,16 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             ),
           );
         }
+      }
+
+      if (_settlementRouteMode == AppConstants.splitRouteMediator &&
+          _settlementMediatorContactId != null &&
+          !_participants.any(
+            (participant) =>
+                participant.contact.id == _settlementMediatorContactId,
+          )) {
+        _settlementRouteMode = AppConstants.splitRouteOptimized;
+        _settlementMediatorContactId = null;
       }
     }
   }
@@ -434,6 +475,11 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               _buildPaymentCoverageSummary(context),
               const SizedBox(height: 10),
 
+              if (_canUseSettlementRoute) ...[
+                _buildSettlementRouteSection(isDark),
+                const SizedBox(height: 10),
+              ],
+
               CustomTextField(
                 controller: _descriptionController,
                 labelText: tr.descriptionOptional,
@@ -459,6 +505,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     final shareAmount = _splitEqually
         ? _calculateEqualShare()
         : participant.shareAmount;
+    final tr = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -514,7 +561,16 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   ),
                   onPressed: () {
                     setState(() {
+                      if (_settlementMediatorContactId ==
+                          participant.contact.id) {
+                        _settlementRouteMode = AppConstants.splitRouteOptimized;
+                        _settlementMediatorContactId = null;
+                      }
                       _participants.removeAt(index);
+                      if (!_canUseSettlementRoute) {
+                        _settlementRouteMode = AppConstants.splitRouteOptimized;
+                        _settlementMediatorContactId = null;
+                      }
                       if (_splitEqually) {
                         _calculateShares();
                       }
@@ -529,13 +585,31 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 Expanded(
                   child: _splitEqually
                       ? _buildReadonlyAmountTile(
-                          labelText: 'Share',
+                          labelText: tr.shareAmount,
                           value: shareAmount,
                         )
                       : _buildParticipantAmountField(
                           key: ValueKey('share-${participant.contact.id}'),
-                          labelText: 'Share',
+                          labelText: tr.shareAmount,
                           initialValue: participant.shareAmount,
+                          validator: (value) {
+                            final amount = double.tryParse(value ?? '') ?? 0;
+                            if (amount < 0) return tr.invalid;
+                            final totalAmount = _totalAmount;
+                            if (totalAmount <= 0) return null;
+                            final otherShares = _participants
+                                .asMap()
+                                .entries
+                                .where((entry) => entry.key != index)
+                                .fold<double>(
+                                  0,
+                                  (sum, entry) => sum + entry.value.shareAmount,
+                                );
+                            if (otherShares + amount > totalAmount + 0.01) {
+                              return tr.totalSharesExceedTotal;
+                            }
+                            return null;
+                          },
                           onChanged: (amount) {
                             setState(() {
                               _participants[index].shareAmount = amount;
@@ -548,8 +622,13 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 Expanded(
                   child: _buildParticipantAmountField(
                     key: ValueKey('paid-${participant.contact.id}'),
-                    labelText: 'Paid bill',
+                    labelText: tr.paidDuringBill,
                     initialValue: participant.expensePaid,
+                    validator: (value) {
+                      final amount = double.tryParse(value ?? '') ?? 0;
+                      if (amount < 0) return tr.invalid;
+                      return null;
+                    },
                     onChanged: (amount) {
                       setState(() {
                         _participants[index].expensePaid = amount;
@@ -674,6 +753,231 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     );
   }
 
+  Widget _buildSettlementRouteSection(bool isDark) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final previewSteps = _buildSettlementRoutePreview(tr);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.route_rounded, size: 18, color: AppTheme.splitColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tr.settlementRoute,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              tr.routeThroughTrustedPerson,
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildRouteChoiceChip(
+                    label: tr.optimizedRoute,
+                    icon: Icons.auto_awesome_rounded,
+                    isSelected:
+                        _settlementRouteMode ==
+                        AppConstants.splitRouteOptimized,
+                    onSelected: () => setState(() {
+                      _settlementRouteMode = AppConstants.splitRouteOptimized;
+                      _settlementMediatorContactId = null;
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildRouteChoiceChip(
+                    label: tr.you,
+                    icon: Icons.person_pin_circle_rounded,
+                    isSelected:
+                        _settlementRouteMode ==
+                            AppConstants.splitRouteMediator &&
+                        _settlementMediatorContactId == null,
+                    onSelected: () => setState(() {
+                      _settlementRouteMode = AppConstants.splitRouteMediator;
+                      _settlementMediatorContactId = null;
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  ..._participants.map(
+                    (participant) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _buildRouteChoiceChip(
+                        label: participant.contact.name,
+                        icon: Icons.person_pin_circle_rounded,
+                        isSelected:
+                            _settlementRouteMode ==
+                                AppConstants.splitRouteMediator &&
+                            _settlementMediatorContactId ==
+                                participant.contact.id,
+                        onSelected: () => setState(() {
+                          _settlementRouteMode =
+                              AppConstants.splitRouteMediator;
+                          _settlementMediatorContactId = participant.contact.id;
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (previewSteps.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              AppDialogNotice(
+                color: AppTheme.splitColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...previewSteps.map(_buildRoutePreviewRow),
+                    const SizedBox(height: 4),
+                    Text(
+                      tr.routePlanOnly,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.25,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRouteChoiceChip({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onSelected,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: isSelected
+          ? AppTheme.splitColor
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onSelected,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isSelected
+                  ? AppTheme.splitColor
+                  : colorScheme.outlineVariant.withValues(alpha: 0.65),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? Icons.check_circle_rounded : icon,
+                size: 15,
+                color: isSelected ? Colors.white : AppTheme.splitColor,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? Colors.white : colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoutePreviewRow(_SettlementRouteStep step) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              step.fromName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 15,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              step.toName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '₹${step.amount.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.splitColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCoverageChip(
     BuildContext context, {
     required String label,
@@ -700,10 +1004,124 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     );
   }
 
+  List<_SettlementRouteStep> _buildSettlementRoutePreview(AppLocalizations tr) {
+    final totalAmount = _totalAmount;
+    if (totalAmount <= 0 || _participants.isEmpty) return [];
+
+    final split = SplitExpenseModel(
+      title: _titleController.text.trim().isEmpty
+          ? tr.splitExpense
+          : _titleController.text.trim(),
+      totalAmount: totalAmount,
+      paidByUser: _paidByUser,
+      date: _selectedDate,
+      status: AppConstants.statusPending,
+    );
+
+    final participants = _participants.map((p) {
+      return SplitParticipantModel(
+        splitId: widget.split?.id ?? 0,
+        contactId: p.contact.id ?? 0,
+        shareAmount: p.shareAmount,
+        expensePaid: p.expensePaid,
+        paid: p.paidAmount,
+        status: AppConstants.statusPending,
+        contactName: p.contact.name,
+      );
+    }).toList();
+
+    final settlements =
+        SplitSettlementCalculator.calculate(
+          split,
+          participants,
+          userName: tr.you,
+          unknownName: tr.unknown,
+        ).where((settlement) {
+          return settlement.remainingAmount >
+              SplitSettlementCalculator.tolerance;
+        }).toList();
+
+    if (_settlementRouteMode == AppConstants.splitRouteOptimized) {
+      return settlements.map((settlement) {
+        final participantName =
+            settlement.participant.contactName ?? tr.unknown;
+        final debtorName = settlement.participantOwes
+            ? participantName
+            : tr.you;
+        final creditorName = settlement.participantOwes
+            ? settlement.counterpartyName
+            : participantName;
+        return _SettlementRouteStep(
+          fromName: debtorName,
+          toName: creditorName,
+          amount: settlement.remainingAmount,
+        );
+      }).toList();
+    }
+
+    var mediatorName = tr.you;
+    if (_settlementMediatorContactId != null) {
+      mediatorName = tr.unknown;
+      for (final participant in _participants) {
+        if (participant.contact.id == _settlementMediatorContactId) {
+          mediatorName = participant.contact.name;
+          break;
+        }
+      }
+    }
+
+    return _buildMediatedRouteSteps(settlements, mediatorName, tr);
+  }
+
+  List<_SettlementRouteStep> _buildMediatedRouteSteps(
+    List<SplitSettlementResult> settlements,
+    String mediatorName,
+    AppLocalizations tr,
+  ) {
+    final totalsByRoute = <String, _SettlementRouteStep>{};
+
+    void addStep(String fromName, String toName, double amount) {
+      if (amount <= SplitSettlementCalculator.tolerance || fromName == toName) {
+        return;
+      }
+
+      final key = '$fromName->$toName';
+      final existing = totalsByRoute[key];
+      totalsByRoute[key] = _SettlementRouteStep(
+        fromName: fromName,
+        toName: toName,
+        amount: (existing?.amount ?? 0) + amount,
+      );
+    }
+
+    for (final settlement in settlements) {
+      final amount = settlement.remainingAmount;
+      final participantName = settlement.participant.contactName ?? tr.unknown;
+      final debtorName = settlement.participantOwes ? participantName : tr.you;
+      final creditorName = settlement.participantOwes
+          ? settlement.counterpartyName
+          : participantName;
+
+      if (debtorName == mediatorName || creditorName == mediatorName) {
+        addStep(debtorName, creditorName, amount);
+      } else {
+        addStep(debtorName, mediatorName, amount);
+        addStep(mediatorName, creditorName, amount);
+      }
+    }
+
+    return totalsByRoute.values.toList()..sort((a, b) {
+      final fromCompare = a.fromName.compareTo(b.fromName);
+      if (fromCompare != 0) return fromCompare;
+      return a.toName.compareTo(b.toName);
+    });
+  }
+
   Widget _buildParticipantAmountField({
     required Key key,
     required String labelText,
     required double initialValue,
+    String? Function(String?)? validator,
     required ValueChanged<double> onChanged,
     required bool isDark,
   }) {
@@ -726,6 +1144,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
       ],
+      validator: validator,
       onChanged: (value) {
         onChanged(double.tryParse(value) ?? 0);
       },
@@ -759,6 +1178,8 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
 
   double get _paidByUser => double.tryParse(_paidByUserController.text) ?? 0;
 
+  bool get _canUseSettlementRoute => _participants.length >= 2;
+
   double get _totalPaidByParticipants {
     return _participants.fold<double>(
       0,
@@ -781,68 +1202,184 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   }
 
   Future<void> _addParticipant() async {
-    final tr = AppLocalizations.of(context)!;
-    final contact = await Navigator.push<ContactModel>(
-      context,
-      MaterialPageRoute(builder: (_) => const ContactPickerScreen()),
+    final result = await showModalBottomSheet<_AddParticipantSheetResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _AddSplitParticipantSheet(),
     );
 
-    if (contact != null && mounted) {
-      // Get or ensure contact has ID by checking database first
-      ContactModel? savedContact;
+    if (result == null || !mounted) return;
 
-      try {
-        final contactRepo = context.read<ContactRepository>();
-        final phoneToCheck = contact.phone?.trim() ?? '';
+    if (result.shouldPickPhoneContact) {
+      final contact = await Navigator.push<ContactModel>(
+        context,
+        MaterialPageRoute(builder: (_) => const ContactPickerScreen()),
+      );
 
-        if (phoneToCheck.isEmpty) {
-          showWarningSnackbar(context, tr.contactMustHavePhoneNumber);
-          return;
-        }
+      if (contact == null || !mounted) return;
+      await _addContactAsParticipant(contact);
+      return;
+    }
 
-        // Check if phone number already exists in participants list
-        final existsInList = _participants.any(
-          (p) => p.contact.phone?.trim() == phoneToCheck,
-        );
+    final manualContact = result.manualContact;
+    if (manualContact == null) return;
+    await _addContactAsParticipant(manualContact);
+  }
 
-        if (existsInList) {
-          showWarningSnackbar(context, tr.thisContactIsAlreadyAdded);
-          return;
-        }
+  Future<void> _addContactAsParticipant(ContactModel contact) async {
+    final tr = AppLocalizations.of(context)!;
+    ContactModel? savedContact;
 
-        // Check if contact exists in database by phone
-        final existingContact = await contactRepo.getContactByPhone(
+    try {
+      final contactRepo = context.read<ContactRepository>();
+      final phoneToCheck = contact.phone?.trim() ?? '';
+      final nameToCheck = contact.name.trim();
+      final normalizedPhoneToCheck = _normalizePhone(phoneToCheck);
+
+      final existsInList = _participants.any((participant) {
+        final sameId =
+            contact.id != null && participant.contact.id == contact.id;
+        final samePhone =
+            normalizedPhoneToCheck.isNotEmpty &&
+            _normalizePhone(participant.contact.phone ?? '') ==
+                normalizedPhoneToCheck;
+        final sameNameWithoutPhone =
+            phoneToCheck.isEmpty &&
+            participant.contact.name.trim().toLowerCase() ==
+                nameToCheck.toLowerCase();
+        return sameId || samePhone || sameNameWithoutPhone;
+      });
+
+      if (existsInList) {
+        showWarningSnackbar(context, tr.thisContactIsAlreadyAdded);
+        return;
+      }
+
+      if (phoneToCheck.isNotEmpty) {
+        final existingContact = await _findExistingContactByPhone(
+          contactRepo,
           phoneToCheck,
         );
-
         if (existingContact != null) {
-          // Contact exists, use it
-          savedContact = existingContact;
-        } else {
-          // Contact doesn't exist, create it
-          final newContactId = await contactRepo.createContact(contact);
-          savedContact = contact.copyWith(id: newContactId);
-        }
-
-        // Add to participants list
-        setState(() {
-          _participants.add(
-            ParticipantData(
-              contact: savedContact!,
-              shareAmount: _calculateEqualShare(),
-              expensePaid: 0,
-              paidAmount: 0,
-            ),
-          );
-          if (_splitEqually) {
-            _calculateShares();
+          final namesDiffer =
+              existingContact.name.trim().toLowerCase() !=
+              nameToCheck.toLowerCase();
+          if (namesDiffer) {
+            if (!mounted) return;
+            final shouldUseExisting = await _confirmUseExistingContact(
+              existingContact,
+            );
+            if (!shouldUseExisting) return;
           }
-        });
-      } catch (e) {
-        if (!mounted) return;
-        showFailureSnackbar(context, tr.failedToSave);
+          savedContact = existingContact;
+        }
+      }
+
+      if (savedContact == null && phoneToCheck.isEmpty) {
+        final existingContacts = await contactRepo.getAllContacts();
+        for (final summary in existingContacts) {
+          if (summary.contact.name.trim().toLowerCase() ==
+              nameToCheck.toLowerCase()) {
+            savedContact = summary.contact;
+            break;
+          }
+        }
+      }
+
+      savedContact ??= contact;
+      if (savedContact.id == null) {
+        final newContactId = await contactRepo.createContact(savedContact);
+        savedContact = savedContact.copyWith(id: newContactId);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _participants.add(
+          ParticipantData(
+            contact: savedContact!,
+            shareAmount: _calculateEqualShare(),
+            expensePaid: 0,
+            paidAmount: 0,
+          ),
+        );
+        if (_splitEqually) {
+          _calculateShares();
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      showFailureSnackbar(context, '${tr.failedToSave}: $e');
+    }
+  }
+
+  String _normalizePhone(String phone) {
+    return FormInputUtils.normalizePhone(phone);
+  }
+
+  Future<ContactModel?> _findExistingContactByPhone(
+    ContactRepository contactRepo,
+    String phone,
+  ) async {
+    final exactMatch = await contactRepo.getContactByPhone(phone);
+    if (exactMatch != null) return exactMatch;
+
+    final normalizedPhone = _normalizePhone(phone);
+    if (normalizedPhone.isEmpty) return null;
+
+    final existingContacts = await contactRepo.getAllContacts();
+    for (final summary in existingContacts) {
+      if (_normalizePhone(summary.contact.phone ?? '') == normalizedPhone) {
+        return summary.contact;
       }
     }
+    return null;
+  }
+
+  Future<bool> _confirmUseExistingContact(ContactModel existingContact) async {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AppDialogShell(
+              icon: AppDialogIcon(
+                icon: Icons.contact_phone_rounded,
+                color: colorScheme.secondary,
+              ),
+              title: tr.phoneAlreadySavedTitle,
+              content: [
+                Text(
+                  tr.phoneAlreadySavedMessage(existingContact.name),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              actions: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(tr.cancel),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: Text(tr.useExistingContact),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   Future<void> _saveSplit() async {
@@ -895,6 +1432,14 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
             : _descriptionController.text.trim(),
         date: _selectedDate,
         status: AppConstants.statusPending,
+        settlementRouteMode: _canUseSettlementRoute
+            ? _settlementRouteMode
+            : AppConstants.splitRouteOptimized,
+        settlementMediatorContactId:
+            _canUseSettlementRoute &&
+                _settlementRouteMode == AppConstants.splitRouteMediator
+            ? _settlementMediatorContactId
+            : null,
       );
 
       final participants = _participants.map((p) {
@@ -939,4 +1484,191 @@ class ParticipantData {
     this.expensePaid = 0,
     this.paidAmount = 0,
   });
+}
+
+class _AddSplitParticipantSheet extends StatefulWidget {
+  const _AddSplitParticipantSheet();
+
+  @override
+  State<_AddSplitParticipantSheet> createState() =>
+      _AddSplitParticipantSheetState();
+}
+
+class _AddSplitParticipantSheetState extends State<_AddSplitParticipantSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  bool _usePhoneContacts = true;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr.addParticipants,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppSegmentedControl<bool>(
+                  selectedValue: _usePhoneContacts,
+                  margin: EdgeInsets.zero,
+                  segmentHeight: 40,
+                  iconSize: 16,
+                  fontSize: 10.5,
+                  selectedColor: colorScheme.secondary,
+                  onChanged: (value) =>
+                      setState(() => _usePhoneContacts = value),
+                  items: [
+                    AppSegmentedControlItem(
+                      value: true,
+                      label: tr.phoneContacts,
+                      icon: Icons.contacts_outlined,
+                    ),
+                    AppSegmentedControlItem(
+                      value: false,
+                      label: tr.manualEntry,
+                      icon: Icons.edit_outlined,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (_usePhoneContacts)
+                  _buildContactPickerTile(
+                    label: tr.selectContactRequired,
+                    icon: Icons.person_outline_rounded,
+                    onTap: () => Navigator.pop(
+                      context,
+                      const _AddParticipantSheetResult.phoneContacts(),
+                    ),
+                  )
+                else ...[
+                  CustomTextField(
+                    controller: _nameController,
+                    labelText: tr.contactNameRequired,
+                    hintText: tr.enterName,
+                    prefixIcon: Icons.person_outline_rounded,
+                    textCapitalization: TextCapitalization.words,
+                    isDense: true,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return tr.pleaseEnterContactName;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  CustomTextField(
+                    controller: _phoneController,
+                    labelText: tr.phoneNumberOptional,
+                    hintText: tr.enterPhoneNumber,
+                    prefixIcon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: FormInputUtils.phoneInputFormatters,
+                    isDense: true,
+                    validator: (value) {
+                      if (!FormInputUtils.isValidOptionalPhone(value)) {
+                        return tr.invalidPhone;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _submitManualContact,
+                      icon: const Icon(Icons.person_add_rounded),
+                      label: Text(tr.add),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _submitManualContact() {
+    if (!_formKey.currentState!.validate()) return;
+
+    final phone = _phoneController.text.trim();
+    Navigator.pop(
+      context,
+      _AddParticipantSheetResult.manual(
+        ContactModel(
+          name: _nameController.text.trim(),
+          phone: phone.isEmpty ? null : phone,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactPickerTile({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: colorScheme.secondary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

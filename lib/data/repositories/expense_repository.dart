@@ -11,21 +11,29 @@ class ExpenseRepository {
   }
 
   // Get all expenses
-  Future<List<ExpenseModel>> getAllExpenses() async {
+  Future<List<ExpenseModel>> getAllExpenses({int? limit, int? offset}) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
       orderBy: 'date DESC',
+      limit: limit,
+      offset: offset,
     );
     return maps.map((map) => ExpenseModel.fromMap(map)).toList();
   }
 
   // Get expenses by category
-  Future<List<ExpenseModel>> getExpensesByCategory(String category) async {
+  Future<List<ExpenseModel>> getExpensesByCategory(
+    String category, {
+    int? limit,
+    int? offset,
+  }) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
       where: 'category = ?',
       whereArgs: [category],
       orderBy: 'date DESC',
+      limit: limit,
+      offset: offset,
     );
     return maps.map((map) => ExpenseModel.fromMap(map)).toList();
   }
@@ -42,14 +50,44 @@ class ExpenseRepository {
   }
 
   // Search expenses
-  Future<List<ExpenseModel>> searchExpenses(String query) async {
+  Future<List<ExpenseModel>> searchExpenses(
+    String query, {
+    int? limit,
+    int? offset,
+  }) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
       where: 'description LIKE ? OR category LIKE ?',
       whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
       orderBy: 'date DESC',
+      limit: limit,
+      offset: offset,
     );
     return maps.map((map) => ExpenseModel.fromMap(map)).toList();
+  }
+
+  Future<int> getExpenseCount({String? category, String? searchQuery}) async {
+    final whereParts = <String>[];
+    final args = <dynamic>[];
+
+    if (category != null && category.trim().isNotEmpty) {
+      whereParts.add('category = ?');
+      args.add(category);
+    }
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      whereParts.add('(description LIKE ? OR category LIKE ?)');
+      final searchTerm = '%${searchQuery.trim()}%';
+      args.addAll([searchTerm, searchTerm]);
+    }
+
+    final where = whereParts.isEmpty ? '' : 'WHERE ${whereParts.join(' AND ')}';
+    final result = await _dbHelper.rawQuery(
+      'SELECT COUNT(*) as count FROM expenses $where',
+      args,
+    );
+
+    return (result.first['count'] as int?) ?? 0;
   }
 
   // Update expense

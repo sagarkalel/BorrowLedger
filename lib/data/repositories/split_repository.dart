@@ -1,11 +1,14 @@
 import 'package:borrow_ledger/core/constants/app_constants.dart';
+import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import '../database/database_helper.dart';
 
 class SplitRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  Future<void>? _syncAllFuture;
 
   // Helper method to compare doubles with tolerance for floating-point precision
   bool _isAmountFullyPaid(double paid, double shareAmount) {
@@ -13,21 +16,28 @@ class SplitRepository {
     return (paid - shareAmount).abs() < tolerance || paid >= shareAmount;
   }
 
-  double _remainingParticipantDebtToUser(SplitParticipantModel participant) {
-    final remaining =
-        participant.shareAmount - participant.expensePaid - participant.paid;
-    return remaining <= 0 ? 0 : remaining;
-  }
-
-  double _remainingUserDebtToParticipant(SplitParticipantModel participant) {
-    final remaining =
-        participant.expensePaid - participant.shareAmount - participant.paid;
-    return remaining <= 0 ? 0 : remaining;
-  }
-
   // Create a new split expense
   Future<int> createSplitExpense(SplitExpenseModel split) async {
     return await _dbHelper.insert('split_expenses', split.toMap());
+  }
+
+  Future<int> createSplitWithParticipants(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+  ) {
+    return _dbHelper.transaction((txn) async {
+      final splitId = await txn.insert('split_expenses', split.toMap());
+
+      for (final participant in participants) {
+        await txn.insert(
+          'split_participants',
+          participant.copyWith(splitId: splitId).toMap(),
+        );
+      }
+
+      await _syncSplitTransactionsInTransaction(txn, splitId);
+      return splitId;
+    });
   }
 
   // Create split participants
@@ -40,59 +50,57 @@ class SplitRepository {
   }
 
   Future<void> syncSplitTransactions(int splitId) async {
-    final split = await getSplitById(splitId);
+    await _dbHelper.transaction((txn) async {
+      await _syncSplitTransactionsInTransaction(txn, splitId);
+    });
+  }
+
+  Future<void> _syncSplitTransactionsInTransaction(
+    sqflite.Transaction txn,
+    int splitId,
+  ) async {
+    final split = await _getSplitByIdInTransaction(txn, splitId);
     if (split == null) return;
 
-    await _deleteGeneratedTransactions(splitId);
+    await _deleteGeneratedTransactionsInTransaction(txn, splitId);
 
     if (split.status == AppConstants.statusSettled) return;
 
     final participants = split.participants ?? [];
     if (participants.isEmpty) return;
 
-    final participantShareTotal = participants.fold<double>(
-      0,
-      (sum, participant) => sum + participant.shareAmount,
+    final routeEntries = SplitSettlementCalculator.calculateRouteEntries(
+      split,
+      participants,
     );
-    final userShare = split.totalAmount - participantShareTotal;
-    var userNet = split.paidByUser - userShare;
-    const tolerance = 0.01;
 
-    if (userNet > tolerance) {
-      for (final participant in participants) {
-        final participantOwes = _remainingParticipantDebtToUser(participant);
-        if (participantOwes <= tolerance || userNet <= tolerance) continue;
-
-        final amount = participantOwes < userNet ? participantOwes : userNet;
-        await _createGeneratedTransaction(
-          split: split,
-          participant: participant,
-          type: AppConstants.typeLend,
-          amount: amount,
-        );
-        userNet -= amount;
+    for (final entry in routeEntries) {
+      if (!entry.affectsUser ||
+          entry.amount <= SplitSettlementCalculator.tolerance) {
+        continue;
       }
-    } else if (userNet < -tolerance) {
-      var userOwes = -userNet;
-      for (final participant in participants) {
-        final participantNet = _remainingUserDebtToParticipant(participant);
-        if (participantNet <= tolerance || userOwes <= tolerance) continue;
 
-        final amount = participantNet < userOwes ? participantNet : userOwes;
-        await _createGeneratedTransaction(
-          split: split,
-          participant: participant,
-          type: AppConstants.typeBorrow,
-          amount: amount,
-        );
-        userOwes -= amount;
-      }
+      final contactParticipant = entry.from.isUser
+          ? entry.to.participant
+          : entry.from.participant;
+      if (contactParticipant == null) continue;
+
+      await _createGeneratedTransactionInTransaction(
+        txn,
+        split: split,
+        participant: contactParticipant,
+        type: entry.userReceives
+            ? AppConstants.typeLend
+            : AppConstants.typeBorrow,
+        amount: entry.amount,
+      );
     }
 
-    await _checkAndUpdateSplitStatus(splitId);
+    await _checkAndUpdateSplitStatusInTransaction(txn, splitId);
   }
 
-  Future<void> _createGeneratedTransaction({
+  Future<void> _createGeneratedTransactionInTransaction(
+    sqflite.Transaction txn, {
     required SplitExpenseModel split,
     required SplitParticipantModel participant,
     required String type,
@@ -100,7 +108,7 @@ class SplitRepository {
   }) async {
     if (amount < 0.01) return;
 
-    await _dbHelper.insert(
+    await txn.insert(
       'transactions',
       TransactionModel(
         type: type,
@@ -118,21 +126,68 @@ class SplitRepository {
   }
 
   Future<void> syncAllSplitTransactions() async {
-    final rows = await _dbHelper.query('split_expenses');
-    for (final row in rows) {
-      final splitId = row['id'] as int?;
-      if (splitId != null) {
-        await syncSplitTransactions(splitId);
+    final activeSync = _syncAllFuture;
+    if (activeSync != null) return activeSync;
+
+    final future = () async {
+      final rows = await _dbHelper.query('split_expenses');
+      for (final row in rows) {
+        final splitId = row['id'] as int?;
+        if (splitId != null) {
+          await syncSplitTransactions(splitId);
+        }
       }
-    }
+    }();
+
+    _syncAllFuture = future.whenComplete(() => _syncAllFuture = null);
+    return _syncAllFuture!;
   }
 
-  Future<void> _deleteGeneratedTransactions(int splitId) async {
-    await _dbHelper.delete(
+  Future<void> _deleteGeneratedTransactionsInTransaction(
+    sqflite.Transaction txn,
+    int splitId,
+  ) async {
+    await txn.delete(
       'transactions',
       where: 'source_type = ? AND source_id = ?',
       whereArgs: [AppConstants.sourceTypeSplit, splitId],
     );
+  }
+
+  Future<SplitExpenseModel?> _getSplitByIdInTransaction(
+    sqflite.Transaction txn,
+    int id,
+  ) async {
+    final maps = await txn.query(
+      'split_expenses',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+
+    final split = SplitExpenseModel.fromMap(maps.first);
+    final participants = await _getParticipantsBySplitIdInTransaction(txn, id);
+
+    return split.copyWith(participants: participants);
+  }
+
+  Future<List<SplitParticipantModel>> _getParticipantsBySplitIdInTransaction(
+    sqflite.Transaction txn,
+    int splitId,
+  ) async {
+    final maps = await txn.rawQuery(
+      '''
+      SELECT sp.*, c.name as contact_name
+      FROM split_participants sp
+      LEFT JOIN contacts c ON sp.contact_id = c.id
+      WHERE sp.split_id = ?
+      ORDER BY sp.status ASC, c.name ASC
+    ''',
+      [splitId],
+    );
+
+    return maps.map((map) => SplitParticipantModel.fromMap(map)).toList();
   }
 
   // Get all split expenses with participants (with pagination)
@@ -265,6 +320,40 @@ class SplitRepository {
     );
   }
 
+  Future<void> updateSplitWithParticipants(
+    SplitExpenseModel split, [
+    List<SplitParticipantModel>? participants,
+  ]) async {
+    final splitId = split.id;
+    if (splitId == null) return;
+
+    await _dbHelper.transaction((txn) async {
+      await txn.update(
+        'split_expenses',
+        split.copyWith(updatedAt: DateTime.now()).toMap(),
+        where: 'id = ?',
+        whereArgs: [splitId],
+      );
+
+      if (participants != null) {
+        await txn.delete(
+          'split_participants',
+          where: 'split_id = ?',
+          whereArgs: [splitId],
+        );
+
+        for (final participant in participants) {
+          await txn.insert(
+            'split_participants',
+            participant.copyWith(splitId: splitId).toMap(),
+          );
+        }
+      }
+
+      await _syncSplitTransactionsInTransaction(txn, splitId);
+    });
+  }
+
   // Update participant
   Future<int> updateParticipant(SplitParticipantModel participant) async {
     return await _dbHelper.update(
@@ -277,22 +366,28 @@ class SplitRepository {
 
   // Mark participant as paid - WITH FLOATING POINT PRECISION FIX
   Future<void> markParticipantAsPaid(int participantId, double amount) async {
-    final participant = await getParticipantById(participantId);
-    if (participant != null) {
-      // Use helper method to check if fully paid (handles decimal precision)
+    await _dbHelper.transaction((txn) async {
+      final maps = await txn.query(
+        'split_participants',
+        where: 'id = ?',
+        whereArgs: [participantId],
+      );
+      if (maps.isEmpty) return;
+
+      final participant = SplitParticipantModel.fromMap(maps.first);
       final amountToSettle = (participant.shareAmount - participant.expensePaid)
           .abs();
       final isFullyPaid = _isAmountFullyPaid(amount, amountToSettle);
 
-      await _dbHelper.update(
+      await txn.update(
         'split_participants',
         {'paid': amount, 'status': isFullyPaid ? 'paid' : 'pending'},
         where: 'id = ?',
         whereArgs: [participantId],
       );
 
-      await syncSplitTransactions(participant.splitId);
-    }
+      await _syncSplitTransactionsInTransaction(txn, participant.splitId);
+    });
   }
 
   // Get participant by ID
@@ -307,9 +402,11 @@ class SplitRepository {
     return SplitParticipantModel.fromMap(maps.first);
   }
 
-  // Check and update split status based on participants - WITH PRECISION FIX
-  Future<void> _checkAndUpdateSplitStatus(int splitId) async {
-    final pendingTransactions = await _dbHelper.rawQuery(
+  Future<void> _checkAndUpdateSplitStatusInTransaction(
+    sqflite.Transaction txn,
+    int splitId,
+  ) async {
+    final pendingTransactions = await txn.rawQuery(
       '''
       SELECT COUNT(*) as count
       FROM transactions
@@ -320,7 +417,7 @@ class SplitRepository {
       [AppConstants.sourceTypeSplit, splitId, AppConstants.categorySplit],
     );
     final pendingCount = pendingTransactions.first['count'] as int? ?? 0;
-    final participantDebtResult = await _dbHelper.rawQuery(
+    final participantDebtResult = await txn.rawQuery(
       '''
       SELECT COALESCE(SUM(
         CASE
@@ -342,7 +439,7 @@ class SplitRepository {
     final allPaid = pendingCount == 0 && pendingParticipantDebt <= tolerance;
 
     if (allPaid) {
-      await _dbHelper.update(
+      await txn.update(
         'split_expenses',
         {'status': 'settled', 'updated_at': DateTime.now().toIso8601String()},
         where: 'id = ?',
@@ -350,7 +447,7 @@ class SplitRepository {
       );
     } else {
       // If not all paid, ensure status is 'pending'
-      await _dbHelper.update(
+      await txn.update(
         'split_expenses',
         {'status': 'pending', 'updated_at': DateTime.now().toIso8601String()},
         where: 'id = ?',
@@ -361,47 +458,50 @@ class SplitRepository {
 
   // Settle entire split - marks all participants as fully paid**
   Future<void> settleSplit(int splitId) async {
-    final participants = await getParticipantsBySplitId(splitId);
-
-    // Mark each participant as fully settled in whichever direction applies.
-    for (var participant in participants) {
-      final amountToSettle = (participant.shareAmount - participant.expensePaid)
-          .abs();
-      await _dbHelper.update(
-        'split_participants',
-        {'paid': amountToSettle, 'status': 'paid'},
-        where: 'id = ?',
-        whereArgs: [participant.id],
+    await _dbHelper.transaction((txn) async {
+      final participants = await _getParticipantsBySplitIdInTransaction(
+        txn,
+        splitId,
       );
-    }
 
-    // Update split status to settled
-    await _dbHelper.update(
-      'split_expenses',
-      {'status': 'settled', 'updated_at': DateTime.now().toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [splitId],
-    );
-    await _deleteGeneratedTransactions(splitId);
+      // Mark each participant as fully settled in whichever direction applies.
+      for (var participant in participants) {
+        final amountToSettle =
+            (participant.shareAmount - participant.expensePaid).abs();
+        await txn.update(
+          'split_participants',
+          {'paid': amountToSettle, 'status': 'paid'},
+          where: 'id = ?',
+          whereArgs: [participant.id],
+        );
+      }
+
+      // Update split status to settled
+      await txn.update(
+        'split_expenses',
+        {'status': 'settled', 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [splitId],
+      );
+      await _deleteGeneratedTransactionsInTransaction(txn, splitId);
+    });
   }
 
   // Delete split expense (cascade deletes participants)
   Future<int> deleteSplit(int id) async {
-    await _deleteGeneratedTransactions(id);
+    return _dbHelper.transaction((txn) async {
+      await _deleteGeneratedTransactionsInTransaction(txn, id);
 
-    // First delete all participants
-    await _dbHelper.delete(
-      'split_participants',
-      where: 'split_id = ?',
-      whereArgs: [id],
-    );
+      // First delete all participants
+      await txn.delete(
+        'split_participants',
+        where: 'split_id = ?',
+        whereArgs: [id],
+      );
 
-    // Then delete the split
-    return await _dbHelper.delete(
-      'split_expenses',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+      // Then delete the split
+      return txn.delete('split_expenses', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   // Get splits by date range
@@ -533,22 +633,24 @@ class SplitRepository {
     int splitId,
     List<SplitParticipantModel> participants,
   ) async {
-    // Delete existing participants
-    await _dbHelper.delete(
-      'split_participants',
-      where: 'split_id = ?',
-      whereArgs: [splitId],
-    );
-
-    // Insert new participants
-    for (var participant in participants) {
-      await _dbHelper.insert(
+    await _dbHelper.transaction((txn) async {
+      // Delete existing participants
+      await txn.delete(
         'split_participants',
-        participant.copyWith(splitId: splitId).toMap(),
+        where: 'split_id = ?',
+        whereArgs: [splitId],
       );
-    }
 
-    await syncSplitTransactions(splitId);
+      // Insert new participants
+      for (var participant in participants) {
+        await txn.insert(
+          'split_participants',
+          participant.copyWith(splitId: splitId).toMap(),
+        );
+      }
+
+      await _syncSplitTransactionsInTransaction(txn, splitId);
+    });
   }
 
   // Get recent splits

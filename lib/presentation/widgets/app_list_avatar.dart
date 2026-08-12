@@ -4,6 +4,7 @@ class AppListAvatar extends StatelessWidget {
   final String label;
   final IconData? indicatorIcon;
   final Color? indicatorColor;
+  final bool isSubtleIndicator;
   final IconData? centerIcon;
   final double size;
 
@@ -12,6 +13,7 @@ class AppListAvatar extends StatelessWidget {
     required this.label,
     this.indicatorIcon,
     this.indicatorColor,
+    this.isSubtleIndicator = false,
     this.centerIcon,
     this.size = 42,
   });
@@ -53,19 +55,40 @@ class AppListAvatar extends StatelessWidget {
             ),
           ),
           if (indicatorIcon != null && indicatorColor != null)
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: indicatorColor!.withValues(alpha: isDark ? 0.95 : 0.9),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colorScheme.surface, width: 2),
-                ),
-                child: Icon(indicatorIcon, size: 9, color: Colors.white),
-              ),
+            Builder(
+              builder: (context) {
+                final indicatorFill = isSubtleIndicator
+                    ? colorScheme.surface
+                    : indicatorColor!.withValues(alpha: isDark ? 0.95 : 0.9);
+                final indicatorBorder = isSubtleIndicator
+                    ? indicatorColor!.withValues(alpha: isDark ? 0.45 : 0.35)
+                    : colorScheme.surface;
+                final indicatorIconColor = isSubtleIndicator
+                    ? indicatorColor!.withValues(alpha: isDark ? 0.9 : 0.82)
+                    : Colors.white;
+
+                return Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: indicatorFill,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: indicatorBorder,
+                        width: isSubtleIndicator ? 1.4 : 2,
+                      ),
+                    ),
+                    child: Icon(
+                      indicatorIcon,
+                      size: isSubtleIndicator ? 10 : 9,
+                      color: indicatorIconColor,
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),

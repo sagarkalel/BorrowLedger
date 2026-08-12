@@ -7,10 +7,12 @@ import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
+import 'package:borrow_ledger/presentation/widgets/app_loading_state.dart';
 import 'package:borrow_ledger/presentation/widgets/app_list_avatar.dart';
 import 'package:borrow_ledger/presentation/widgets/app_pill_badge.dart';
 import 'package:borrow_ledger/presentation/widgets/custom_text_field.dart';
 import 'package:borrow_ledger/presentation/widgets/delete_split_expense_dialog.dart';
+import 'package:borrow_ledger/presentation/widgets/share_name_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,8 +23,19 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/split_repository.dart';
-import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/split_cubit.dart';
+
+class _SettlementRouteStep {
+  final String fromName;
+  final String toName;
+  final double amount;
+
+  const _SettlementRouteStep({
+    required this.fromName,
+    required this.toName,
+    required this.amount,
+  });
+}
 
 class SplitDetailScreen extends StatefulWidget {
   final int splitId;
@@ -72,7 +85,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text(tr.splitDetails), elevation: 0),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const AppPageLoadingState(compact: true),
       );
     }
 
@@ -91,6 +104,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final settlements = SplitSettlementCalculator.calculate(
       split,
       participants,
+      userName: tr.you,
       unknownName: tr.unknown,
     );
     final fullyPendingParticipants = settlements
@@ -138,6 +152,20 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                     // Financial summary card (compact version)
                     _buildFinancialSummaryCard(split, participants, isDark),
                     const SizedBox(height: 8),
+
+                    if (participants.length >= 2 &&
+                        (isSettled ||
+                            (totalPendingCount > 0 &&
+                                split.settlementRouteMode ==
+                                    AppConstants.splitRouteMediator))) ...[
+                      _buildSettlementRouteCard(
+                        split,
+                        participants,
+                        isDark,
+                        isSettled: isSettled,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
 
                     // Participants header with count
                     _buildParticipantsHeader(
@@ -252,12 +280,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               ),
             ],
 
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
             // Bottom action button
             if (!isSettled)
               SliverToBoxAdapter(
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
                   child: FilledButton.icon(
                     onPressed: _showSettleConfirmation,
                     icon: const Icon(Icons.fact_check_rounded, size: 20),
@@ -625,6 +654,261 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildSettlementRouteCard(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+    bool isDark, {
+    required bool isSettled,
+  }) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final mediatorName = _routeMediatorName(split, participants, tr);
+    final isMediatorRoute =
+        split.settlementRouteMode == AppConstants.splitRouteMediator;
+    final routeSteps = _buildRouteSteps(
+      split,
+      participants,
+      tr,
+      ignoreSettledPayments: isSettled,
+    );
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTheme.splitColor.withValues(
+                      alpha: isDark ? 0.18 : 0.11,
+                    ),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(
+                    Icons.route_rounded,
+                    color: AppTheme.splitColor,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr.settlementRoute,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        isSettled
+                            ? tr.settlementRouteCompleted
+                            : isMediatorRoute
+                            ? tr.routeThroughTrustedPerson
+                            : tr.optimizedRoute,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            AppDialogNotice(
+              color: AppTheme.splitColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: AppTheme.splitColor,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          isMediatorRoute
+                              ? '${tr.settleViaPerson}: $mediatorName'
+                              : tr.optimizedRoute,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...routeSteps.map(_buildSettlementRouteStepRow),
+                  if (routeSteps.isEmpty)
+                    Text(
+                      tr.allSettlementsAlreadyComplete,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  const SizedBox(height: 7),
+                  Text(
+                    isSettled ? tr.settlementRouteCompleted : tr.routePlanOnly,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.25,
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettlementRouteStepRow(_SettlementRouteStep step) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              step.fromName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 15,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              step.toName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '₹${step.amount.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.splitColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _routeMediatorName(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+    AppLocalizations tr,
+  ) {
+    final mediatorContactId = split.settlementMediatorContactId;
+    if (mediatorContactId == null) return tr.you;
+
+    for (final participant in participants) {
+      if (participant.contactId == mediatorContactId) {
+        return participant.contactName ?? tr.unknown;
+      }
+    }
+    return tr.unknown;
+  }
+
+  List<_SettlementRouteStep> _buildRouteSteps(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+    AppLocalizations tr, {
+    bool ignoreSettledPayments = false,
+    String? userName,
+  }) {
+    final totalsByRoute = <String, _SettlementRouteStep>{};
+    final routeParticipants = ignoreSettledPayments
+        ? participants
+              .map(
+                (participant) => participant.copyWith(
+                  paid: 0,
+                  status: AppConstants.statusPending,
+                ),
+              )
+              .toList()
+        : participants;
+
+    void addStep(String fromName, String toName, double amount) {
+      if (amount <= SplitSettlementCalculator.tolerance || fromName == toName) {
+        return;
+      }
+
+      final key = '$fromName->$toName';
+      final existing = totalsByRoute[key];
+      totalsByRoute[key] = _SettlementRouteStep(
+        fromName: fromName,
+        toName: toName,
+        amount: (existing?.amount ?? 0) + amount,
+      );
+    }
+
+    final routeEntries = SplitSettlementCalculator.calculateRouteEntries(
+      split,
+      routeParticipants,
+      userName: userName ?? tr.you,
+      unknownName: tr.unknown,
+    );
+
+    for (final routeEntry in routeEntries) {
+      final amount = routeEntry.amount;
+      if (amount <= SplitSettlementCalculator.tolerance) continue;
+      addStep(routeEntry.from.name, routeEntry.to.name, amount);
+    }
+
+    final steps = totalsByRoute.values.toList()
+      ..sort((a, b) {
+        final fromCompare = a.fromName.compareTo(b.fromName);
+        if (fromCompare != 0) return fromCompare;
+        return a.toName.compareTo(b.toName);
+      });
+    return steps;
   }
 
   // Compact participants header
@@ -1412,8 +1696,8 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     var loadingShown = false;
 
     try {
-      final profile = await context.read<UserProfileRepository>().getProfile();
-      final ownerName = _profileDisplayName(profile.name);
+      final ownerName = await ensureShareOwnerName(context);
+      if (ownerName == null) return;
       if (!mounted) return;
 
       loadingShown = true;
@@ -1451,250 +1735,309 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     SplitExpenseModel split,
     String ownerName,
   ) async {
+    final tr = AppLocalizations.of(context)!;
     final participants = split.participants ?? [];
     final settlements = SplitSettlementCalculator.calculate(
       split,
       participants,
       userName: ownerName,
+      unknownName: tr.unknown,
     );
     final userShare = SplitSettlementCalculator.userShare(split, participants);
     final balance = SplitSettlementCalculator.userBalance(split, participants);
-    final paidByOthers = participants.fold<double>(
-      0,
-      (sum, participant) => sum + participant.expensePaid,
-    );
-    final totalPaid = split.paidByUser + paidByOthers;
     final isSettled = split.status == AppConstants.statusSettled;
+    final routeSteps = _buildRouteSteps(
+      split,
+      participants,
+      tr,
+      ignoreSettledPayments: isSettled,
+      userName: ownerName,
+    );
     final width = 1080.0;
-    final rowHeight = 86.0;
+    final rowHeight = 58.0;
+    final routeTableHeight = routeSteps.isEmpty
+        ? 0.0
+        : 42.0 + (routeSteps.length * 42.0);
+    final routeHeight = routeSteps.isEmpty ? 0.0 : 82.0 + routeTableHeight;
     final descriptionHeight =
         split.description != null && split.description!.trim().isNotEmpty
-        ? 72.0
+        ? 54.0
         : 0.0;
     final height =
-        820.0 + descriptionHeight + (participants.length * rowHeight);
+        740.0 +
+        descriptionHeight +
+        routeHeight +
+        (participants.length * rowHeight);
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final size = Size(width, height);
-    final colorScheme = Theme.of(context).colorScheme;
-    final background = colorScheme.surface;
-    final textColor = colorScheme.onSurface;
-    final mutedColor = colorScheme.onSurfaceVariant;
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    const background = Color(0xFFF7F8F5);
+    const paperColor = Color(0xFFFFFFFF);
+    const textColor = Color(0xFF202124);
+    const mutedColor = Color(0xFF68716A);
+    const lineColor = Color(0xFFE3E7DF);
+    const headerFill = Color(0xFFF0F6EA);
+    const primaryColor = Color(0xFF78B83F);
     final receiveColor = AppTheme.moneyInColor;
     final giveColor = AppTheme.moneyOutColor;
     final balanceColor = balance >= 0 ? receiveColor : giveColor;
 
     canvas.drawRect(Offset.zero & size, Paint()..color = background);
 
-    final pagePadding = 58.0;
-    var y = 52.0;
-
+    const pagePadding = 58.0;
+    final paperRect = Rect.fromLTWH(
+      pagePadding,
+      42,
+      width - pagePadding * 2,
+      height - 84,
+    );
     _drawRoundedRect(
       canvas,
-      Rect.fromLTWH(pagePadding, y, width - pagePadding * 2, 118),
-      primaryColor.withValues(alpha: 0.12),
+      paperRect,
+      paperColor,
       radius: 28,
-      strokeColor: primaryColor.withValues(alpha: 0.22),
+      strokeColor: lineColor,
     );
+
+    var y = paperRect.top + 34;
+    final left = paperRect.left + 34;
+    final right = paperRect.right - 34;
+
     _drawText(
       canvas,
       'HisaabMate',
-      Offset(pagePadding + 34, y + 24),
+      Offset(left, y),
       fontSize: 28,
       fontWeight: FontWeight.w800,
       color: primaryColor,
     );
     _drawText(
       canvas,
+      isSettled ? 'SETTLED' : 'PENDING',
+      Offset(right - 150, y + 4),
+      fontSize: 20,
+      fontWeight: FontWeight.w800,
+      color: isSettled ? receiveColor : AppTheme.warningColor,
+      maxWidth: 150,
+      textAlign: TextAlign.right,
+    );
+    y += 44;
+    _drawText(
+      canvas,
       'Split Invoice',
-      Offset(pagePadding + 34, y + 62),
-      fontSize: 42,
+      Offset(left, y),
+      fontSize: 46,
       fontWeight: FontWeight.w800,
       color: textColor,
     );
-    _drawPill(
+    _drawText(
       canvas,
-      isSettled ? 'SETTLED' : 'PENDING',
-      Offset(width - pagePadding - 214, y + 38),
-      isSettled ? AppTheme.successColor : AppTheme.warningColor,
-      width: 180,
-      height: 42,
+      '#${split.id ?? DateTime.now().millisecondsSinceEpoch}',
+      Offset(right - 220, y + 11),
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      color: mutedColor,
+      maxWidth: 220,
+      textAlign: TextAlign.right,
     );
+    y += 70;
+    _drawHorizontalLine(canvas, left, right, y, lineColor);
 
-    y += 154;
+    y += 28;
     _drawText(
       canvas,
       split.title,
-      Offset(pagePadding, y),
-      fontSize: 38,
+      Offset(left, y),
+      fontSize: 34,
       fontWeight: FontWeight.w800,
       color: textColor,
-      maxWidth: width - pagePadding * 2,
+      maxWidth: 480,
     );
-    y += 54;
-    _drawText(
+    _drawInvoiceMeta(
       canvas,
-      DateFormat(AppConstants.dateTimeFormat).format(split.date),
-      Offset(pagePadding, y),
-      fontSize: 24,
-      fontWeight: FontWeight.w600,
-      color: mutedColor,
-    );
-
-    if (descriptionHeight > 0) {
-      y += 44;
-      _drawRoundedRect(
-        canvas,
-        Rect.fromLTWH(pagePadding, y, width - pagePadding * 2, 56),
-        mutedColor.withValues(alpha: 0.07),
-        radius: 16,
-      );
-      _drawText(
-        canvas,
-        split.description!.trim(),
-        Offset(pagePadding + 20, y + 15),
-        fontSize: 22,
-        fontWeight: FontWeight.w500,
-        color: mutedColor,
-        maxWidth: width - pagePadding * 2 - 40,
-      );
-      y += 72;
-    }
-
-    y += 34;
-    final summaryCardWidth = (width - pagePadding * 2 - 24) / 2;
-    _drawMetricCard(
-      canvas,
-      Rect.fromLTWH(pagePadding, y, summaryCardWidth, 126),
-      label: 'Total bill',
-      value: _money(split.totalAmount),
-      color: primaryColor,
+      label: 'Date',
+      value: DateFormat(AppConstants.dateTimeFormat).format(split.date),
+      x: right - 320,
+      y: y,
+      width: 320,
       textColor: textColor,
       mutedColor: mutedColor,
     );
-    _drawMetricCard(
+    y += 42;
+    if (descriptionHeight > 0) {
+      _drawText(
+        canvas,
+        split.description!.trim(),
+        Offset(left, y),
+        fontSize: 19,
+        fontWeight: FontWeight.w500,
+        color: mutedColor,
+        maxWidth: 520,
+      );
+      y += descriptionHeight;
+    }
+
+    y += 20;
+    final summaryTop = y;
+    _drawRoundedRect(
       canvas,
-      Rect.fromLTWH(
-        pagePadding + summaryCardWidth + 24,
-        y,
-        summaryCardWidth,
-        126,
-      ),
+      Rect.fromLTWH(left, summaryTop, right - left, 126),
+      headerFill,
+      radius: 18,
+      strokeColor: lineColor,
+    );
+    final summaryWidth = (right - left) / 4;
+    _drawInvoiceMetric(
+      canvas,
+      label: 'Total bill',
+      value: _money(split.totalAmount),
+      x: left + 22,
+      y: summaryTop + 24,
+      width: summaryWidth - 28,
+      color: textColor,
+      mutedColor: mutedColor,
+    );
+    _drawInvoiceMetric(
+      canvas,
+      label: '$ownerName paid',
+      value: _money(split.paidByUser),
+      x: left + summaryWidth + 12,
+      y: summaryTop + 24,
+      width: summaryWidth - 28,
+      color: textColor,
+      mutedColor: mutedColor,
+    );
+    _drawInvoiceMetric(
+      canvas,
+      label: '${_possessive(ownerName)} share',
+      value: _money(userShare),
+      x: left + summaryWidth * 2 + 12,
+      y: summaryTop + 24,
+      width: summaryWidth - 28,
+      color: textColor,
+      mutedColor: mutedColor,
+    );
+    _drawInvoiceMetric(
+      canvas,
       label: balance.abs() < 0.01
           ? '${_possessive(ownerName)} balance'
           : balance >= 0
           ? '$ownerName gets'
           : '$ownerName gives',
       value: _money(balance.abs()),
-      color: balance.abs() < 0.01 ? mutedColor : balanceColor,
-      textColor: textColor,
+      x: left + summaryWidth * 3 + 12,
+      y: summaryTop + 24,
+      width: summaryWidth - 28,
+      color: balance.abs() < 0.01 ? textColor : balanceColor,
       mutedColor: mutedColor,
     );
+    y += 158;
 
-    y += 150;
-    final miniCardWidth = (width - pagePadding * 2 - 32) / 3;
-    _drawMetricCard(
-      canvas,
-      Rect.fromLTWH(pagePadding, y, miniCardWidth, 104),
-      label: '$ownerName paid',
-      value: _money(split.paidByUser),
-      color: primaryColor,
-      textColor: textColor,
-      mutedColor: mutedColor,
-      compact: true,
-    );
-    _drawMetricCard(
-      canvas,
-      Rect.fromLTWH(pagePadding + miniCardWidth + 16, y, miniCardWidth, 104),
-      label: '${_possessive(ownerName)} share',
-      value: _money(userShare),
-      color: colorScheme.secondary,
-      textColor: textColor,
-      mutedColor: mutedColor,
-      compact: true,
-    );
-    _drawMetricCard(
-      canvas,
-      Rect.fromLTWH(
-        pagePadding + (miniCardWidth + 16) * 2,
-        y,
-        miniCardWidth,
-        104,
-      ),
-      label: 'Paid total',
-      value: _money(totalPaid),
-      color: totalPaid >= split.totalAmount
-          ? AppTheme.successColor
-          : AppTheme.warningColor,
-      textColor: textColor,
-      mutedColor: mutedColor,
-      compact: true,
-    );
+    if (routeSteps.isNotEmpty) {
+      _drawInvoiceSectionTitle(canvas, 'Settlement Route', left, y, textColor);
+      _drawText(
+        canvas,
+        split.settlementRouteMode == AppConstants.splitRouteMediator
+            ? 'Routed through trusted person'
+            : 'Optimized route',
+        Offset(right - 300, y + 5),
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: mutedColor,
+        maxWidth: 300,
+        textAlign: TextAlign.right,
+      );
+      y += 42;
+      _drawRouteInvoiceTable(
+        canvas,
+        Rect.fromLTWH(left, y, right - left, routeTableHeight),
+        routeSteps,
+        textColor,
+        mutedColor,
+        lineColor,
+        headerFill,
+        AppTheme.splitColor,
+      );
+      y += routeHeight;
+    }
 
-    y += 144;
+    _drawInvoiceSectionTitle(canvas, 'Participants', left, y, textColor);
     _drawText(
       canvas,
-      'Participants',
-      Offset(pagePadding, y),
-      fontSize: 30,
-      fontWeight: FontWeight.w800,
-      color: textColor,
-    );
-    _drawText(
-      canvas,
-      '${participants.length} people',
-      Offset(width - pagePadding - 138, y + 6),
-      fontSize: 21,
+      '${participants.length} ${participants.length == 1 ? 'participant' : 'participants'}',
+      Offset(right - 180, y + 5),
+      fontSize: 18,
       fontWeight: FontWeight.w700,
       color: mutedColor,
+      maxWidth: 180,
+      textAlign: TextAlign.right,
     );
-    y += 50;
+    y += 42;
 
-    _drawRoundedRect(
+    _drawParticipantInvoiceTableHeader(
       canvas,
-      Rect.fromLTWH(pagePadding, y, width - pagePadding * 2, 46),
-      mutedColor.withValues(alpha: 0.08),
-      radius: 14,
-    );
-    _drawTableHeader(
-      canvas,
-      Offset(pagePadding, y),
-      width - pagePadding * 2,
+      Rect.fromLTWH(left, y, right - left, 42),
+      headerFill,
+      lineColor,
       mutedColor,
     );
-    y += 58;
+    y += 42;
 
-    for (var i = 0; i < participants.length; i++) {
-      final participant = participants[i];
-      final settlement = i < settlements.length ? settlements[i] : null;
-      final remaining = settlement?.remainingAmount ?? 0;
+    for (final participant in participants) {
+      final settlement = settlements.firstWhere(
+        (item) => item.participant.contactId == participant.contactId,
+        orElse: () => SplitSettlementResult(
+          participant: participant,
+          affectsUser: false,
+          participantOwes: false,
+          userReceives: false,
+          counterpartyName: '',
+          totalAmount: 0,
+          settledAmount: participant.paid,
+          remainingAmount: 0,
+        ),
+      );
+      final remaining = settlement.remainingAmount;
       final rowColor = remaining <= 0
-          ? AppTheme.successColor
-          : settlement?.userReceives == false
+          ? receiveColor
+          : settlement.userReceives == false
           ? giveColor
           : receiveColor;
-      _drawParticipantInvoiceRow(
+      _drawParticipantInvoiceTableRow(
         canvas,
-        Rect.fromLTWH(pagePadding, y, width - pagePadding * 2, rowHeight - 12),
+        Rect.fromLTWH(left, y, right - left, rowHeight),
         participant,
         remaining,
         rowColor,
         textColor,
         mutedColor,
+        lineColor,
         ownerName,
-        settlement?.userReceives,
+        settlement.userReceives,
       );
       y += rowHeight;
     }
 
+    y = height - 120;
+    _drawHorizontalLine(canvas, left, right, y, lineColor);
     _drawText(
       canvas,
-      'Generated by $ownerName • ${DateFormat(AppConstants.dateTimeFormat).format(DateTime.now())}',
-      Offset(pagePadding, height - 52),
+      'Generated by $ownerName',
+      Offset(left, y + 24),
       fontSize: 18,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w600,
       color: mutedColor,
+      maxWidth: 430,
+    );
+    _drawText(
+      canvas,
+      DateFormat(AppConstants.dateTimeFormat).format(DateTime.now()),
+      Offset(right - 280, y + 24),
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      color: mutedColor,
+      maxWidth: 280,
+      textAlign: TextAlign.right,
     );
 
     final picture = recorder.endRecording();
@@ -1711,13 +2054,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
 
   String _money(double amount) => '₹${amount.toStringAsFixed(2)}';
 
-  String _profileDisplayName(String name) {
-    final trimmed = name.trim();
-    return trimmed.isEmpty ? 'You' : trimmed;
-  }
-
   String _possessive(String name) {
-    if (name == 'You') return 'Your';
     return name.endsWith('s') ? "$name'" : "$name's";
   }
 
@@ -1728,6 +2065,382 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
     return safe.isEmpty ? 'split' : safe;
+  }
+
+  void _drawHorizontalLine(
+    Canvas canvas,
+    double left,
+    double right,
+    double y,
+    Color color,
+  ) {
+    canvas.drawLine(
+      Offset(left, y),
+      Offset(right, y),
+      Paint()
+        ..color = color
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  void _drawVerticalLine(
+    Canvas canvas,
+    double x,
+    double top,
+    double bottom,
+    Color color,
+  ) {
+    canvas.drawLine(
+      Offset(x, top),
+      Offset(x, bottom),
+      Paint()
+        ..color = color
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  void _drawInvoiceMeta(
+    Canvas canvas, {
+    required String label,
+    required String value,
+    required double x,
+    required double y,
+    required double width,
+    required Color textColor,
+    required Color mutedColor,
+  }) {
+    _drawText(
+      canvas,
+      label,
+      Offset(x, y),
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: mutedColor,
+      maxWidth: width,
+      textAlign: TextAlign.right,
+    );
+    _drawText(
+      canvas,
+      value,
+      Offset(x, y + 24),
+      fontSize: 19,
+      fontWeight: FontWeight.w800,
+      color: textColor,
+      maxWidth: width,
+      textAlign: TextAlign.right,
+    );
+  }
+
+  void _drawInvoiceMetric(
+    Canvas canvas, {
+    required String label,
+    required String value,
+    required double x,
+    required double y,
+    required double width,
+    required Color color,
+    required Color mutedColor,
+  }) {
+    _drawText(
+      canvas,
+      label,
+      Offset(x, y),
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      color: mutedColor,
+      maxWidth: width,
+    );
+    _drawText(
+      canvas,
+      value,
+      Offset(x, y + 38),
+      fontSize: 31,
+      fontWeight: FontWeight.w800,
+      color: color,
+      maxWidth: width,
+    );
+  }
+
+  void _drawInvoiceSectionTitle(
+    Canvas canvas,
+    String title,
+    double x,
+    double y,
+    Color color,
+  ) {
+    _drawText(
+      canvas,
+      title,
+      Offset(x, y),
+      fontSize: 28,
+      fontWeight: FontWeight.w800,
+      color: color,
+    );
+  }
+
+  void _drawRouteInvoiceTable(
+    Canvas canvas,
+    Rect rect,
+    List<_SettlementRouteStep> steps,
+    Color textColor,
+    Color mutedColor,
+    Color lineColor,
+    Color headerFill,
+    Color accentColor,
+  ) {
+    _drawRoundedRect(
+      canvas,
+      rect,
+      Colors.white,
+      radius: 14,
+      strokeColor: lineColor,
+    );
+    _drawRoundedRect(
+      canvas,
+      Rect.fromLTWH(rect.left, rect.top, rect.width, 38),
+      headerFill,
+      radius: 14,
+    );
+    _drawVerticalLine(
+      canvas,
+      rect.left + rect.width * 0.42,
+      rect.top,
+      rect.bottom,
+      lineColor,
+    );
+    _drawVerticalLine(
+      canvas,
+      rect.left + rect.width * 0.76,
+      rect.top,
+      rect.bottom,
+      lineColor,
+    );
+    _drawText(
+      canvas,
+      'From',
+      Offset(rect.left + 18, rect.top + 10),
+      fontSize: 15,
+      fontWeight: FontWeight.w800,
+      color: mutedColor,
+    );
+    _drawText(
+      canvas,
+      'To',
+      Offset(rect.left + rect.width * 0.45, rect.top + 10),
+      fontSize: 15,
+      fontWeight: FontWeight.w800,
+      color: mutedColor,
+    );
+    _drawText(
+      canvas,
+      'Amount',
+      Offset(rect.right - 160, rect.top + 10),
+      fontSize: 15,
+      fontWeight: FontWeight.w800,
+      color: mutedColor,
+      maxWidth: 140,
+      textAlign: TextAlign.right,
+    );
+
+    var y = rect.top + 42;
+    for (final step in steps) {
+      _drawHorizontalLine(canvas, rect.left, rect.right, y, lineColor);
+      _drawText(
+        canvas,
+        step.fromName,
+        Offset(rect.left + 18, y + 11),
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: textColor,
+        maxWidth: rect.width * 0.36,
+      );
+      _drawText(
+        canvas,
+        step.toName,
+        Offset(rect.left + rect.width * 0.45, y + 11),
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: textColor,
+        maxWidth: rect.width * 0.32,
+      );
+      _drawText(
+        canvas,
+        _money(step.amount),
+        Offset(rect.right - 170, y + 11),
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: accentColor,
+        maxWidth: 150,
+        textAlign: TextAlign.right,
+      );
+      y += 42;
+    }
+  }
+
+  void _drawParticipantInvoiceTableHeader(
+    Canvas canvas,
+    Rect rect,
+    Color fill,
+    Color lineColor,
+    Color mutedColor,
+  ) {
+    _drawRoundedRect(canvas, rect, fill, radius: 12, strokeColor: lineColor);
+    _drawParticipantTableVerticals(canvas, rect, lineColor);
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      'Person',
+      0.02,
+      0.28,
+      mutedColor,
+      isHeader: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      'Share',
+      0.33,
+      0.13,
+      mutedColor,
+      isHeader: true,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      'Paid',
+      0.49,
+      0.13,
+      mutedColor,
+      isHeader: true,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      'Settled',
+      0.65,
+      0.13,
+      mutedColor,
+      isHeader: true,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      'Balance',
+      0.81,
+      0.17,
+      mutedColor,
+      isHeader: true,
+      alignRight: true,
+    );
+  }
+
+  void _drawParticipantInvoiceTableRow(
+    Canvas canvas,
+    Rect rect,
+    SplitParticipantModel participant,
+    double remaining,
+    Color rowColor,
+    Color textColor,
+    Color mutedColor,
+    Color lineColor,
+    String ownerName,
+    bool? userReceives,
+  ) {
+    _drawParticipantTableVerticals(canvas, rect, lineColor);
+    _drawHorizontalLine(canvas, rect.left, rect.right, rect.bottom, lineColor);
+    final balanceText = remaining <= 0
+        ? 'Settled'
+        : userReceives == false
+        ? '$ownerName pays'
+        : 'Pays $ownerName';
+
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      participant.contactName ?? 'Unknown',
+      0.02,
+      0.28,
+      textColor,
+      isHeader: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      _money(participant.shareAmount),
+      0.33,
+      0.13,
+      textColor,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      _money(participant.expensePaid),
+      0.49,
+      0.13,
+      textColor,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      _money(participant.paid),
+      0.65,
+      0.13,
+      mutedColor,
+      alignRight: true,
+    );
+    _drawParticipantTableText(
+      canvas,
+      rect,
+      remaining <= 0 ? balanceText : '$balanceText ${_money(remaining)}',
+      0.81,
+      0.17,
+      rowColor,
+      isHeader: true,
+      alignRight: true,
+      fontSize: remaining <= 0 ? 17 : 15,
+    );
+  }
+
+  void _drawParticipantTableVerticals(Canvas canvas, Rect rect, Color color) {
+    for (final factor in [0.31, 0.47, 0.63, 0.79]) {
+      _drawVerticalLine(
+        canvas,
+        rect.left + rect.width * factor,
+        rect.top,
+        rect.bottom,
+        color,
+      );
+    }
+  }
+
+  void _drawParticipantTableText(
+    Canvas canvas,
+    Rect rect,
+    String text,
+    double leftFactor,
+    double widthFactor,
+    Color color, {
+    bool isHeader = false,
+    bool alignRight = false,
+    double fontSize = 16,
+  }) {
+    final columnLeft = rect.left + rect.width * leftFactor;
+    final columnWidth = rect.width * widthFactor;
+    _drawText(
+      canvas,
+      text,
+      Offset(columnLeft, rect.top + (rect.height - fontSize * 1.2) / 2),
+      fontSize: fontSize,
+      fontWeight: isHeader ? FontWeight.w800 : FontWeight.w700,
+      color: color,
+      maxWidth: columnWidth,
+      textAlign: alignRight ? TextAlign.right : TextAlign.left,
+    );
   }
 
   void _drawRoundedRect(
@@ -1776,189 +2489,6 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       textAlign: textAlign,
     )..layout(maxWidth: maxWidth ?? double.infinity);
     painter.paint(canvas, offset);
-  }
-
-  void _drawPill(
-    Canvas canvas,
-    String label,
-    Offset offset,
-    Color color, {
-    required double width,
-    required double height,
-  }) {
-    _drawRoundedRect(
-      canvas,
-      Rect.fromLTWH(offset.dx, offset.dy, width, height),
-      color.withValues(alpha: 0.12),
-      radius: height / 2,
-      strokeColor: color.withValues(alpha: 0.22),
-    );
-    final painter = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: color,
-        ),
-      ),
-      textDirection: ui.TextDirection.ltr,
-    )..layout(maxWidth: width);
-    painter.paint(
-      canvas,
-      Offset(
-        offset.dx + (width - painter.width) / 2,
-        offset.dy + (height - painter.height) / 2,
-      ),
-    );
-  }
-
-  void _drawMetricCard(
-    Canvas canvas,
-    Rect rect, {
-    required String label,
-    required String value,
-    required Color color,
-    required Color textColor,
-    required Color mutedColor,
-    bool compact = false,
-  }) {
-    _drawRoundedRect(
-      canvas,
-      rect,
-      color.withValues(alpha: 0.08),
-      radius: 22,
-      strokeColor: color.withValues(alpha: 0.14),
-    );
-    _drawText(
-      canvas,
-      label,
-      Offset(rect.left + 22, rect.top + (compact ? 18 : 24)),
-      fontSize: compact ? 19 : 22,
-      fontWeight: FontWeight.w700,
-      color: mutedColor,
-      maxWidth: rect.width - 44,
-    );
-    _drawText(
-      canvas,
-      value,
-      Offset(rect.left + 22, rect.top + (compact ? 50 : 62)),
-      fontSize: compact ? 30 : 38,
-      fontWeight: FontWeight.w800,
-      color: textColor,
-      maxWidth: rect.width - 44,
-    );
-  }
-
-  void _drawTableHeader(
-    Canvas canvas,
-    Offset offset,
-    double width,
-    Color mutedColor,
-  ) {
-    _drawText(
-      canvas,
-      'Person',
-      Offset(offset.dx + 18, offset.dy + 13),
-      fontSize: 17,
-      fontWeight: FontWeight.w800,
-      color: mutedColor,
-    );
-    _drawText(
-      canvas,
-      'Share',
-      Offset(offset.dx + width * 0.45, offset.dy + 13),
-      fontSize: 17,
-      fontWeight: FontWeight.w800,
-      color: mutedColor,
-    );
-    _drawText(
-      canvas,
-      'Paid',
-      Offset(offset.dx + width * 0.62, offset.dy + 13),
-      fontSize: 17,
-      fontWeight: FontWeight.w800,
-      color: mutedColor,
-    );
-    _drawText(
-      canvas,
-      'Balance',
-      Offset(offset.dx + width * 0.79, offset.dy + 13),
-      fontSize: 17,
-      fontWeight: FontWeight.w800,
-      color: mutedColor,
-    );
-  }
-
-  void _drawParticipantInvoiceRow(
-    Canvas canvas,
-    Rect rect,
-    SplitParticipantModel participant,
-    double remaining,
-    Color rowColor,
-    Color textColor,
-    Color mutedColor,
-    String ownerName,
-    bool? userReceives,
-  ) {
-    _drawRoundedRect(
-      canvas,
-      rect,
-      mutedColor.withValues(alpha: 0.035),
-      radius: 16,
-      strokeColor: mutedColor.withValues(alpha: 0.08),
-    );
-    final balanceText = remaining <= 0
-        ? 'Settled'
-        : userReceives == false
-        ? '$ownerName owes ${_money(remaining)}'
-        : 'Owes $ownerName ${_money(remaining)}';
-    final paidTotal = participant.expensePaid + participant.paid;
-    _drawText(
-      canvas,
-      participant.contactName ?? 'Unknown',
-      Offset(rect.left + 18, rect.top + 16),
-      fontSize: 23,
-      fontWeight: FontWeight.w800,
-      color: textColor,
-      maxWidth: rect.width * 0.38,
-    );
-    _drawText(
-      canvas,
-      'Settled ${_money(participant.paid)}',
-      Offset(rect.left + 18, rect.top + 44),
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      color: mutedColor,
-      maxWidth: rect.width * 0.38,
-    );
-    _drawText(
-      canvas,
-      _money(participant.shareAmount),
-      Offset(rect.left + rect.width * 0.45, rect.top + 27),
-      fontSize: 20,
-      fontWeight: FontWeight.w800,
-      color: textColor,
-      maxWidth: rect.width * 0.15,
-    );
-    _drawText(
-      canvas,
-      _money(paidTotal),
-      Offset(rect.left + rect.width * 0.62, rect.top + 27),
-      fontSize: 20,
-      fontWeight: FontWeight.w800,
-      color: textColor,
-      maxWidth: rect.width * 0.15,
-    );
-    _drawText(
-      canvas,
-      balanceText,
-      Offset(rect.left + rect.width * 0.79, rect.top + 27),
-      fontSize: remaining <= 0 ? 20 : 16,
-      fontWeight: FontWeight.w800,
-      color: rowColor,
-      maxWidth: rect.width * 0.18,
-    );
   }
 
   void _showDeleteConfirmation() {

@@ -349,37 +349,61 @@ class TransactionRepository {
   }) async {
     log('TransactionRepository: Fetching contact-wise summary with filters');
 
-    // Base query
     final sql = StringBuffer('''
-      SELECT 
+      WITH transaction_summary AS (
+        SELECT
+          contact_id,
+          COUNT(id) AS total_transactions,
+          COALESCE(SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END), 0) AS total_lent,
+          COALESCE(SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END), 0) AS total_borrowed,
+          COUNT(CASE WHEN transaction_category = 'cash' THEN 1 END) AS cash_count,
+          COALESCE(SUM(CASE WHEN transaction_category = 'cash' AND type = 'lend' THEN amount ELSE 0 END), 0) AS cash_lent,
+          COALESCE(SUM(CASE WHEN transaction_category = 'cash' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS cash_borrowed,
+          COUNT(CASE WHEN transaction_category = 'udhari' THEN 1 END) AS udhari_count,
+          COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'lend' THEN amount ELSE 0 END), 0) AS udhari_given,
+          COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS udhari_taken,
+          COUNT(CASE WHEN transaction_category = 'split' THEN 1 END) AS split_transaction_count,
+          COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'lend' THEN amount ELSE 0 END), 0) AS split_lent,
+          COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS split_borrowed,
+          MAX(date) AS last_transaction_date
+        FROM transactions
+        GROUP BY contact_id
+      ),
+      split_history AS (
+        SELECT
+          sp.contact_id,
+          COUNT(sp.id) AS split_history_count,
+          MAX(se.date) AS last_split_date
+        FROM split_participants sp
+        INNER JOIN split_expenses se ON se.id = sp.split_id
+        GROUP BY sp.contact_id
+      )
+      SELECT
         c.id AS contact_id,
         c.name AS contact_name,
         c.phone AS contact_phone,
         c.avatar AS contact_avatar,
-        
-        -- Overall totals
-        COUNT(t.id) AS total_transactions,
-        COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS total_lent,
-        COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS total_borrowed,
-        
-        -- Cash totals
-        COUNT(CASE WHEN t.transaction_category = 'cash' THEN 1 END) AS cash_count,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'cash' AND t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS cash_lent,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'cash' AND t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS cash_borrowed,
-        
-        -- Udhari totals
-        COUNT(CASE WHEN t.transaction_category = 'udhari' THEN 1 END) AS udhari_count,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'udhari' AND t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS udhari_given,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'udhari' AND t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS udhari_taken,
-
-        -- Split totals
-        COUNT(CASE WHEN t.transaction_category = 'split' THEN 1 END) AS split_count,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'split' AND t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS split_lent,
-        COALESCE(SUM(CASE WHEN t.transaction_category = 'split' AND t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS split_borrowed,
-        
-        MAX(t.date) AS last_transaction_date
+        COALESCE(ts.total_transactions, 0) + COALESCE(sh.split_history_count, 0) AS total_transactions,
+        COALESCE(ts.total_lent, 0) AS total_lent,
+        COALESCE(ts.total_borrowed, 0) AS total_borrowed,
+        COALESCE(ts.cash_count, 0) AS cash_count,
+        COALESCE(ts.cash_lent, 0) AS cash_lent,
+        COALESCE(ts.cash_borrowed, 0) AS cash_borrowed,
+        COALESCE(ts.udhari_count, 0) AS udhari_count,
+        COALESCE(ts.udhari_given, 0) AS udhari_given,
+        COALESCE(ts.udhari_taken, 0) AS udhari_taken,
+        COALESCE(ts.split_transaction_count, 0) + COALESCE(sh.split_history_count, 0) AS split_count,
+        COALESCE(ts.split_lent, 0) AS split_lent,
+        COALESCE(ts.split_borrowed, 0) AS split_borrowed,
+        CASE
+          WHEN ts.last_transaction_date IS NULL THEN sh.last_split_date
+          WHEN sh.last_split_date IS NULL THEN ts.last_transaction_date
+          WHEN ts.last_transaction_date >= sh.last_split_date THEN ts.last_transaction_date
+          ELSE sh.last_split_date
+        END AS last_transaction_date
       FROM contacts c
-      LEFT JOIN transactions t ON c.id = t.contact_id
+      LEFT JOIN transaction_summary ts ON ts.contact_id = c.id
+      LEFT JOIN split_history sh ON sh.contact_id = c.id
     ''');
 
     final whereConditions = <String>[];
@@ -393,33 +417,27 @@ class TransactionRepository {
       args.add(searchTerm);
     }
 
+    final activityCondition =
+        '(COALESCE(ts.total_transactions, 0) + COALESCE(sh.split_history_count, 0)) > 0';
+    final netExpression =
+        '(COALESCE(ts.total_lent, 0) - COALESCE(ts.total_borrowed, 0))';
+
+    if (balanceFilter == 'settled') {
+      whereConditions.add(activityCondition);
+      whereConditions.add('ABS($netExpression) <= 0.01');
+    } else if (balanceFilter == 'pending') {
+      whereConditions.add('ABS($netExpression) > 0.01');
+    } else {
+      whereConditions.add(activityCondition);
+    }
+
     if (whereConditions.isNotEmpty) {
       sql.write(' WHERE ${whereConditions.join(' AND ')}');
     }
 
-    sql.write(' GROUP BY c.id');
-
-    // Apply balance filter using HAVING clause
-    if (balanceFilter != null && balanceFilter != 'all') {
-      if (balanceFilter == 'settled') {
-        // Net balance = 0
-        sql.write('''
-          HAVING (total_transactions > 0 AND (COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) - 
-                  COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0)) = 0)
-        ''');
-      } else if (balanceFilter == 'pending') {
-        // Net balance != 0
-        sql.write('''
-          HAVING (COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) - 
-                  COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0)) != 0
-        ''');
-      }
-    } else {
-      // Default: only show contacts with transactions
-      sql.write(' HAVING total_transactions > 0');
-    }
-
-    sql.write(' ORDER BY last_transaction_date DESC');
+    sql.write(
+      ' ORDER BY last_transaction_date IS NULL, last_transaction_date DESC',
+    );
 
     if (limit != null) {
       sql.write(' LIMIT $limit');
@@ -443,9 +461,27 @@ class TransactionRepository {
     log('TransactionRepository: Getting contact count with filters');
 
     final sql = StringBuffer('''
-      SELECT COUNT(DISTINCT c.id) as count
+      WITH transaction_summary AS (
+        SELECT
+          contact_id,
+          COUNT(id) AS total_transactions,
+          COALESCE(SUM(CASE WHEN type = 'lend' THEN amount ELSE 0 END), 0) AS total_lent,
+          COALESCE(SUM(CASE WHEN type = 'borrow' THEN amount ELSE 0 END), 0) AS total_borrowed
+        FROM transactions
+        GROUP BY contact_id
+      ),
+      split_history AS (
+        SELECT
+          sp.contact_id,
+          COUNT(sp.id) AS split_history_count
+        FROM split_participants sp
+        INNER JOIN split_expenses se ON se.id = sp.split_id
+        GROUP BY sp.contact_id
+      )
+      SELECT COUNT(*) as count
       FROM contacts c
-      LEFT JOIN transactions t ON c.id = t.contact_id
+      LEFT JOIN transaction_summary ts ON ts.contact_id = c.id
+      LEFT JOIN split_history sh ON sh.contact_id = c.id
     ''');
 
     final whereConditions = <String>[];
@@ -461,50 +497,25 @@ class TransactionRepository {
       args.add(searchTerm);
     }
 
+    final activityCondition =
+        '(COALESCE(ts.total_transactions, 0) + COALESCE(sh.split_history_count, 0)) > 0';
+    final netExpression =
+        '(COALESCE(ts.total_lent, 0) - COALESCE(ts.total_borrowed, 0))';
+
+    if (balanceFilter == 'settled') {
+      whereConditions.add(activityCondition);
+      whereConditions.add('ABS($netExpression) <= 0.01');
+    } else if (balanceFilter == 'pending') {
+      whereConditions.add('ABS($netExpression) > 0.01');
+    } else {
+      whereConditions.add(activityCondition);
+    }
+
     if (whereConditions.isNotEmpty) {
       sql.write(' WHERE ${whereConditions.join(' AND ')}');
     }
 
-    // For balance filter, we need a subquery
-    if (balanceFilter != null && balanceFilter != 'all') {
-      final innerSql = StringBuffer('''
-        SELECT c.id
-        FROM contacts c
-        LEFT JOIN transactions t ON c.id = t.contact_id
-      ''');
-
-      if (whereConditions.isNotEmpty) {
-        innerSql.write(' WHERE ${whereConditions.join(' AND ')}');
-      }
-
-      innerSql.write(' GROUP BY c.id');
-
-      if (balanceFilter == 'settled') {
-        innerSql.write('''
-          HAVING (COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) - 
-                  COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0)) = 0
-        ''');
-      } else if (balanceFilter == 'pending') {
-        innerSql.write('''
-          HAVING (COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) - 
-                  COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0)) != 0
-        ''');
-      }
-
-      final countResult = await _dbHelper.rawQuery(
-        'SELECT COUNT(*) as count FROM ($innerSql)',
-        args,
-      );
-
-      return (countResult.first['count'] as int?) ?? 0;
-    }
-
-    // Default count (contacts with transactions)
-    sql.write(' GROUP BY c.id HAVING COUNT(t.id) > 0');
-    final countResult = await _dbHelper.rawQuery(
-      'SELECT COUNT(*) as count FROM ($sql)',
-      args,
-    );
+    final countResult = await _dbHelper.rawQuery(sql.toString(), args);
 
     return (countResult.first['count'] as int?) ?? 0;
   }
@@ -557,7 +568,7 @@ class TransactionRepository {
         : 'WHERE ${whereConditions.join(' AND ')}';
 
     final result = await _dbHelper.rawQuery(
-      'SELECT COUNT(*) as count FROM transactions $where',
+      'SELECT COUNT(*) as count FROM transactions t $where',
       whereArgs,
     );
 

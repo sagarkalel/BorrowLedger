@@ -24,16 +24,16 @@ class EmptyStateWidget extends StatelessWidget {
       child: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 28 : 40,
-            vertical: compact ? 24 : 36,
+            horizontal: compact ? 28 : 34,
+            vertical: compact ? 24 : 30,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: compact ? 64 : 88,
-                height: compact ? 64 : 88,
+                width: compact ? 64 : 76,
+                height: compact ? 64 : 76,
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
@@ -42,13 +42,13 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  size: compact ? 30 : 42,
+                  size: compact ? 30 : 36,
                   color: Theme.of(
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.6),
                 ),
               ),
-              SizedBox(height: compact ? 16 : 22),
+              SizedBox(height: compact ? 16 : 18),
               Text(
                 title,
                 style: Theme.of(

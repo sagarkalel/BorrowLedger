@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -187,6 +188,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 hintText: tr.enterPhoneNumber,
                 prefixIcon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
+                inputFormatters: FormInputUtils.phoneInputFormatters,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -195,6 +197,9 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return tr.pleaseEnterPhoneNumber;
+                  }
+                  if (!FormInputUtils.isValidOptionalPhone(value)) {
+                    return tr.invalidPhone;
                   }
                   return null;
                 },

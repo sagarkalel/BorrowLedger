@@ -118,9 +118,7 @@ class TransactionListItem extends StatelessWidget {
   String _transactionTitle(BuildContext context, bool isCash, bool isSplit) {
     final tr = AppLocalizations.of(context)!;
     if (isSplit) {
-      final splitTitle = transaction.description
-          ?.replaceFirst(RegExp(r'^Split:\s*'), '')
-          .trim();
+      final splitTitle = _splitTitle();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
     if (!isCash && transaction.itemName?.trim().isNotEmpty == true) {
@@ -140,9 +138,7 @@ class TransactionListItem extends StatelessWidget {
   ) {
     final tr = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final splitTitle = transaction.description
-        ?.replaceFirst(RegExp(r'^Split:\s*'), '')
-        .trim();
+    final splitTitle = _splitTitle();
 
     return Row(
       children: [
@@ -219,6 +215,12 @@ class TransactionListItem extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  String? _splitTitle() {
+    return transaction.description
+        ?.replaceFirst(RegExp(r'^(Split|Split history):\s*'), '')
+        .trim();
   }
 
   Widget _buildMetaInfo(BuildContext context, bool hasPhone) {

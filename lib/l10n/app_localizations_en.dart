@@ -102,6 +102,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknown => 'Unknown';
 
   @override
+  String get you => 'You';
+
+  @override
   String get youWillGet => 'You\'ll Get';
 
   @override
@@ -139,6 +142,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comment_navigation => '========== Navigation ==========';
+
+  @override
+  String get home => 'Home';
 
   @override
   String get people => 'People';
@@ -455,6 +461,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisContactIsAlreadyAdded => 'This contact is already added';
+
+  @override
+  String get phoneAlreadySavedTitle => 'Phone already saved';
+
+  @override
+  String phoneAlreadySavedMessage(Object contactName) {
+    return 'This number is already saved as $contactName. Use that contact for this split?';
+  }
+
+  @override
+  String get useExistingContact => 'Use Existing';
 
   @override
   String get contactsAlreadyAddedMarked =>
@@ -804,6 +821,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settlementsToClose => 'Settlements to close';
+
+  @override
+  String get settlementRoute => 'Settlement Route';
+
+  @override
+  String get optimizedRoute => 'Optimized';
+
+  @override
+  String get settleViaPerson => 'Via Person';
+
+  @override
+  String get routeThroughTrustedPerson =>
+      'Route payments through a trusted person.';
+
+  @override
+  String get selectRoutePerson => 'Select route person';
+
+  @override
+  String get routePlanOnly =>
+      'This only changes the suggested payment path. Mark people as paid after they actually settle.';
+
+  @override
+  String get settlementRouteCompleted =>
+      'Settlement was completed using this route.';
 
   @override
   String get settlingWillCloseThesePayments =>
@@ -1841,6 +1882,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showLess => 'Show Less';
+
+  @override
+  String get allCaughtUp => 'All caught up';
+
+  @override
+  String get noMoreData => 'No more data';
+
+  @override
+  String get noMoreRecords => 'No more records';
 
   @override
   String get viewAll => 'View All';

@@ -286,6 +286,12 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get unknown;
 
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
   /// No description provided for @youWillGet.
   ///
   /// In en, this message translates to:
@@ -363,6 +369,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'========== Navigation =========='**
   String get comment_navigation;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
 
   /// No description provided for @people.
   ///
@@ -981,6 +993,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This contact is already added'**
   String get thisContactIsAlreadyAdded;
+
+  /// No description provided for @phoneAlreadySavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone already saved'**
+  String get phoneAlreadySavedTitle;
+
+  /// No description provided for @phoneAlreadySavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already saved as {contactName}. Use that contact for this split?'**
+  String phoneAlreadySavedMessage(Object contactName);
+
+  /// No description provided for @useExistingContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Existing'**
+  String get useExistingContact;
 
   /// No description provided for @contactsAlreadyAddedMarked.
   ///
@@ -1659,6 +1689,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settlements to close'**
   String get settlementsToClose;
+
+  /// No description provided for @settlementRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement Route'**
+  String get settlementRoute;
+
+  /// No description provided for @optimizedRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimized'**
+  String get optimizedRoute;
+
+  /// No description provided for @settleViaPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Via Person'**
+  String get settleViaPerson;
+
+  /// No description provided for @routeThroughTrustedPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Route payments through a trusted person.'**
+  String get routeThroughTrustedPerson;
+
+  /// No description provided for @selectRoutePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Select route person'**
+  String get selectRoutePerson;
+
+  /// No description provided for @routePlanOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This only changes the suggested payment path. Mark people as paid after they actually settle.'**
+  String get routePlanOnly;
+
+  /// No description provided for @settlementRouteCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement was completed using this route.'**
+  String get settlementRouteCompleted;
 
   /// No description provided for @settlingWillCloseThesePayments.
   ///
@@ -3631,6 +3703,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Less'**
   String get showLess;
+
+  /// No description provided for @allCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up'**
+  String get allCaughtUp;
+
+  /// No description provided for @noMoreData.
+  ///
+  /// In en, this message translates to:
+  /// **'No more data'**
+  String get noMoreData;
+
+  /// No description provided for @noMoreRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No more records'**
+  String get noMoreRecords;
 
   /// No description provided for @viewAll.
   ///

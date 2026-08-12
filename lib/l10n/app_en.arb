@@ -39,6 +39,7 @@
   "suggestions": "Suggestions",
   "tapToUse": "Tap to use",
   "unknown": "Unknown",
+  "you": "You",
   "youWillGet": "You'll Get",
   "youWillGive": "You'll Give",
   "payable": "Payable",
@@ -53,6 +54,7 @@
   "collectionProgress": "Collection Progress",
   
   "comment_navigation": "========== Navigation ==========",
+  "home": "Home",
   "people": "People",
   "borrowLend": "Borrow/Lend",
   "splits": "Splits",
@@ -161,6 +163,14 @@
   "noContactsWithPendingBalance": "No contacts with pending balance found",
   "contactMustHavePhoneNumber": "Contact must have a phone number",
   "thisContactIsAlreadyAdded": "This contact is already added",
+  "phoneAlreadySavedTitle": "Phone already saved",
+  "phoneAlreadySavedMessage": "This number is already saved as {contactName}. Use that contact for this split?",
+  "@phoneAlreadySavedMessage": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "useExistingContact": "Use Existing",
   "contactsAlreadyAddedMarked": "Contacts already added are marked with a checkmark",
   "contactsPermissionRequired": "Contacts permission is required",
   "checkingExistingContacts": "Checking existing contacts...",
@@ -285,6 +295,13 @@
     }
   },
   "settlementsToClose": "Settlements to close",
+  "settlementRoute": "Settlement Route",
+  "optimizedRoute": "Optimized",
+  "settleViaPerson": "Via Person",
+  "routeThroughTrustedPerson": "Route payments through a trusted person.",
+  "selectRoutePerson": "Select route person",
+  "routePlanOnly": "This only changes the suggested payment path. Mark people as paid after they actually settle.",
+  "settlementRouteCompleted": "Settlement was completed using this route.",
   "settlingWillCloseThesePayments": "This will close these payments and remove generated split ledger entries.",
   "allSettlementsAlreadyComplete": "All settlements are already complete. Mark this split as settled?",
   "yourShare": "Your Share",
@@ -664,6 +681,9 @@
   "less": "Less",
   "showMore": "Show More",
   "showLess": "Show Less",
+  "allCaughtUp": "All caught up",
+  "noMoreData": "No more data",
+  "noMoreRecords": "No more records",
   "viewAll": "View All",
   "seeAll": "See All",
   "collapse": "Collapse",

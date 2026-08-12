@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
+import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
+import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
+import 'package:borrow_ledger/presentation/widgets/app_loading_state.dart';
 import 'package:borrow_ledger/presentation/widgets/build_summary_card.dart';
 import 'package:borrow_ledger/presentation/widgets/floating_tab_header_delegate.dart';
 import 'package:borrow_ledger/presentation/widgets/settle_txn_dialog_with_partial_payment.dart';
@@ -20,11 +24,11 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
-import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
 import '../widgets/app_pill_badge.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
+import '../widgets/share_name_prompt.dart';
 import 'transaction_details_screen.dart';
 import 'split_detail_screen.dart';
 
@@ -59,7 +63,16 @@ class ContactWiseTransactionsScreen extends StatefulWidget {
 
 class _ContactWiseTransactionsScreenState
     extends State<ContactWiseTransactionsScreen> {
+  static const int _pageSize = 20;
+  static const String _splitHistoryDescriptionPrefix = 'Split history: ';
+
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 0;
+  int _filteredTotalCount = 0;
+  final ScrollController _scrollController = ScrollController();
+  List<TransactionModel> _allTransactions = [];
   List<TransactionModel> _transactions = [];
   double _totalLent = 0;
   double _totalBorrowed = 0;
@@ -76,21 +89,53 @@ class _ContactWiseTransactionsScreenState
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadTransactions();
   }
 
-  Future<void> _loadTransactions() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoading || _isLoadingMore) return;
+
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreTransactions();
+    }
+  }
+
+  Future<void> _loadTransactions({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() => _isLoading = true);
+    }
 
     try {
+      final loadingDelay = _transactions.isEmpty
+          ? AppLoadingDelay.initial()
+          : AppLoadingDelay.refresh();
       final splitRepo = context.read<SplitRepository>();
       final repo = context.read<TransactionRepository>();
       await splitRepo.syncAllSplitTransactions();
 
       if (widget.contactId != null) {
-        _transactions = await repo.getTransactionsByContact(widget.contactId!);
+        final directTransactions = await repo.getTransactionsByContact(
+          widget.contactId!,
+        );
+        final contactSplits = await splitRepo.getSplitsByContact(
+          widget.contactId!,
+          limit: 100000,
+          offset: 0,
+        );
+        _allTransactions = _mergeContactTransactionsWithSplitHistory(
+          directTransactions,
+          contactSplits,
+        );
       } else {
-        _transactions = await repo.getAllTransactions();
+        _allTransactions = await repo.getAllTransactions();
       }
 
       _totalLent = 0;
@@ -103,11 +148,15 @@ class _ContactWiseTransactionsScreenState
       var splitLent = 0.0;
       var splitBorrowed = 0.0;
 
-      for (var transaction in _transactions) {
-        if (transaction.type == AppConstants.typeLend) {
-          _totalLent += transaction.amount;
-        } else {
-          _totalBorrowed += transaction.amount;
+      for (var transaction in _allTransactions) {
+        final affectsBalance = !_isSplitHistoryOnly(transaction);
+
+        if (affectsBalance) {
+          if (transaction.type == AppConstants.typeLend) {
+            _totalLent += transaction.amount;
+          } else {
+            _totalBorrowed += transaction.amount;
+          }
         }
 
         // Count by category
@@ -117,6 +166,10 @@ class _ContactWiseTransactionsScreenState
           _udhariCount++;
         } else if (transaction.category == AppConstants.categorySplit) {
           _splitCount++;
+        }
+
+        if (!affectsBalance) {
+          continue;
         }
 
         if (transaction.category == AppConstants.categorySplit) {
@@ -136,8 +189,21 @@ class _ContactWiseTransactionsScreenState
       _normalNetBalance = normalLent - normalBorrowed;
       _splitNetBalance = splitLent - splitBorrowed;
 
-      setState(() => _isLoading = false);
+      final page = await _loadTransactionsPage(0);
+      final totalCount = await _getTransactionCount();
+
+      await loadingDelay;
+
+      if (!mounted) return;
+      setState(() {
+        _transactions = page;
+        _filteredTotalCount = totalCount;
+        _currentPage = 0;
+        _hasMoreData = page.length >= _pageSize;
+        _isLoading = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       if (mounted) {
         final tr = AppLocalizations.of(context);
@@ -146,12 +212,152 @@ class _ContactWiseTransactionsScreenState
     }
   }
 
-  // Get filtered transactions
-  List<TransactionModel> get _filteredTransactions {
-    if (_filterCategory == null) {
-      return _transactions;
+  Future<void> _loadMoreTransactions() async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final nextPage = _currentPage + 1;
+      final loadingDelay = AppLoadingDelay.loadMore();
+      final newTransactions = await _loadTransactionsPage(nextPage);
+      await loadingDelay;
+
+      if (!mounted) return;
+      setState(() {
+        _transactions = [..._transactions, ...newTransactions];
+        _currentPage = nextPage;
+        _hasMoreData = newTransactions.length >= _pageSize;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+      final tr = AppLocalizations.of(context);
+      showFailureSnackbar(context, '${tr?.failedToLoad}: $e');
     }
-    return _transactions.where((t) => t.category == _filterCategory).toList();
+  }
+
+  Future<List<TransactionModel>> _loadTransactionsPage(int page) async {
+    final repo = context.read<TransactionRepository>();
+    final offset = page * _pageSize;
+
+    if (widget.contactId != null) {
+      final filtered = _filterCategory == null
+          ? _allTransactions
+          : _allTransactions
+                .where((transaction) => transaction.category == _filterCategory)
+                .toList();
+      return filtered.skip(offset).take(_pageSize).toList();
+    }
+
+    if (_filterCategory != null) {
+      return repo.getTransactionsByCategory(
+        _filterCategory!,
+        limit: _pageSize,
+        offset: offset,
+      );
+    }
+
+    return repo.getAllTransactions(limit: _pageSize, offset: offset);
+  }
+
+  Future<int> _getTransactionCount() {
+    if (widget.contactId != null) {
+      if (_filterCategory == null) return Future.value(_allTransactions.length);
+      return Future.value(
+        _allTransactions
+            .where((transaction) => transaction.category == _filterCategory)
+            .length,
+      );
+    }
+
+    return context.read<TransactionRepository>().getTransactionCount(
+      contactId: widget.contactId,
+      category: _filterCategory,
+    );
+  }
+
+  List<TransactionModel> _mergeContactTransactionsWithSplitHistory(
+    List<TransactionModel> directTransactions,
+    List<SplitExpenseModel> contactSplits,
+  ) {
+    final existingSplitIds = directTransactions
+        .where(
+          (transaction) =>
+              transaction.category == AppConstants.categorySplit &&
+              transaction.sourceType == AppConstants.sourceTypeSplit &&
+              transaction.sourceId != null,
+        )
+        .map((transaction) => transaction.sourceId!)
+        .toSet();
+
+    final splitHistoryRows = <TransactionModel>[];
+    for (final split in contactSplits) {
+      final splitId = split.id;
+      if (splitId == null || existingSplitIds.contains(splitId)) continue;
+
+      final participants = split.participants ?? [];
+      SplitParticipantModel? contactParticipant;
+      for (final participant in participants) {
+        if (participant.contactId == widget.contactId) {
+          contactParticipant = participant;
+          break;
+        }
+      }
+      if (contactParticipant == null) continue;
+
+      final netAmount =
+          contactParticipant.shareAmount - contactParticipant.expensePaid;
+      final displayAmount = netAmount.abs() >= 0.01
+          ? netAmount.abs()
+          : contactParticipant.shareAmount;
+
+      splitHistoryRows.add(
+        TransactionModel(
+          type: netAmount >= 0
+              ? AppConstants.typeLend
+              : AppConstants.typeBorrow,
+          category: AppConstants.categorySplit,
+          contactId: widget.contactId!,
+          amount: displayAmount,
+          description: '$_splitHistoryDescriptionPrefix${split.title}',
+          date: split.date,
+          isSettlement: true,
+          sourceType: AppConstants.sourceTypeSplit,
+          sourceId: splitId,
+          contactName: widget.contactName,
+          contactPhone: widget.contactPhone,
+        ),
+      );
+    }
+
+    return [...directTransactions, ...splitHistoryRows]..sort((a, b) {
+      final dateCompare = b.date.compareTo(a.date);
+      if (dateCompare != 0) return dateCompare;
+      return (b.id ?? 0).compareTo(a.id ?? 0);
+    });
+  }
+
+  bool _isSplitHistoryOnly(TransactionModel transaction) {
+    return transaction.category == AppConstants.categorySplit &&
+        transaction.isSettlement &&
+        transaction.sourceType == AppConstants.sourceTypeSplit &&
+        transaction.description?.startsWith(_splitHistoryDescriptionPrefix) ==
+            true;
+  }
+
+  void _setCategoryFilter(String? category) {
+    if (_filterCategory == category) return;
+
+    setState(() {
+      _filterCategory = category;
+      _transactions = [];
+      _filteredTotalCount = 0;
+      _hasMoreData = true;
+      _currentPage = 0;
+    });
+    _loadTransactions();
   }
 
   @override
@@ -166,7 +372,7 @@ class _ContactWiseTransactionsScreenState
       appBar: AppBar(
         title: Text(widget.contactName ?? tr.allContacts),
         actions: [
-          if (widget.contactId != null && _transactions.isNotEmpty)
+          if (widget.contactId != null && _allTransactions.isNotEmpty)
             PopupMenuButton<String>(
               tooltip: tr.moreOptions,
               icon: const Icon(Icons.more_vert_rounded),
@@ -190,11 +396,11 @@ class _ContactWiseTransactionsScreenState
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: _isLoading && _allTransactions.isEmpty
+          ? const AppPageLoadingState(compact: true)
           : RefreshIndicator(
-              onRefresh: _loadTransactions,
-              child: _transactions.isEmpty
+              onRefresh: () => _loadTransactions(showLoading: false),
+              child: _allTransactions.isEmpty && !_isLoading
                   ? SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: SizedBox(
@@ -207,10 +413,12 @@ class _ContactWiseTransactionsScreenState
                           message: widget.contactId != null
                               ? '${tr.startTrackingYourMoneyWith} ${widget.contactName}'
                               : tr.addFirstTransaction,
+                          compact: true,
                         ),
                       ),
                     )
                   : CustomScrollView(
+                      controller: _scrollController,
                       slivers: [
                         // Summary section
                         SliverToBoxAdapter(
@@ -255,7 +463,7 @@ class _ContactWiseTransactionsScreenState
                                   ),
                                 ),
                                 Text(
-                                  '${_filteredTransactions.length} ${_selectedFilterLabel(tr)}',
+                                  '$_filteredTotalCount ${_selectedFilterLabel(tr)}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: colorScheme.onSurfaceVariant,
@@ -266,25 +474,46 @@ class _ContactWiseTransactionsScreenState
                           ),
                         ),
 
-                        // Transactions list (filtered)
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final transaction = _filteredTransactions[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 7),
-                                child: _CompactContactTransactionCard(
-                                  transaction: transaction,
-                                  onTap: () => _navigateToDetail(transaction),
-                                ),
-                              );
-                            }, childCount: _filteredTransactions.length),
+                        if (_isLoading)
+                          _buildRecordsLoadingSliver()
+                        else if (_transactions.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: EmptyStateWidget(
+                              icon: Icons.receipt_long_outlined,
+                              title: tr.noMatchingTransactions,
+                              message: tr.tryAdjustingFilters,
+                              compact: true,
+                            ),
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                if (index == _transactions.length) {
+                                  return AppLoadMoreFooter(
+                                    isLoading: _isLoadingMore,
+                                    hasMoreData: _hasMoreData,
+                                    hasItems: _transactions.isNotEmpty,
+                                    itemCount: _transactions.length,
+                                  );
+                                }
+
+                                final transaction = _transactions[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 7),
+                                  child: _CompactContactTransactionCard(
+                                    transaction: transaction,
+                                    onTap: () => _navigateToDetail(transaction),
+                                  ),
+                                );
+                              }, childCount: _transactions.length + 1),
+                            ),
                           ),
-                        ),
 
                         // Bottom padding for FAB
                         const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -333,9 +562,9 @@ class _ContactWiseTransactionsScreenState
         child: Row(
           children: [
             FilterChipWidget(
-              label: '${tr.all} (${_transactions.length})',
+              label: '${tr.all} (${_allTransactions.length})',
               isSelected: _filterCategory == null,
-              onSelected: () => setState(() => _filterCategory = null),
+              onSelected: () => _setCategoryFilter(null),
             ),
             const SizedBox(width: 8),
             if (_cashCount > 0) ...[
@@ -344,8 +573,7 @@ class _ContactWiseTransactionsScreenState
                 icon: Icons.currency_rupee,
                 color: AppTheme.successColor,
                 isSelected: _filterCategory == AppConstants.categoryCash,
-                onSelected: () =>
-                    setState(() => _filterCategory = AppConstants.categoryCash),
+                onSelected: () => _setCategoryFilter(AppConstants.categoryCash),
               ),
               const SizedBox(width: 8),
             ],
@@ -355,9 +583,8 @@ class _ContactWiseTransactionsScreenState
                 icon: Icons.shopping_basket,
                 color: AppTheme.infoColor,
                 isSelected: _filterCategory == AppConstants.categoryUdhari,
-                onSelected: () => setState(
-                  () => _filterCategory = AppConstants.categoryUdhari,
-                ),
+                onSelected: () =>
+                    _setCategoryFilter(AppConstants.categoryUdhari),
               ),
               const SizedBox(width: 8),
             ],
@@ -367,13 +594,19 @@ class _ContactWiseTransactionsScreenState
                 icon: Icons.call_split_rounded,
                 color: AppTheme.splitColor,
                 isSelected: _filterCategory == AppConstants.categorySplit,
-                onSelected: () => setState(
-                  () => _filterCategory = AppConstants.categorySplit,
-                ),
+                onSelected: () =>
+                    _setCategoryFilter(AppConstants.categorySplit),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRecordsLoadingSliver() {
+    return const SliverFillRemaining(
+      hasScrollBody: false,
+      child: AppPageLoadingState(compact: true),
     );
   }
 
@@ -569,11 +802,9 @@ class _ContactWiseTransactionsScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${isSettled
-                          ? ''
-                          : isPositive
-                          ? '+'
-                          : '-'}₹${_netBalance.abs().toStringAsFixed(2)}',
+                      isSettled
+                          ? '₹0'
+                          : '${isPositive ? '+' : '-'}₹${_netBalance.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 28,
@@ -647,9 +878,7 @@ class _ContactWiseTransactionsScreenState
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => setState(() {
-          _filterCategory = AppConstants.categorySplit;
-        }),
+        onTap: () => _setCategoryFilter(AppConstants.categorySplit),
         borderRadius: BorderRadius.circular(10),
         child: AppDialogNotice(
           color: AppTheme.splitColor,
@@ -761,6 +990,9 @@ class _ContactWiseTransactionsScreenState
     var loadingShown = false;
 
     try {
+      final ownerName = await ensureShareOwnerName(context);
+      if (ownerName == null || !mounted) return;
+
       loadingShown = true;
       showDialog(
         context: context,
@@ -768,10 +1000,6 @@ class _ContactWiseTransactionsScreenState
         builder: (_) => AppLoadingDialog(message: tr.preparingStatement),
       );
 
-      final profile = await context.read<UserProfileRepository>().getProfile();
-      final ownerName = profile.name.trim().isEmpty
-          ? tr.appName
-          : profile.name.trim();
       final file = await _createContactStatementPdf(range, ownerName);
 
       if (!mounted) return;
@@ -913,7 +1141,7 @@ class _ContactWiseTransactionsScreenState
     final tr = AppLocalizations.of(context)!;
     final contactName = widget.contactName ?? tr.allContacts;
     final contactPhone = widget.contactPhone;
-    final periodTransactions = _transactions
+    final periodTransactions = _allTransactions
         .where((transaction) => _matchesStatementFilter(transaction))
         .where(
           (transaction) =>
@@ -921,7 +1149,7 @@ class _ContactWiseTransactionsScreenState
               !transaction.date.isAfter(range.end),
         )
         .toList();
-    final openingTransactions = _transactions
+    final openingTransactions = _allTransactions
         .where((transaction) => _matchesStatementFilter(transaction))
         .where((transaction) => transaction.date.isBefore(range.start))
         .toList();
@@ -935,11 +1163,12 @@ class _ContactWiseTransactionsScreenState
     final closingBalance = openingBalance + periodLent - periodBorrowed;
     final statementFilter = _statementFilterLabel(tr);
     final generatedAt = DateTime.now();
+    final pdfTheme = await PdfReportTheme.load();
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: _statementPageTheme(),
+        pageTheme: _statementPageTheme(pdfTheme),
         build: (context) => [
           _statementHeader(
             ownerName: ownerName,
@@ -999,25 +1228,56 @@ class _ContactWiseTransactionsScreenState
   }) {
     return pw.Container(
       width: double.infinity,
-      padding: const pw.EdgeInsets.all(18),
-      decoration: _statementBoxDecoration(PdfColors.lightGreen100),
-      child: pw.Column(
+      padding: const pw.EdgeInsets.only(bottom: 14),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300)),
+      ),
+      child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            tr.borrowLedgerStatement,
-            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  tr.borrowLedgerStatement,
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  contactName,
+                  style: pw.TextStyle(
+                    fontSize: 13,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                if (contactPhone != null && contactPhone.trim().isNotEmpty)
+                  pw.Text('${tr.phone}: $contactPhone'),
+              ],
+            ),
           ),
-          pw.SizedBox(height: 8),
-          pw.Text('${tr.contact}: $contactName'),
-          if (contactPhone != null && contactPhone.trim().isNotEmpty)
-            pw.Text('${tr.phone}: $contactPhone'),
-          pw.Text(
-            '${tr.period}: ${_formatDate(range.start)} - ${_formatDate(range.end)}',
+          pw.SizedBox(width: 16),
+          pw.Container(
+            width: 210,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text('${tr.generatedBy}: $ownerName'),
+                pw.SizedBox(height: 3),
+                pw.Text('${tr.generatedOn}: ${_formatDateTime(generatedAt)}'),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '${tr.period}: ${_formatDate(range.start)} - ${_formatDate(range.end)}',
+                  textAlign: pw.TextAlign.right,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text('${tr.filter}: $filterLabel'),
+              ],
+            ),
           ),
-          pw.Text('${tr.filter}: $filterLabel'),
-          pw.Text('${tr.generatedBy}: $ownerName'),
-          pw.Text('${tr.generatedOn}: ${_formatDateTime(generatedAt)}'),
         ],
       ),
     );
@@ -1030,44 +1290,21 @@ class _ContactWiseTransactionsScreenState
     required double closingBalance,
     required AppLocalizations tr,
   }) {
-    return pw.Row(
-      children: [
-        _statementMetric(tr.opening, openingBalance),
-        pw.SizedBox(width: 8),
-        _statementMetric(tr.youGave, periodLent),
-        pw.SizedBox(width: 8),
-        _statementMetric(tr.youGot, periodBorrowed),
-        pw.SizedBox(width: 8),
-        _statementMetric(tr.closing, closingBalance),
+    return pw.TableHelper.fromTextArray(
+      headers: [tr.opening, tr.youGave, tr.youGot, tr.closing],
+      data: [
+        [
+          _statementMoney(openingBalance),
+          _statementMoney(periodLent),
+          _statementMoney(periodBorrowed),
+          _statementMoney(closingBalance),
+        ],
       ],
-    );
-  }
-
-  pw.Widget _statementMetric(String label, double amount) {
-    final color = amount >= 0 ? PdfColors.green700 : PdfColors.deepOrange700;
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.all(10),
-        decoration: _statementBoxDecoration(PdfColors.grey100),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              label,
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              _statementMoney(amount),
-              style: pw.TextStyle(
-                fontSize: 13,
-                fontWeight: pw.FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+      cellStyle: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+      cellAlignment: pw.Alignment.center,
     );
   }
 
@@ -1078,39 +1315,54 @@ class _ContactWiseTransactionsScreenState
     return pw.TableHelper.fromTextArray(
       headers: [tr.date, tr.type, tr.category, tr.details, tr.amount],
       data: transactions.map((transaction) {
+        final isSplitHistory = _isSplitHistoryOnly(transaction);
         return [
           _formatDate(transaction.date),
-          transaction.type == AppConstants.typeLend ? tr.youGave : tr.youGot,
+          isSplitHistory
+              ? tr.settledBadge
+              : transaction.type == AppConstants.typeLend
+              ? tr.youGave
+              : tr.youGot,
           _categoryLabel(transaction.category, tr),
-          _transactionDetails(transaction),
-          _statementMoney(
-            transaction.type == AppConstants.typeLend
-                ? transaction.amount
-                : -transaction.amount,
-          ),
+          _transactionDetails(transaction, tr),
+          isSplitHistory
+              ? tr.settled
+              : _statementMoney(
+                  transaction.type == AppConstants.typeLend
+                      ? transaction.amount
+                      : -transaction.amount,
+                ),
         ];
       }).toList(),
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
       headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-      cellStyle: const pw.TextStyle(fontSize: 8),
+      cellStyle: const pw.TextStyle(fontSize: 7.5),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
       oddRowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      headerAlignment: pw.Alignment.centerLeft,
       cellAlignment: pw.Alignment.centerLeft,
-      cellAlignments: const {4: pw.Alignment.centerRight},
+      cellAlignments: const {
+        0: pw.Alignment.centerLeft,
+        1: pw.Alignment.centerLeft,
+        2: pw.Alignment.centerLeft,
+        3: pw.Alignment.centerLeft,
+        4: pw.Alignment.centerRight,
+      },
       columnWidths: const {
-        0: pw.FixedColumnWidth(58),
-        1: pw.FixedColumnWidth(42),
-        2: pw.FixedColumnWidth(50),
-        4: pw.FixedColumnWidth(62),
+        0: pw.FixedColumnWidth(56),
+        1: pw.FixedColumnWidth(50),
+        2: pw.FixedColumnWidth(48),
+        4: pw.FixedColumnWidth(64),
       },
     );
   }
 
-  pw.PageTheme _statementPageTheme() {
+  pw.PageTheme _statementPageTheme(pw.ThemeData theme) {
     return pw.PageTheme(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(28),
+      theme: theme,
       buildBackground: (_) => pw.FullPage(
         ignoreMargins: true,
         child: pw.Container(color: PdfColors.white),
@@ -1132,6 +1384,7 @@ class _ContactWiseTransactionsScreenState
 
   double _netForTransactions(List<TransactionModel> transactions) {
     return transactions.fold<double>(0, (sum, transaction) {
+      if (_isSplitHistoryOnly(transaction)) return sum;
       return sum +
           (transaction.type == AppConstants.typeLend
               ? transaction.amount
@@ -1141,7 +1394,10 @@ class _ContactWiseTransactionsScreenState
 
   double _sumByType(List<TransactionModel> transactions, String type) {
     return transactions
-        .where((transaction) => transaction.type == type)
+        .where(
+          (transaction) =>
+              !_isSplitHistoryOnly(transaction) && transaction.type == type,
+        )
         .fold<double>(0, (sum, transaction) => sum + transaction.amount);
   }
 
@@ -1163,7 +1419,16 @@ class _ContactWiseTransactionsScreenState
     }
   }
 
-  String _transactionDetails(TransactionModel transaction) {
+  String _transactionDetails(
+    TransactionModel transaction,
+    AppLocalizations tr,
+  ) {
+    if (_isSplitHistoryOnly(transaction)) {
+      final splitTitle = transaction.description
+          ?.replaceFirst(_splitHistoryDescriptionPrefix, '')
+          .trim();
+      return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
+    }
     if (transaction.isSettlement) return 'Settlement';
     final parts = [
       if (transaction.description?.trim().isNotEmpty == true)
@@ -1471,13 +1736,13 @@ class _CompactContactTransactionCard extends StatelessWidget {
 
   String _title(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
-    if (transaction.isSettlement) return tr.settlementTransaction;
     if (transaction.category == AppConstants.categorySplit) {
       final splitTitle = transaction.description
-          ?.replaceFirst(RegExp(r'^Split:\s*'), '')
+          ?.replaceFirst(RegExp(r'^(Split|Split history):\s*'), '')
           .trim();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
+    if (transaction.isSettlement) return tr.settlementTransaction;
     if (transaction.category == AppConstants.categoryUdhari &&
         transaction.itemName?.trim().isNotEmpty == true) {
       return transaction.itemName!.trim();

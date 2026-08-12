@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/splash_screen.dart';
 import 'package:borrow_ledger/presentation/widgets/clear_data_dialog.dart';
@@ -1232,11 +1233,22 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
               controller: _phoneController,
               style: const TextStyle(fontSize: 15, height: 1.15),
               decoration: _profileInputDecoration(
-                labelText: tr.phone,
-                hintText: tr.phoneNumberOptional,
+                labelText: '${tr.phoneNumber} *',
+                hintText: tr.enterPhoneNumber,
                 icon: Icons.phone_outlined,
               ),
               keyboardType: TextInputType.phone,
+              inputFormatters: FormInputUtils.phoneInputFormatters,
+              validator: (value) {
+                final phone = value?.trim() ?? '';
+                if (phone.isEmpty) {
+                  return tr.pleaseEnterPhoneNumber;
+                }
+                if (!FormInputUtils.isValidOptionalPhone(phone)) {
+                  return tr.invalidPhone;
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -1290,8 +1302,8 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
     setState(() => _isSaving = true);
 
     final profile = UserProfileModel(
-      name: _nameController.text,
-      phone: _phoneController.text,
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
     );
 
     await widget.repository.saveProfile(profile);

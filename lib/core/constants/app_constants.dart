@@ -6,7 +6,7 @@ class AppConstants {
 
   // Database
   static const String dbName = 'borrow_ledger.db';
-  static const int dbVersion = 9; // UPDATED: Added multi-payer split support
+  static const int dbVersion = 10; // UPDATED: Added split settlement routing
 
   // Storage Keys
   static const String themeKey = 'theme_mode';
@@ -33,6 +33,9 @@ class AppConstants {
   static const String statusPaid = 'paid';
   static const String statusPartial = 'partial';
   static const String statusSettled = 'settled';
+
+  static const String splitRouteOptimized = 'optimized';
+  static const String splitRouteMediator = 'mediator';
 
   // Expense Categories
   static const List<String> expenseCategories = [

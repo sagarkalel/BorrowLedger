@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:borrow_ledger/core/constants/app_constants.dart';
+import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/utils/app_loading_delay.dart';
 import '../../data/models/contact_model.dart';
 import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
@@ -189,6 +192,8 @@ class BorrowLendState {
 }
 
 class BorrowLendCubit extends Cubit<BorrowLendState> {
+  static const String _splitHistoryDescriptionPrefix = 'Split history: ';
+
   final TransactionRepository _transactionRepository;
   final SplitRepository _splitRepository;
   late Timer timer;
@@ -201,13 +206,20 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     emit(
       state.copyWith(
         isLoading: true,
+        isLoadingContacts: true,
         error: null,
         currentPage: 0,
         hasMoreData: true,
+        currentContactsPage: 0,
+        hasMoreContacts: true,
       ),
     );
 
     try {
+      final loadingDelay = state.transactions.isEmpty
+          ? AppLoadingDelay.initial()
+          : AppLoadingDelay.refresh();
+
       await _syncSplitTransactions();
 
       // Get dashboard summary with category breakdown
@@ -260,6 +272,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
         'BorrowLendCubit: Found ${transactions.length} transactions (total: $totalCount)',
       );
 
+      await loadingDelay;
+
       emit(
         state.copyWith(
           isLoading: false,
@@ -277,6 +291,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           transactions: transactions,
           recentTransactions: recentTransactions,
           contactSummaries: contacts,
+          isLoadingContacts: false,
           error: null,
           lastUpdate: DateTime.now(),
           currentPage: 0,
@@ -290,7 +305,13 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Data loaded successfully at ${DateTime.now()}');
     } catch (e) {
       log('BorrowLendCubit: Error loading data - $e');
-      emit(state.copyWith(isLoading: false, error: 'Failed to load data: $e'));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          isLoadingContacts: false,
+          error: 'Failed to load data: $e',
+        ),
+      );
     }
   }
 
@@ -311,6 +332,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
+      final loadingDelay = state.contactSummaries.isEmpty
+          ? AppLoadingDelay.initial()
+          : AppLoadingDelay.refresh();
+
       final contacts = await _loadContactSummariesPage(0);
       final totalCount = await _getContactSummariesCount();
       final hasMoreContacts =
@@ -319,6 +344,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log(
         'BorrowLendCubit: Loaded ${contacts.length} contact summaries (total: $totalCount)',
       );
+
+      await loadingDelay;
 
       emit(
         state.copyWith(
@@ -356,7 +383,9 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     emit(state.copyWith(isLoadingMoreContacts: true, error: null));
 
     try {
+      final loadingDelay = AppLoadingDelay.loadMore();
       final newContacts = await _loadContactSummariesPage(nextPage);
+      await loadingDelay;
 
       if (newContacts.isEmpty) {
         log('BorrowLendCubit: No more contacts to load');
@@ -541,6 +570,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
+      final loadingDelay = state.transactions.isEmpty
+          ? AppLoadingDelay.initial()
+          : AppLoadingDelay.refresh();
+
       await _syncSplitTransactions();
 
       final transactions = await _loadTransactionsPage(0);
@@ -551,6 +584,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log(
         'BorrowLendCubit: Found ${transactions.length} transactions (total: $totalCount)',
       );
+
+      await loadingDelay;
 
       emit(
         state.copyWith(
@@ -595,7 +630,9 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     emit(state.copyWith(isLoadingMore: true, error: null));
 
     try {
+      final loadingDelay = AppLoadingDelay.loadMore();
       final newTransactions = await _loadTransactionsPage(nextPage);
+      await loadingDelay;
 
       if (newTransactions.isEmpty) {
         log('BorrowLendCubit: No more transactions to load');
@@ -647,6 +684,11 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       'BorrowLendCubit: Current filters - Type: ${state.filterType}, Category: ${state.filterCategory}, Query: ${state.searchQuery}',
     );
 
+    if (_shouldUseLedgerHistoryMerge()) {
+      final transactions = await _loadMergedLedgerTransactions();
+      return transactions.skip(offset).take(limit).toList();
+    }
+
     if (state.searchQuery != null && state.searchQuery!.isNotEmpty) {
       log('BorrowLendCubit: Searching with query: "${state.searchQuery}"');
       return await _transactionRepository.searchTransactions(
@@ -695,6 +737,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
   /// Get total transaction count for current filters
   Future<int> _getTransactionCount() async {
     try {
+      if (_shouldUseLedgerHistoryMerge()) {
+        return (await _loadMergedLedgerTransactions()).length;
+      }
+
       return await _transactionRepository.getTransactionCount(
         type: state.filterType,
         category: state.filterCategory,
@@ -703,6 +749,106 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       log('BorrowLendCubit: Error getting transaction count - $e');
       return 0;
     }
+  }
+
+  bool _shouldUseLedgerHistoryMerge() {
+    return state.filterCategory == null ||
+        state.filterCategory == AppConstants.categorySplit;
+  }
+
+  Future<List<TransactionModel>> _loadMergedLedgerTransactions() async {
+    final realTransactions = await _loadRealTransactionsForLedgerMerge();
+    final splitHistoryRows = await _loadSplitHistoryRows(realTransactions);
+    final merged = [...realTransactions, ...splitHistoryRows]
+      ..sort((a, b) {
+        final dateCompare = b.date.compareTo(a.date);
+        if (dateCompare != 0) return dateCompare;
+        return (b.id ?? 0).compareTo(a.id ?? 0);
+      });
+
+    return merged.where(_matchesLedgerDisplayFilters).toList();
+  }
+
+  Future<List<TransactionModel>> _loadRealTransactionsForLedgerMerge() {
+    if (state.filterCategory == AppConstants.categorySplit) {
+      return _transactionRepository.getTransactionsByCategory(
+        AppConstants.categorySplit,
+      );
+    }
+
+    return _transactionRepository.getAllTransactions();
+  }
+
+  Future<List<TransactionModel>> _loadSplitHistoryRows(
+    List<TransactionModel> realTransactions,
+  ) async {
+    final existingSplitIds = realTransactions
+        .where(
+          (transaction) =>
+              transaction.category == AppConstants.categorySplit &&
+              transaction.sourceType == AppConstants.sourceTypeSplit &&
+              transaction.sourceId != null,
+        )
+        .map((transaction) => transaction.sourceId!)
+        .toSet();
+
+    final splits = await _splitRepository.getAllSplits(
+      limit: 100000,
+      offset: 0,
+    );
+    final rows = <TransactionModel>[];
+
+    for (final split in splits) {
+      final splitId = split.id;
+      if (splitId == null || existingSplitIds.contains(splitId)) continue;
+
+      final participants =
+          split.participants ?? const <SplitParticipantModel>[];
+      for (final participant in participants) {
+        final netAmount = participant.shareAmount - participant.expensePaid;
+        final displayAmount = netAmount.abs() >= 0.01
+            ? netAmount.abs()
+            : participant.shareAmount;
+
+        rows.add(
+          TransactionModel(
+            type: netAmount >= 0
+                ? AppConstants.typeLend
+                : AppConstants.typeBorrow,
+            category: AppConstants.categorySplit,
+            contactId: participant.contactId,
+            amount: displayAmount,
+            description: '$_splitHistoryDescriptionPrefix${split.title}',
+            date: split.date,
+            isSettlement: true,
+            sourceType: AppConstants.sourceTypeSplit,
+            sourceId: splitId,
+            contactName: participant.contactName,
+          ),
+        );
+      }
+    }
+
+    return rows;
+  }
+
+  bool _matchesLedgerDisplayFilters(TransactionModel transaction) {
+    if (state.filterCategory != null &&
+        state.filterCategory != transaction.category) {
+      return false;
+    }
+
+    if (state.filterType != null && state.filterType != transaction.type) {
+      return false;
+    }
+
+    final query = state.searchQuery?.trim().toLowerCase();
+    if (query == null || query.isEmpty) return true;
+
+    return (transaction.description ?? '').toLowerCase().contains(query) ||
+        (transaction.contactName ?? '').toLowerCase().contains(query) ||
+        (transaction.itemName ?? '').toLowerCase().contains(query) ||
+        transaction.category.toLowerCase().contains(query);
   }
 
   /* =======================
