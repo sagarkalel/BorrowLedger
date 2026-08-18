@@ -141,6 +141,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get collectionProgress => 'पैसे एकत्र करने की प्रगति';
 
   @override
+  String get contactFallback => 'संपर्क';
+
+  @override
+  String get balance => 'बाकी राशि';
+
+  @override
   String get comment_navigation => '========== Navigation ==========';
 
   @override
@@ -274,6 +280,71 @@ class AppLocalizationsHi extends AppLocalizations {
   String get whoNeedsToPayYou => 'किसे आपको देना है';
 
   @override
+  String get moneyTransaction => 'पैसे का लेन-देन';
+
+  @override
+  String get moneyTransactionDescription => 'सीधे पैसे दिए या लिए';
+
+  @override
+  String get moneyTransactionOnePersonDescription =>
+      'एक व्यक्ति के साथ सीधे पैसे दिए या लिए';
+
+  @override
+  String get udhariItemCredit => 'उधारी / आइटम क्रेडिट';
+
+  @override
+  String get udhariItemCreditDescription => 'आइटम या सेवा उधार पर खरीदी/बेची';
+
+  @override
+  String get sharedSpend => 'साझा खर्च';
+
+  @override
+  String get sharedSpendDescription =>
+      'आप दोनों में से किसी एक ने साथ के खर्च का भुगतान किया';
+
+  @override
+  String get whoPaid => 'किसने भुगतान किया?';
+
+  @override
+  String get udhariDirection => 'उधारी दिशा';
+
+  @override
+  String get moneyDirection => 'पैसे की दिशा';
+
+  @override
+  String get iPaid => 'मैंने भुगतान किया';
+
+  @override
+  String get iGaveItem => 'मैंने आइटम दिया';
+
+  @override
+  String get iGave => 'मैंने दिया';
+
+  @override
+  String get iTookItem => 'मैंने आइटम लिया';
+
+  @override
+  String get iGot => 'मुझे मिला';
+
+  @override
+  String get youPaidLabel => 'आपने भुगतान किया';
+
+  @override
+  String personPaid(Object personName) {
+    return '$personName ने भुगतान किया';
+  }
+
+  @override
+  String personPays(Object personName) {
+    return '$personName भुगतान करेगा';
+  }
+
+  @override
+  String paysPerson(Object personName) {
+    return '$personName को भुगतान';
+  }
+
+  @override
   String get comment_categories => '========== Categories ==========';
 
   @override
@@ -302,6 +373,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get cashAndUdhari => 'कैश और उधारी';
+
+  @override
+  String get groupSplit => 'ग्रुप स्प्लिट';
+
+  @override
+  String get groupSplitDescription => 'एक खर्च को कई लोगों में बांटें';
 
   @override
   String get comment_amounts => '========== Amounts ==========';
@@ -365,6 +442,59 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get totalPending => 'कुल बाकी';
+
+  @override
+  String get purposeRequired => 'उद्देश्य *';
+
+  @override
+  String get purposeHint => 'डिनर, पेट्रोल, शॉपिंग...';
+
+  @override
+  String get pleaseEnterPurpose => 'कृपया उद्देश्य दर्ज करें';
+
+  @override
+  String get totalBill => 'कुल बिल';
+
+  @override
+  String get totalBillAmountRequired => 'कुल बिल राशि *';
+
+  @override
+  String get totalBillAmountOptional => 'कुल बिल राशि (वैकल्पिक)';
+
+  @override
+  String get enterFullBillAmount => 'पूरा बिल अमाउंट दर्ज करें';
+
+  @override
+  String get contactShareBecomesHalf => 'संपर्क का हिस्सा कुल का आधा हो जाएगा';
+
+  @override
+  String get yourShareBecomesHalf =>
+      'कुल राशि डालने पर आपका हिस्सा आधा हो जाएगा';
+
+  @override
+  String personShare(Object personName) {
+    return '$personName का हिस्सा';
+  }
+
+  @override
+  String personShareRequired(Object personName) {
+    return '$personName का हिस्सा *';
+  }
+
+  @override
+  String get myShareRequired => 'मेरा हिस्सा *';
+
+  @override
+  String amountPersonShouldPay(Object personName) {
+    return '$personName को देना चाहिए इतनी राशि';
+  }
+
+  @override
+  String get amountYouShouldPay => 'आपको देनी चाहिए इतनी राशि';
+
+  @override
+  String get shareCannotExceedTotalBill =>
+      'हिस्सा कुल बिल से ज्यादा नहीं हो सकता';
 
   @override
   String get comment_contacts => '========== Contacts ==========';
@@ -1362,10 +1492,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get successfullyImported => 'सफलतापूर्वक इम्पोर्ट किया गया:';
 
   @override
-  String get restartRecommended => 'Restart recommended for best experience';
+  String get restartRecommended => 'बेहतर अनुभव के लिए रीस्टार्ट सुझाया गया';
 
   @override
-  String get restartRecommendedMessage => 'Restart recommended';
+  String get restartRecommendedMessage => 'रीस्टार्ट सुझाया गया';
 
   @override
   String get importFailed => 'इम्पोर्ट विफल';
@@ -1989,6 +2119,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get preparingStatement => 'स्टेटमेंट तैयार हो रहा है...';
 
   @override
+  String get preparingInvoice => 'इनवॉइस तैयार हो रहा है...';
+
+  @override
   String get last15Days => 'पिछले 15 दिन';
 
   @override
@@ -2010,6 +2143,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get borrowLedgerFullStatement => 'HisaabMate पूरा स्टेटमेंट';
 
   @override
+  String get splitInvoice => 'स्प्लिट इनवॉइस';
+
+  @override
+  String splitInvoiceFrom(Object ownerName, Object splitTitle) {
+    return '$ownerName की तरफ से स्प्लिट इनवॉइस: $splitTitle';
+  }
+
+  @override
+  String splitInvoiceSubject(Object splitTitle) {
+    return 'स्प्लिट इनवॉइस - $splitTitle';
+  }
+
+  @override
   String get period => 'अवधि';
 
   @override
@@ -2017,6 +2163,48 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get generatedOn => 'बनाया गया';
+
+  @override
+  String ownerPaid(Object ownerName) {
+    return '$ownerName ने भुगतान किया';
+  }
+
+  @override
+  String ownerShare(Object ownerName) {
+    return '$ownerName का हिस्सा';
+  }
+
+  @override
+  String ownerBalance(Object ownerName) {
+    return '$ownerName का बैलेंस';
+  }
+
+  @override
+  String ownerGets(Object ownerName) {
+    return '$ownerName को मिलेगा';
+  }
+
+  @override
+  String ownerGives(Object ownerName) {
+    return '$ownerName देगा';
+  }
+
+  @override
+  String ownerGave(Object ownerName) {
+    return '$ownerName ने दिया';
+  }
+
+  @override
+  String ownerGot(Object ownerName) {
+    return '$ownerName को मिला';
+  }
+
+  @override
+  String get routedThroughTrustedPerson =>
+      'भरोसेमंद व्यक्ति के जरिए रूट किया गया';
+
+  @override
+  String get optimizedRouteLabel => 'ऑप्टिमाइज्ड रूट';
 
   @override
   String get opening => 'शुरुआती';

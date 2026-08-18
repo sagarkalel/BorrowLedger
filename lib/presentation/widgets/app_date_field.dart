@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_form_field_metrics.dart';
+
 class AppDateField extends StatelessWidget {
   final String labelText;
   final String? valueText;
@@ -51,8 +53,8 @@ class AppDateField extends StatelessWidget {
         labelText: labelText,
         prefixIcon: Icon(prefixIcon),
         prefixIconConstraints: const BoxConstraints(
-          minWidth: 42,
-          minHeight: 42,
+          minWidth: AppFormFieldMetrics.denseIconSlot,
+          minHeight: AppFormFieldMetrics.denseHeight,
         ),
         suffixIcon: SizedBox(
           width: 42,
@@ -78,14 +80,11 @@ class AppDateField extends StatelessWidget {
           ),
         ),
         suffixIconConstraints: const BoxConstraints(
-          minWidth: 42,
-          minHeight: 32,
+          minWidth: AppFormFieldMetrics.denseIconSlot,
+          minHeight: AppFormFieldMetrics.denseHeight,
         ),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
+        contentPadding: AppFormFieldMetrics.denseContentPadding,
         floatingLabelStyle: TextStyle(
           color: colorScheme.primary,
           backgroundColor: fillColor,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/expense_model.dart';
 import 'app_dialog_components.dart';
 import 'app_list_avatar.dart';
@@ -148,7 +149,7 @@ class ExpenseDetailsBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '₹${expense.amount.toStringAsFixed(2)}',
+            CurrencyFormatter.format(expense.amount),
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,

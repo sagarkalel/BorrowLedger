@@ -1,5 +1,6 @@
 // Settle Dialog Widget with Partial Settlement Option
 import 'package:borrow_ledger/core/theme/app_theme.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -141,7 +142,10 @@ class _SettleDialogState extends State<SettleDialog> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${widget.isPositive ? '+' : '-'}₹${widget.netBalance.abs().toStringAsFixed(2)}',
+                        CurrencyFormatter.format(
+                          widget.netBalance.abs(),
+                          showSign: true,
+                        ).replaceFirst('+', widget.isPositive ? '+' : '-'),
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -224,7 +228,7 @@ class _SettleDialogState extends State<SettleDialog> {
                         return tr.invalidAmount;
                       }
                       if (amount > widget.netBalance.abs()) {
-                        return '${tr.amountCanNotExceed} ₹${widget.netBalance.abs().toStringAsFixed(2)}';
+                        return '${tr.amountCanNotExceed} ${CurrencyFormatter.format(widget.netBalance.abs())}';
                       }
                       return null;
                     },
@@ -383,7 +387,7 @@ class _SettleDialogState extends State<SettleDialog> {
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Text(
-            '$percentage% (₹${amount.toStringAsFixed(0)})',
+            '$percentage% (${CurrencyFormatter.format(amount)})',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

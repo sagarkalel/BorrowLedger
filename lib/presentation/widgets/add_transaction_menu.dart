@@ -1,6 +1,7 @@
 import 'package:borrow_ledger/core/constants/app_constants.dart';
 import 'package:borrow_ledger/core/theme/app_theme.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
+import 'package:borrow_ledger/presentation/screens/add_split_screen.dart';
 import 'package:borrow_ledger/presentation/screens/add_transaction_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -50,18 +51,12 @@ void showAddTransactionMenu(
               ),
               const SizedBox(height: 16),
 
-              _buildSectionHeader(
-                context,
-                tr.cash,
-                Icons.currency_rupee_rounded,
-              ),
-              const SizedBox(height: 8),
               _buildQuickActionTile(
                 context,
-                icon: Icons.call_made,
-                title: tr.youGaveMoney,
-                subtitle: tr.directCashLent,
-                color: AppTheme.moneyOutColor,
+                icon: Icons.currency_rupee_rounded,
+                title: tr.moneyTransaction,
+                subtitle: tr.moneyTransactionDescription,
+                color: AppTheme.cashColor,
                 onTap: () => _navigateToAddTransactionScreen(
                   context,
                   type: AppConstants.typeLend,
@@ -75,35 +70,10 @@ void showAddTransactionMenu(
               const SizedBox(height: 8),
               _buildQuickActionTile(
                 context,
-                icon: Icons.call_received,
-                title: tr.youGotMoney,
-                subtitle: tr.directCashBorrowed,
-                color: AppTheme.moneyInColor,
-                onTap: () => _navigateToAddTransactionScreen(
-                  context,
-                  type: AppConstants.typeBorrow,
-                  category: AppConstants.categoryCash,
-                  prefilledContactId: prefilledContactId,
-                  prefilledContactName: prefilledContactName,
-                  prefilledContactPhone: prefilledContactPhone,
-                  refreshData: refreshData,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildSectionHeader(
-                context,
-                tr.udhari,
-                Icons.shopping_basket_outlined,
-              ),
-              const SizedBox(height: 8),
-              _buildQuickActionTile(
-                context,
-                icon: Icons.shopping_bag_rounded,
-                title: tr.youGaveOnUdhari,
-                subtitle: tr.soldItemsOnCredit,
-                color: AppTheme.moneyOutColor,
+                icon: Icons.shopping_basket_outlined,
+                title: tr.udhariItemCredit,
+                subtitle: tr.udhariItemCreditDescription,
+                color: AppTheme.udhariColor,
                 onTap: () => _navigateToAddTransactionScreen(
                   context,
                   type: AppConstants.typeLend,
@@ -117,17 +87,29 @@ void showAddTransactionMenu(
               const SizedBox(height: 8),
               _buildQuickActionTile(
                 context,
-                icon: Icons.shopping_cart_rounded,
-                title: tr.youTookOnUdhari,
-                subtitle: tr.boughtItemsOnCredit,
-                color: AppTheme.moneyInColor,
+                icon: Icons.receipt_long_outlined,
+                title: tr.sharedSpend,
+                subtitle: tr.sharedSpendDescription,
+                color: AppTheme.sharedSpendColor,
                 onTap: () => _navigateToAddTransactionScreen(
                   context,
-                  type: AppConstants.typeBorrow,
-                  category: AppConstants.categoryUdhari,
+                  type: AppConstants.typeLend,
+                  category: AppConstants.categorySharedSpend,
                   prefilledContactId: prefilledContactId,
                   prefilledContactName: prefilledContactName,
                   prefilledContactPhone: prefilledContactPhone,
+                  refreshData: refreshData,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildQuickActionTile(
+                context,
+                icon: Icons.call_split_rounded,
+                title: tr.groupSplit,
+                subtitle: tr.groupSplitDescription,
+                color: AppTheme.splitColor,
+                onTap: () => _navigateToAddSplitScreen(
+                  context,
                   refreshData: refreshData,
                 ),
               ),
@@ -167,23 +149,19 @@ void _navigateToAddTransactionScreen(
   }
 }
 
-Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
-  final colorScheme = Theme.of(context).colorScheme;
-
-  return Row(
-    children: [
-      Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-      const SizedBox(width: 5),
-      Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: colorScheme.onSurfaceVariant,
-        ),
-      ),
-    ],
+void _navigateToAddSplitScreen(
+  BuildContext context, {
+  required VoidCallback refreshData,
+}) async {
+  Navigator.pop(context);
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const AddSplitScreen()),
   );
+
+  if (result == true) {
+    refreshData();
+  }
 }
 
 Widget _buildQuickActionTile(

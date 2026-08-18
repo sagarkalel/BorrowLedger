@@ -1,3 +1,4 @@
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 
 class BuildSummaryCard extends StatelessWidget {
@@ -70,7 +71,7 @@ class BuildSummaryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '₹${amount.toStringAsFixed(2)}',
+                  CurrencyFormatter.format(amount),
                   style: TextStyle(
                     fontSize: isCompact ? 17 : 20,
                     fontWeight: FontWeight.w800,

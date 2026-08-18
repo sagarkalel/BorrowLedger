@@ -7,6 +7,7 @@ class ContactSummary {
   final DateTime? lastTransactionDate;
   final int cashCount;
   final int udhariCount;
+  final int sharedSpendCount;
   final int splitCount;
   final double splitLent;
   final double splitBorrowed;
@@ -21,6 +22,7 @@ class ContactSummary {
     required this.lastTransactionDate,
     this.cashCount = 0,
     this.udhariCount = 0,
+    this.sharedSpendCount = 0,
     this.splitCount = 0,
     this.splitLent = 0,
     this.splitBorrowed = 0,

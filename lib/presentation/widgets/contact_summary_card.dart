@@ -2,6 +2,7 @@ import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_formatter.dart';
 import 'app_list_avatar.dart';
 import 'app_pill_badge.dart';
 
@@ -12,6 +13,7 @@ class ContactSummaryCard extends StatelessWidget {
   final double netBalance;
   final int cashCount;
   final int udhariCount;
+  final int sharedSpendCount;
   final int splitCount;
   final double splitNet;
   final VoidCallback onTap;
@@ -24,6 +26,7 @@ class ContactSummaryCard extends StatelessWidget {
     required this.netBalance,
     this.cashCount = 0,
     this.udhariCount = 0,
+    this.sharedSpendCount = 0,
     this.splitCount = 0,
     this.splitNet = 0,
     required this.onTap,
@@ -136,13 +139,22 @@ class ContactSummaryCard extends StatelessWidget {
         ],
 
         // Category breakdown
-        if (cashCount > 0 || udhariCount > 0 || splitCount > 0) ...[
+        if (cashCount > 0 ||
+            udhariCount > 0 ||
+            sharedSpendCount > 0 ||
+            splitCount > 0) ...[
           if (cashCount > 0) ...[
             _buildCategoryBadge(context, tr.cash, cashCount),
-            if (udhariCount > 0 || splitCount > 0) const SizedBox(width: 4),
+            if (udhariCount > 0 || sharedSpendCount > 0 || splitCount > 0)
+              const SizedBox(width: 4),
           ],
           if (udhariCount > 0) ...[
             _buildCategoryBadge(context, tr.udhari, udhariCount),
+            if (sharedSpendCount > 0 || splitCount > 0)
+              const SizedBox(width: 4),
+          ],
+          if (sharedSpendCount > 0) ...[
+            _buildCategoryBadge(context, tr.sharedSpend, sharedSpendCount),
             if (splitCount > 0) const SizedBox(width: 4),
           ],
           if (splitCount > 0)
@@ -174,7 +186,7 @@ class ContactSummaryCard extends StatelessWidget {
         const SizedBox(width: 4),
         Flexible(
           child: Text(
-            '${tr.splits}: ${isPositive ? tr.youWillGet : tr.youWillGive} ₹${splitNet.abs().toStringAsFixed(2)}',
+            '${tr.splits}: ${isPositive ? tr.youWillGet : tr.youWillGive} ${CurrencyFormatter.format(splitNet.abs())}',
             style: TextStyle(
               fontSize: 10,
               height: 1.1,
@@ -225,27 +237,13 @@ class ContactSummaryCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Amount
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isSettled ? '₹0' : '₹',
-                  style: TextStyle(
-                    fontSize: isSettled ? 16 : 12,
-                    fontWeight: FontWeight.w800,
-                    color: directionColor,
-                  ),
-                ),
-                if (!isSettled)
-                  Text(
-                    netBalance.abs().toStringAsFixed(2),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: directionColor,
-                    ),
-                  ),
-              ],
+            Text(
+              CurrencyFormatter.format(netBalance.abs()),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: directionColor,
+              ),
             ),
             const SizedBox(height: 3),
             // Direction badge

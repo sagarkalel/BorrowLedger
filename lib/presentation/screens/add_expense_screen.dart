@@ -1,4 +1,5 @@
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import '../../core/constants/app_constants.dart';
 import '../cubit/expense_cubit.dart';
 import '../widgets/app_amount_field.dart';
 import '../widgets/app_date_field.dart';
-import '../widgets/app_dialog_components.dart';
 import '../widgets/app_dropdown_field.dart';
 import '../widgets/app_list_avatar.dart';
 import '../widgets/custom_text_field.dart';
@@ -67,7 +67,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Form(
           key: _formKey,
           child: Column(
@@ -119,108 +119,191 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
 
-              // Amount field
-              AppAmountField(
-                controller: _amountController,
-                labelText: tr.amount,
-                hintText: '0.00',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return tr.pleaseEnterAmount;
-                  }
-                  if (double.tryParse(value) == null) {
-                    return tr.pleaseEnterValidAmount;
-                  }
-                  if (double.parse(value) <= 0) {
-                    return tr.amountMustBeGreaterThanZero;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-
-              AppDropdownField<String>(
-                value: _selectedCategory,
-                labelText: tr.category,
-                prefixIcon: Icons.category_rounded,
-                isDense: true,
-                items: AppConstants.expenseCategories
-                    .map(
-                      (category) => AppDropdownItem(
-                        value: category,
-                        label: getCategoryLabel(context, category),
-                        icon: getCategoryIcon(category),
-                        color: getCategoryColor(category),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return tr.pleaseSelectCategory;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-
-              AppDateField(
-                labelText: tr.date,
-                valueText: DateFormat(
-                  AppConstants.dateFormat,
-                ).format(_selectedDate),
-                onTap: () => _selectDate(context),
-              ),
-              const SizedBox(height: 10),
-
-              // Description field
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: tr.descriptionOptional,
-                prefixIcon: Icons.notes_rounded,
-                hintText: tr.whatDidYouSpendOn,
-                isDense: true,
-                maxLines: 3,
-                maxLength: 200,
-              ),
-              const SizedBox(height: 10),
-
-              // Category quick tips
-              AppDialogNotice(
-                color: colorScheme.secondary,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              _buildComposerSection(
+                context,
+                icon: Icons.receipt_long_outlined,
+                title: 'Details',
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: colorScheme.secondary,
-                      size: 18,
+                    AppAmountField(
+                      controller: _amountController,
+                      labelText: tr.amount,
+                      hintText: '0.00',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return tr.pleaseEnterAmount;
+                        }
+                        if (double.tryParse(value) == null) {
+                          return tr.pleaseEnterValidAmount;
+                        }
+                        if (double.parse(value) <= 0) {
+                          return tr.amountMustBeGreaterThanZero;
+                        }
+                        return null;
+                      },
+                      onChanged: (_) => setState(() {}),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        tr.chooseRightCategory,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                          height: 1.35,
-                        ),
-                      ),
+                    const SizedBox(height: 8),
+                    AppDropdownField<String>(
+                      value: _selectedCategory,
+                      labelText: tr.category,
+                      prefixIcon: Icons.category_rounded,
+                      isDense: true,
+                      items: AppConstants.expenseCategories
+                          .map(
+                            (category) => AppDropdownItem(
+                              value: category,
+                              label: getCategoryLabel(context, category),
+                              icon: getCategoryIcon(category),
+                              color: getCategoryColor(category),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return tr.pleaseSelectCategory;
+                        }
+                        return null;
+                      },
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 9),
+
+              _buildExpensePreview(context, tr),
+              const SizedBox(height: 9),
+
+              _buildComposerSection(
+                context,
+                icon: Icons.calendar_today_outlined,
+                title: 'When',
+                child: AppDateField(
+                  labelText: tr.date,
+                  valueText: DateFormat(
+                    AppConstants.dateFormat,
+                  ).format(_selectedDate),
+                  onTap: () => _selectDate(context),
+                ),
+              ),
+              const SizedBox(height: 9),
+
+              _buildComposerSection(
+                context,
+                icon: Icons.notes_outlined,
+                title: 'Note',
+                child: CustomTextField(
+                  controller: _descriptionController,
+                  labelText: tr.descriptionOptional,
+                  prefixIcon: Icons.notes_rounded,
+                  hintText: tr.whatDidYouSpendOn,
+                  isDense: true,
+                  maxLines: 4,
+                  maxLength: 200,
+                ),
+              ),
+              const SizedBox(height: 10),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildComposerSection(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = colorScheme.secondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 21,
+              height: 21,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(icon, size: 12.5, color: accentColor),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildExpensePreview(BuildContext context, AppLocalizations tr) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final amount = double.tryParse(_amountController.text.trim());
+    final category = _selectedCategory == null
+        ? tr.category
+        : getCategoryLabel(context, _selectedCategory!);
+    final accentColor = _selectedCategory == null
+        ? colorScheme.secondary
+        : getCategoryColor(_selectedCategory!);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: isDark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accentColor.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.payments_outlined, size: 18, color: accentColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Expense ${_formatAmount(amount)} • $category',
+              style: TextStyle(
+                fontSize: 13.2,
+                height: 1.2,
+                fontWeight: FontWeight.w800,
+                color: accentColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(double? amount) {
+    if (amount == null || amount.isNaN) return CurrencyFormatter.format(0);
+    return CurrencyFormatter.format(amount.clamp(0, double.infinity));
   }
 
   Future<void> _selectDate(BuildContext context) async {

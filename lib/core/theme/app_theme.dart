@@ -53,6 +53,7 @@ class AppTheme {
   static const Color udhariColor = Color(0xFFFFB74D);
   static const Color udhariLight = Color(0xFFFFCC80);
   static const Color udhariDark = Color(0xFFFFA726);
+  static const Color sharedSpendColor = Color(0xFF7E57C2);
 
   // Get transaction direction color (what will happen in future)
   static Color getTransactionDirectionColor(String type) {
@@ -89,6 +90,8 @@ class AppTheme {
         return isDark ? udhariDark : udhariColor;
       case 'split':
         return splitColor;
+      case 'shared_spend':
+        return sharedSpendColor;
       default:
         return infoColor;
     }
@@ -107,6 +110,8 @@ class AppTheme {
             : udhariLight.withValues(alpha: 0.15);
       case 'split':
         return splitColor.withValues(alpha: isDark ? 0.18 : 0.12);
+      case 'shared_spend':
+        return sharedSpendColor.withValues(alpha: isDark ? 0.18 : 0.12);
       default:
         return Colors.grey.withValues(alpha: 0.1);
     }

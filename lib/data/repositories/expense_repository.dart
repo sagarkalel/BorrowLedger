@@ -4,6 +4,8 @@ import '../database/database_helper.dart';
 
 class ExpenseRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  static const String _activityOrder =
+      'updated_at DESC, created_at DESC, id DESC';
 
   // Create a new expense
   Future<int> createExpense(ExpenseModel expense) async {
@@ -14,7 +16,7 @@ class ExpenseRepository {
   Future<List<ExpenseModel>> getAllExpenses({int? limit, int? offset}) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -31,7 +33,7 @@ class ExpenseRepository {
       'expenses',
       where: 'category = ?',
       whereArgs: [category],
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -59,7 +61,7 @@ class ExpenseRepository {
       'expenses',
       where: 'description LIKE ? OR category LIKE ?',
       whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -174,7 +176,7 @@ class ExpenseRepository {
   Future<List<ExpenseModel>> getRecentExpenses(int limit) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
     );
     return maps.map((map) => ExpenseModel.fromMap(map)).toList();

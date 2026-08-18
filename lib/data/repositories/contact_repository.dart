@@ -96,6 +96,36 @@ class ContactRepository {
     return rows.map(_mapToContactSummary).toList();
   }
 
+  /// Contacts for person pickers: recently used contacts first, then any
+  /// saved contacts without transactions so manual duplicates are avoidable.
+  Future<List<ContactModel>> getContactsForPicker() async {
+    final recentContacts = await getAllContactsWithSummary();
+    final allContacts = await getAllContacts();
+    final merged = <ContactModel>[];
+    final seenIds = <int>{};
+    final seenFallbackKeys = <String>{};
+
+    void addContact(ContactModel contact) {
+      final id = contact.id;
+      if (id != null) {
+        if (!seenIds.add(id)) return;
+      } else {
+        final key =
+            '${contact.name.trim().toLowerCase()}|${contact.phone?.trim() ?? ''}';
+        if (!seenFallbackKeys.add(key)) return;
+      }
+      merged.add(contact);
+    }
+
+    for (final summary in recentContacts) {
+      addContact(summary.contact);
+    }
+    for (final summary in allContacts) {
+      addContact(summary.contact);
+    }
+    return merged;
+  }
+
   /// Single contact summary
   Future<ContactSummary?> getContactById(int contactId) async {
     final rows = await _dbHelper.rawQuery(
@@ -159,7 +189,7 @@ class ContactRepository {
       COUNT(t.id) AS transaction_count,
       COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS total_lent,
       COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS total_borrowed,
-      MAX(t.date) AS last_transaction_date
+      MAX(COALESCE(t.updated_at, t.created_at, t.date)) AS last_transaction_date
     FROM contacts c
     LEFT JOIN transactions t ON c.id = t.contact_id
     GROUP BY c.id

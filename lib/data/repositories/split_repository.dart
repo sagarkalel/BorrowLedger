@@ -9,6 +9,8 @@ import '../database/database_helper.dart';
 class SplitRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   Future<void>? _syncAllFuture;
+  static const String _activityOrder =
+      'updated_at DESC, created_at DESC, id DESC';
 
   // Helper method to compare doubles with tolerance for floating-point precision
   bool _isAmountFullyPaid(double paid, double shareAmount) {
@@ -118,7 +120,7 @@ class SplitRepository {
         description: 'Split: ${split.title}',
         date: split.date,
         createdAt: split.createdAt,
-        updatedAt: DateTime.now(),
+        updatedAt: split.updatedAt,
         sourceType: AppConstants.sourceTypeSplit,
         sourceId: split.id,
       ).toMap(),
@@ -197,7 +199,7 @@ class SplitRepository {
   }) async {
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'split_expenses',
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -256,7 +258,7 @@ class SplitRepository {
       'split_expenses',
       where: 'status = ?',
       whereArgs: [status],
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -281,7 +283,7 @@ class SplitRepository {
       'split_expenses',
       where: 'title LIKE ? OR description LIKE ?',
       whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
-      orderBy: 'date DESC',
+      orderBy: _activityOrder,
       limit: limit,
       offset: offset,
     );
@@ -612,7 +614,7 @@ class SplitRepository {
       FROM split_expenses se
       INNER JOIN split_participants sp ON se.id = sp.split_id
       WHERE sp.contact_id = ?
-      ORDER BY se.date DESC
+      ORDER BY se.updated_at DESC, se.created_at DESC, se.id DESC
       LIMIT ? OFFSET ?
     ''',
       [contactId, limit, offset],

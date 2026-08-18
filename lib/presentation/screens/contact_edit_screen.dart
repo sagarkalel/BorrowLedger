@@ -168,10 +168,6 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 prefixIcon: Icons.person_outline_rounded,
                 textCapitalization: TextCapitalization.words,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return tr.pleaseEnterContactName;
@@ -190,10 +186,6 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 keyboardType: TextInputType.phone,
                 inputFormatters: FormInputUtils.phoneInputFormatters,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return tr.pleaseEnterPhoneNumber;
@@ -213,10 +205,6 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (!value.contains('@') || !value.contains('.')) {

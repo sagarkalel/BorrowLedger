@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_formatter.dart';
 import 'app_list_avatar.dart';
 import 'app_pill_badge.dart';
 
@@ -25,6 +26,7 @@ class TransactionListItem extends StatelessWidget {
     final isLend = transaction.type == AppConstants.typeLend;
     final isCash = transaction.category == AppConstants.categoryCash;
     final isSplit = transaction.category == AppConstants.categorySplit;
+    final isShared = transaction.category == AppConstants.categorySharedSpend;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tr = AppLocalizations.of(context)!;
@@ -66,6 +68,8 @@ class TransactionListItem extends StatelessWidget {
                 label: contactName,
                 indicatorIcon: isSplit
                     ? Icons.call_split_rounded
+                    : isShared
+                    ? Icons.receipt_long_outlined
                     : isCash
                     ? Icons.currency_rupee
                     : Icons.shopping_bag,
@@ -84,7 +88,12 @@ class TransactionListItem extends StatelessWidget {
                     Text(
                       showContactIdentity
                           ? contactName
-                          : _transactionTitle(context, isCash, isSplit),
+                          : _transactionTitle(
+                              context,
+                              isCash,
+                              isSplit,
+                              isShared,
+                            ),
                       style: TextStyle(
                         fontSize: showContactIdentity ? 14 : 13.5,
                         fontWeight: FontWeight.w700,
@@ -96,7 +105,13 @@ class TransactionListItem extends StatelessWidget {
                     const SizedBox(height: 3),
 
                     // Category badge and item info
-                    _buildCategoryInfo(context, isCash, isSplit, categoryColor),
+                    _buildCategoryInfo(
+                      context,
+                      isCash,
+                      isSplit,
+                      isShared,
+                      categoryColor,
+                    ),
                     const SizedBox(height: 3),
 
                     // Phone, Date, Expected date
@@ -115,11 +130,22 @@ class TransactionListItem extends StatelessWidget {
     );
   }
 
-  String _transactionTitle(BuildContext context, bool isCash, bool isSplit) {
+  String _transactionTitle(
+    BuildContext context,
+    bool isCash,
+    bool isSplit,
+    bool isShared,
+  ) {
     final tr = AppLocalizations.of(context)!;
     if (isSplit) {
       final splitTitle = _splitTitle();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
+    }
+    if (isShared) {
+      if (transaction.description?.trim().isNotEmpty == true) {
+        return transaction.description!.trim();
+      }
+      return tr.sharedSpend;
     }
     if (!isCash && transaction.itemName?.trim().isNotEmpty == true) {
       return transaction.itemName!.trim();
@@ -134,6 +160,7 @@ class TransactionListItem extends StatelessWidget {
     BuildContext context,
     bool isCash,
     bool isSplit,
+    bool isShared,
     Color categoryColor,
   ) {
     final tr = AppLocalizations.of(context)!;
@@ -146,11 +173,19 @@ class TransactionListItem extends StatelessWidget {
         AppPillBadge(
           label: isSplit
               ? tr.split
+              : isShared
+              ? tr.sharedSpend
               : isCash
               ? tr.cashBadge
               : tr.udhariBadge,
-          icon: isSplit ? Icons.call_split_rounded : null,
-          color: isSplit ? categoryColor : colorScheme.onSurfaceVariant,
+          icon: isSplit
+              ? Icons.call_split_rounded
+              : isShared
+              ? Icons.receipt_long_outlined
+              : null,
+          color: isSplit || isShared
+              ? categoryColor
+              : colorScheme.onSurfaceVariant,
           fontSize: 8.5,
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         ),
@@ -183,10 +218,36 @@ class TransactionListItem extends StatelessWidget {
           ),
         ],
 
+        if (showContactIdentity && isShared) ...[
+          const SizedBox(width: 6),
+          Container(
+            width: 2,
+            height: 2,
+            decoration: BoxDecoration(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              _sharedSpendDetail(context),
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+
         // For udhari, show item name
         if (showContactIdentity &&
             !isCash &&
             !isSplit &&
+            !isShared &&
             transaction.itemName != null) ...[
           const SizedBox(width: 6),
           Container(
@@ -221,6 +282,22 @@ class TransactionListItem extends StatelessWidget {
     return transaction.description
         ?.replaceFirst(RegExp(r'^(Split|Split history):\s*'), '')
         .trim();
+  }
+
+  String _sharedSpendDetail(BuildContext context) {
+    final total = transaction.sharedTotalAmount;
+    final contactName =
+        transaction.contactName ?? AppLocalizations.of(context)!.unknown;
+    final payer = transaction.sharedPaidByUser == true
+        ? AppLocalizations.of(context)!.youPaidLabel
+        : AppLocalizations.of(context)!.personPaid(contactName);
+    final shareLabel = transaction.sharedPaidByUser == true
+        ? AppLocalizations.of(context)!.personShare(contactName)
+        : AppLocalizations.of(context)!.yourShare;
+    final totalText = total == null
+        ? ''
+        : ' ${CurrencyFormatter.format(total)}';
+    return '$payer$totalText • $shareLabel ${CurrencyFormatter.format(transaction.amount)}';
   }
 
   Widget _buildMetaInfo(BuildContext context, bool hasPhone) {
@@ -308,7 +385,7 @@ class TransactionListItem extends StatelessWidget {
           children: [
             // Amount
             Text(
-              '₹${transaction.amount.toStringAsFixed(2)}',
+              CurrencyFormatter.format(transaction.amount),
               style: TextStyle(
                 fontSize: 16.5,
                 fontWeight: FontWeight.w800,

@@ -22,6 +22,12 @@ class TransactionModel {
   final String? sourceType;
   final int? sourceId;
 
+  // Shared spend metadata
+  final double? sharedTotalAmount;
+  final double? sharedUserShare;
+  final double? sharedContactShare;
+  final bool? sharedPaidByUser;
+
   // Optional, for joined queries
   final String? contactName;
   final String? contactPhone;
@@ -44,6 +50,10 @@ class TransactionModel {
     this.isSettlement = false, // Default false
     this.sourceType,
     this.sourceId,
+    this.sharedTotalAmount,
+    this.sharedUserShare,
+    this.sharedContactShare,
+    this.sharedPaidByUser,
     this.contactName,
     this.contactPhone,
     this.contactAvatar,
@@ -58,6 +68,8 @@ class TransactionModel {
 
   // Helper getter for split-linked transactions
   bool get isSplit => category == 'split';
+
+  bool get isSharedSpend => category == 'shared_spend';
 
   // Helper getter to check if transaction is overdue
   bool get isOverdue {
@@ -83,6 +95,12 @@ class TransactionModel {
       'is_settlement': isSettlement ? 1 : 0, // Store as integer
       'source_type': sourceType,
       'source_id': sourceId,
+      'shared_total_amount': sharedTotalAmount,
+      'shared_user_share': sharedUserShare,
+      'shared_contact_share': sharedContactShare,
+      'shared_paid_by_user': sharedPaidByUser == null
+          ? null
+          : (sharedPaidByUser! ? 1 : 0),
     };
   }
 
@@ -108,6 +126,18 @@ class TransactionModel {
       isSettlement: (map['is_settlement'] as int?) == 1,
       sourceType: map['source_type'] as String?,
       sourceId: map['source_id'] as int?,
+      sharedTotalAmount: map['shared_total_amount'] != null
+          ? (map['shared_total_amount'] as num).toDouble()
+          : null,
+      sharedUserShare: map['shared_user_share'] != null
+          ? (map['shared_user_share'] as num).toDouble()
+          : null,
+      sharedContactShare: map['shared_contact_share'] != null
+          ? (map['shared_contact_share'] as num).toDouble()
+          : null,
+      sharedPaidByUser: map['shared_paid_by_user'] == null
+          ? null
+          : (map['shared_paid_by_user'] as int) == 1,
       contactName: map['contact_name'] as String?,
       contactPhone: map['contact_phone'] as String?,
       contactAvatar: map['contact_avatar'] as String?,
@@ -132,6 +162,10 @@ class TransactionModel {
     bool? isSettlement,
     String? sourceType,
     int? sourceId,
+    double? sharedTotalAmount,
+    double? sharedUserShare,
+    double? sharedContactShare,
+    bool? sharedPaidByUser,
     String? contactName,
     String? contactPhone,
     String? contactAvatar,
@@ -153,6 +187,10 @@ class TransactionModel {
       isSettlement: isSettlement ?? this.isSettlement,
       sourceType: sourceType ?? this.sourceType,
       sourceId: sourceId ?? this.sourceId,
+      sharedTotalAmount: sharedTotalAmount ?? this.sharedTotalAmount,
+      sharedUserShare: sharedUserShare ?? this.sharedUserShare,
+      sharedContactShare: sharedContactShare ?? this.sharedContactShare,
+      sharedPaidByUser: sharedPaidByUser ?? this.sharedPaidByUser,
       contactName: contactName ?? this.contactName,
       contactPhone: contactPhone ?? this.contactPhone,
       contactAvatar: contactAvatar ?? this.contactAvatar,

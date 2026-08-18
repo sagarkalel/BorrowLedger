@@ -6,7 +6,7 @@ class AppConstants {
 
   // Database
   static const String dbName = 'borrow_ledger.db';
-  static const int dbVersion = 10; // UPDATED: Added split settlement routing
+  static const int dbVersion = 12; // UPDATED: Added contact activity indexes
 
   // Storage Keys
   static const String themeKey = 'theme_mode';
@@ -24,9 +24,11 @@ class AppConstants {
   static const String categoryCash = 'cash';
   static const String categoryUdhari = 'udhari';
   static const String categorySplit = 'split';
+  static const String categorySharedSpend = 'shared_spend';
 
   // Transaction Sources
   static const String sourceTypeSplit = 'split';
+  static const String sourceTypeSharedSpend = 'shared_spend';
 
   // Transaction Status
   static const String statusPending = 'pending';

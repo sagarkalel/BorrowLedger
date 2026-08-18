@@ -141,6 +141,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionProgress => 'Collection Progress';
 
   @override
+  String get contactFallback => 'Contact';
+
+  @override
+  String get balance => 'Balance';
+
+  @override
   String get comment_navigation => '========== Navigation ==========';
 
   @override
@@ -274,6 +280,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whoNeedsToPayYou => 'Who Needs to Pay You';
 
   @override
+  String get moneyTransaction => 'Money Transaction';
+
+  @override
+  String get moneyTransactionDescription => 'Direct money given or received';
+
+  @override
+  String get moneyTransactionOnePersonDescription =>
+      'Direct money given or received with one person';
+
+  @override
+  String get udhariItemCredit => 'Udhari / Item Credit';
+
+  @override
+  String get udhariItemCreditDescription =>
+      'Item or service bought/sold on credit';
+
+  @override
+  String get sharedSpend => 'Shared Spend';
+
+  @override
+  String get sharedSpendDescription => 'One of you paid for something together';
+
+  @override
+  String get whoPaid => 'Who paid?';
+
+  @override
+  String get udhariDirection => 'Udhari direction';
+
+  @override
+  String get moneyDirection => 'Money direction';
+
+  @override
+  String get iPaid => 'I paid';
+
+  @override
+  String get iGaveItem => 'I gave item';
+
+  @override
+  String get iGave => 'I gave';
+
+  @override
+  String get iTookItem => 'I took item';
+
+  @override
+  String get iGot => 'I got';
+
+  @override
+  String get youPaidLabel => 'You paid';
+
+  @override
+  String personPaid(Object personName) {
+    return '$personName paid';
+  }
+
+  @override
+  String personPays(Object personName) {
+    return '$personName pays';
+  }
+
+  @override
+  String paysPerson(Object personName) {
+    return 'Pays $personName';
+  }
+
+  @override
   String get comment_categories => '========== Categories ==========';
 
   @override
@@ -302,6 +373,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cashAndUdhari => 'Cash & Udhari';
+
+  @override
+  String get groupSplit => 'Group split';
+
+  @override
+  String get groupSplitDescription => 'Split one expense with multiple people';
 
   @override
   String get comment_amounts => '========== Amounts ==========';
@@ -365,6 +442,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalPending => 'Total Pending';
+
+  @override
+  String get purposeRequired => 'Purpose *';
+
+  @override
+  String get purposeHint => 'Dinner, petrol, shopping...';
+
+  @override
+  String get pleaseEnterPurpose => 'Please enter purpose';
+
+  @override
+  String get totalBill => 'Total bill';
+
+  @override
+  String get totalBillAmountRequired => 'Total bill amount *';
+
+  @override
+  String get totalBillAmountOptional => 'Total bill amount (Optional)';
+
+  @override
+  String get enterFullBillAmount => 'Enter full bill amount';
+
+  @override
+  String get contactShareBecomesHalf => 'Contact share becomes half of total';
+
+  @override
+  String get yourShareBecomesHalf =>
+      'Your share becomes half when total is entered';
+
+  @override
+  String personShare(Object personName) {
+    return '$personName share';
+  }
+
+  @override
+  String personShareRequired(Object personName) {
+    return '$personName share *';
+  }
+
+  @override
+  String get myShareRequired => 'My share *';
+
+  @override
+  String amountPersonShouldPay(Object personName) {
+    return 'Amount $personName should pay';
+  }
+
+  @override
+  String get amountYouShouldPay => 'Amount you should pay';
+
+  @override
+  String get shareCannotExceedTotalBill => 'Share cannot exceed total bill';
 
   @override
   String get comment_contacts => '========== Contacts ==========';
@@ -1990,6 +2119,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preparingStatement => 'Preparing statement...';
 
   @override
+  String get preparingInvoice => 'Preparing invoice...';
+
+  @override
   String get last15Days => 'Last 15 days';
 
   @override
@@ -2011,6 +2143,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get borrowLedgerFullStatement => 'HisaabMate Full Statement';
 
   @override
+  String get splitInvoice => 'Split Invoice';
+
+  @override
+  String splitInvoiceFrom(Object ownerName, Object splitTitle) {
+    return 'Split invoice from $ownerName: $splitTitle';
+  }
+
+  @override
+  String splitInvoiceSubject(Object splitTitle) {
+    return 'Split Invoice - $splitTitle';
+  }
+
+  @override
   String get period => 'Period';
 
   @override
@@ -2018,6 +2163,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generatedOn => 'Generated on';
+
+  @override
+  String ownerPaid(Object ownerName) {
+    return '$ownerName paid';
+  }
+
+  @override
+  String ownerShare(Object ownerName) {
+    return '$ownerName\'s share';
+  }
+
+  @override
+  String ownerBalance(Object ownerName) {
+    return '$ownerName\'s balance';
+  }
+
+  @override
+  String ownerGets(Object ownerName) {
+    return '$ownerName gets';
+  }
+
+  @override
+  String ownerGives(Object ownerName) {
+    return '$ownerName gives';
+  }
+
+  @override
+  String ownerGave(Object ownerName) {
+    return '$ownerName gave';
+  }
+
+  @override
+  String ownerGot(Object ownerName) {
+    return '$ownerName got';
+  }
+
+  @override
+  String get routedThroughTrustedPerson => 'Routed through trusted person';
+
+  @override
+  String get optimizedRouteLabel => 'Optimized route';
 
   @override
   String get opening => 'Opening';

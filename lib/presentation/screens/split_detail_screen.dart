@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/constants/app_text_styles.dart';
 import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -487,7 +488,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '₹${split.totalAmount.toStringAsFixed(2)}',
+                        _money(split.totalAmount),
                         style: TextStyle(
                           fontSize: 23,
                           fontWeight: FontWeight.w800,
@@ -507,7 +508,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   child: _buildInfoChip(
                     icon: Icons.person_rounded,
                     label: tr.yourShare,
-                    value: '₹${userShare.toStringAsFixed(2)}',
+                    value: _money(userShare),
                     color: colorScheme.secondary,
                     isDark: isDark,
                   ),
@@ -517,7 +518,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   child: _buildInfoChip(
                     icon: Icons.payments_rounded,
                     label: tr.youPaid,
-                    value: '₹${split.paidByUser.toStringAsFixed(2)}',
+                    value: _money(split.paidByUser),
                     color: colorScheme.primary,
                     isDark: isDark,
                   ),
@@ -550,7 +551,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '₹${balance.abs().toStringAsFixed(2)}',
+                            _money(balance.abs()),
                             style: TextStyle(
                               fontSize: 18,
                               color: balanceColor,
@@ -589,7 +590,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '₹${totalReceived.toStringAsFixed(0)}/₹${totalExpected.toStringAsFixed(0)}',
+                    '${_money(totalReceived)}/${_money(totalExpected)}',
                     style: TextStyle(
                       fontSize: 11,
                       color: colorScheme.onSurfaceVariant,
@@ -828,7 +829,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '₹${step.amount.toStringAsFixed(2)}',
+            _money(step.amount),
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.splitColor,
@@ -1033,7 +1034,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   )
                 else
                   Text(
-                    '₹${remaining.toStringAsFixed(2)}',
+                    _money(remaining),
                     style: AppTextStyles.body2.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1078,28 +1079,26 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final remaining = settlement.remainingAmount;
     if (remaining > 0) {
       if (participant.paid > 0) {
-        return AppLocalizations.of(context)!.settledAmountLeft(
-          '₹${participant.paid.toStringAsFixed(2)}',
-          '₹${remaining.toStringAsFixed(2)}',
-        );
+        return AppLocalizations.of(
+          context,
+        )!.settledAmountLeft(_money(participant.paid), _money(remaining));
       }
       if (settlement.participantOwes) {
-        return AppLocalizations.of(context)!.owesCounterparty(
-          settlement.counterpartyName,
-          '₹${remaining.toStringAsFixed(2)}',
-        );
+        return AppLocalizations.of(
+          context,
+        )!.owesCounterparty(settlement.counterpartyName, _money(remaining));
       }
       return AppLocalizations.of(context)!.youOwePerson(
         participant.contactName ?? AppLocalizations.of(context)!.unknown,
-        '₹${remaining.toStringAsFixed(2)}',
+        _money(remaining),
       );
     }
 
     if (participant.expensePaid > 0) {
-      return '$shareLabel: ₹${participant.shareAmount.toStringAsFixed(2)} • ${AppLocalizations.of(context)!.paidDuringBill} ₹${participant.expensePaid.toStringAsFixed(2)}';
+      return '$shareLabel: ${_money(participant.shareAmount)} • ${AppLocalizations.of(context)!.paidDuringBill} ${_money(participant.expensePaid)}';
     }
 
-    return '$shareLabel: ₹${participant.shareAmount.toStringAsFixed(2)}';
+    return '$shareLabel: ${_money(participant.shareAmount)}';
   }
 
   void _showSettleParticipantDialog(SplitSettlementResult settlement) {
@@ -1121,7 +1120,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               : AppTheme.moneyOutColor;
           final title = userReceives ? tr.markAsReceived : tr.markAsPaid;
           final amountLabel = userReceives ? tr.amountReceived : tr.amountPaid;
-          final remainingText = '₹${remaining.toStringAsFixed(2)}';
+          final remainingText = _money(remaining);
           final directionText = settlement.participantOwes
               ? tr.personOwesCounterparty(
                   participant.contactName ?? tr.unknown,
@@ -1156,20 +1155,20 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                   children: [
                     _buildDialogAmountRow(
                       tr.shareAmount,
-                      '₹${participant.shareAmount.toStringAsFixed(2)}',
+                      _money(participant.shareAmount),
                     ),
                     if (participant.expensePaid > 0) ...[
                       const SizedBox(height: 6),
                       _buildDialogAmountRow(
                         tr.paidDuringBill,
-                        '₹${participant.expensePaid.toStringAsFixed(2)}',
+                        _money(participant.expensePaid),
                       ),
                     ],
                     if (participant.paid > 0) ...[
                       const SizedBox(height: 6),
                       _buildDialogAmountRow(
                         tr.alreadyPaid,
-                        '₹${participant.paid.toStringAsFixed(2)}',
+                        _money(participant.paid),
                       ),
                     ],
                     const SizedBox(height: 8),
@@ -1177,7 +1176,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                     const SizedBox(height: 8),
                     _buildDialogAmountRow(
                       tr.remaining,
-                      '₹${remaining.toStringAsFixed(2)}',
+                      _money(remaining),
                       color: color,
                       isStrong: true,
                     ),
@@ -1264,7 +1263,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                             return tr.pleaseEnterValidAmount;
                           }
                           if (amount > remaining) {
-                            return '${tr.amountCanNotExceed} ₹${remaining.toStringAsFixed(2)}';
+                            return '${tr.amountCanNotExceed} ${_money(remaining)}';
                           }
                           return null;
                         },
@@ -1278,9 +1277,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                           final amount = remaining * percent;
                           final percentage = (percent * 100).toInt();
                           return ActionChip(
-                            label: Text(
-                              '$percentage%  ₹${amount.toStringAsFixed(0)}',
-                            ),
+                            label: Text('$percentage%  ${_money(amount)}'),
                             onPressed: () => amountController.text = amount
                                 .toStringAsFixed(2),
                             visualDensity: VisualDensity.compact,
@@ -1427,7 +1424,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final participantName = settlement.participant.contactName ?? tr.unknown;
-    final amount = '₹${settlement.remainingAmount.toStringAsFixed(2)}';
+    final amount = _money(settlement.remainingAmount);
     final text = settlement.participantOwes
         ? tr.personOwesCounterparty(
             participantName,
@@ -1560,7 +1557,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                 children: [
                   _buildDialogAmountRow(
                     tr.totalPending,
-                    '₹${totalPending.toStringAsFixed(2)}',
+                    _money(totalPending),
                     color: AppTheme.warningColor,
                     isStrong: true,
                   ),
@@ -1704,7 +1701,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const AppLoadingDialog(message: 'Preparing invoice...'),
+        builder: (_) => AppLoadingDialog(message: tr.preparingInvoice),
       );
 
       final file = await _createSplitInvoiceImage(split, ownerName);
@@ -1717,8 +1714,8 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'Split invoice from $ownerName: ${split.title}',
-          subject: 'Split Invoice - ${split.title}',
+          text: tr.splitInvoiceFrom(ownerName, split.title),
+          subject: tr.splitInvoiceSubject(split.title),
         ),
       );
     } catch (e) {
@@ -1813,7 +1810,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawText(
       canvas,
-      isSettled ? 'SETTLED' : 'PENDING',
+      isSettled ? tr.settledBadge : tr.pendingBadge,
       Offset(right - 150, y + 4),
       fontSize: 20,
       fontWeight: FontWeight.w800,
@@ -1824,7 +1821,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     y += 44;
     _drawText(
       canvas,
-      'Split Invoice',
+      tr.splitInvoice,
       Offset(left, y),
       fontSize: 46,
       fontWeight: FontWeight.w800,
@@ -1855,7 +1852,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawInvoiceMeta(
       canvas,
-      label: 'Date',
+      label: tr.date,
       value: DateFormat(AppConstants.dateTimeFormat).format(split.date),
       x: right - 320,
       y: y,
@@ -1889,7 +1886,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final summaryWidth = (right - left) / 4;
     _drawInvoiceMetric(
       canvas,
-      label: 'Total bill',
+      label: tr.totalBill,
       value: _money(split.totalAmount),
       x: left + 22,
       y: summaryTop + 24,
@@ -1899,7 +1896,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawInvoiceMetric(
       canvas,
-      label: '$ownerName paid',
+      label: tr.ownerPaid(ownerName),
       value: _money(split.paidByUser),
       x: left + summaryWidth + 12,
       y: summaryTop + 24,
@@ -1909,7 +1906,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawInvoiceMetric(
       canvas,
-      label: '${_possessive(ownerName)} share',
+      label: tr.ownerShare(ownerName),
       value: _money(userShare),
       x: left + summaryWidth * 2 + 12,
       y: summaryTop + 24,
@@ -1920,10 +1917,10 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawInvoiceMetric(
       canvas,
       label: balance.abs() < 0.01
-          ? '${_possessive(ownerName)} balance'
+          ? tr.ownerBalance(ownerName)
           : balance >= 0
-          ? '$ownerName gets'
-          : '$ownerName gives',
+          ? tr.ownerGets(ownerName)
+          : tr.ownerGives(ownerName),
       value: _money(balance.abs()),
       x: left + summaryWidth * 3 + 12,
       y: summaryTop + 24,
@@ -1934,12 +1931,12 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     y += 158;
 
     if (routeSteps.isNotEmpty) {
-      _drawInvoiceSectionTitle(canvas, 'Settlement Route', left, y, textColor);
+      _drawInvoiceSectionTitle(canvas, tr.settlementRoute, left, y, textColor);
       _drawText(
         canvas,
         split.settlementRouteMode == AppConstants.splitRouteMediator
-            ? 'Routed through trusted person'
-            : 'Optimized route',
+            ? tr.routedThroughTrustedPerson
+            : tr.optimizedRouteLabel,
         Offset(right - 300, y + 5),
         fontSize: 18,
         fontWeight: FontWeight.w600,
@@ -1957,14 +1954,15 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         lineColor,
         headerFill,
         AppTheme.splitColor,
+        tr,
       );
       y += routeHeight;
     }
 
-    _drawInvoiceSectionTitle(canvas, 'Participants', left, y, textColor);
+    _drawInvoiceSectionTitle(canvas, tr.participants, left, y, textColor);
     _drawText(
       canvas,
-      '${participants.length} ${participants.length == 1 ? 'participant' : 'participants'}',
+      '${participants.length} ${participants.length == 1 ? tr.personSmall : tr.peopleSmall}',
       Offset(right - 180, y + 5),
       fontSize: 18,
       fontWeight: FontWeight.w700,
@@ -1980,6 +1978,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       headerFill,
       lineColor,
       mutedColor,
+      tr,
     );
     y += 42;
 
@@ -2014,6 +2013,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         lineColor,
         ownerName,
         settlement.userReceives,
+        tr,
       );
       y += rowHeight;
     }
@@ -2022,7 +2022,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawHorizontalLine(canvas, left, right, y, lineColor);
     _drawText(
       canvas,
-      'Generated by $ownerName',
+      '${tr.generatedBy} $ownerName',
       Offset(left, y + 24),
       fontSize: 18,
       fontWeight: FontWeight.w600,
@@ -2052,11 +2052,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     return file;
   }
 
-  String _money(double amount) => '₹${amount.toStringAsFixed(2)}';
-
-  String _possessive(String name) {
-    return name.endsWith('s') ? "$name'" : "$name's";
-  }
+  String _money(double amount) => CurrencyFormatter.format(amount);
 
   String _safeFilePart(String value) {
     final safe = value
@@ -2187,6 +2183,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     Color lineColor,
     Color headerFill,
     Color accentColor,
+    AppLocalizations tr,
   ) {
     _drawRoundedRect(
       canvas,
@@ -2217,7 +2214,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawText(
       canvas,
-      'From',
+      tr.fromText,
       Offset(rect.left + 18, rect.top + 10),
       fontSize: 15,
       fontWeight: FontWeight.w800,
@@ -2225,7 +2222,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawText(
       canvas,
-      'To',
+      tr.toText,
       Offset(rect.left + rect.width * 0.45, rect.top + 10),
       fontSize: 15,
       fontWeight: FontWeight.w800,
@@ -2233,7 +2230,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     _drawText(
       canvas,
-      'Amount',
+      tr.amount,
       Offset(rect.right - 160, rect.top + 10),
       fontSize: 15,
       fontWeight: FontWeight.w800,
@@ -2283,13 +2280,14 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     Color fill,
     Color lineColor,
     Color mutedColor,
+    AppLocalizations tr,
   ) {
     _drawRoundedRect(canvas, rect, fill, radius: 12, strokeColor: lineColor);
     _drawParticipantTableVerticals(canvas, rect, lineColor);
     _drawParticipantTableText(
       canvas,
       rect,
-      'Person',
+      tr.personSmall,
       0.02,
       0.28,
       mutedColor,
@@ -2298,7 +2296,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawParticipantTableText(
       canvas,
       rect,
-      'Share',
+      tr.shareAmount,
       0.33,
       0.13,
       mutedColor,
@@ -2308,7 +2306,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawParticipantTableText(
       canvas,
       rect,
-      'Paid',
+      tr.paid,
       0.49,
       0.13,
       mutedColor,
@@ -2318,7 +2316,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawParticipantTableText(
       canvas,
       rect,
-      'Settled',
+      tr.settled,
       0.65,
       0.13,
       mutedColor,
@@ -2328,7 +2326,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     _drawParticipantTableText(
       canvas,
       rect,
-      'Balance',
+      tr.balance,
       0.81,
       0.17,
       mutedColor,
@@ -2348,19 +2346,20 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     Color lineColor,
     String ownerName,
     bool? userReceives,
+    AppLocalizations tr,
   ) {
     _drawParticipantTableVerticals(canvas, rect, lineColor);
     _drawHorizontalLine(canvas, rect.left, rect.right, rect.bottom, lineColor);
     final balanceText = remaining <= 0
-        ? 'Settled'
+        ? tr.settled
         : userReceives == false
-        ? '$ownerName pays'
-        : 'Pays $ownerName';
+        ? tr.personPays(ownerName)
+        : tr.paysPerson(ownerName);
 
     _drawParticipantTableText(
       canvas,
       rect,
-      participant.contactName ?? 'Unknown',
+      participant.contactName ?? tr.unknown,
       0.02,
       0.28,
       textColor,
@@ -2493,14 +2492,15 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
 
   void _showDeleteConfirmation() {
     final tr = AppLocalizations.of(context)!;
+    final pageContext = context;
     showDialog(
-      context: context,
-      builder: (context) => DeleteSplitExpenseDialog(
+      context: pageContext,
+      builder: (dialogContext) => DeleteSplitExpenseDialog(
         onConfirm: () async {
-          await context.read<SplitCubit>().deleteSplit(_split!.id!);
-          if (context.mounted) {
-            showSuccessSnackbar(context, tr.splitExpenseDeleted);
-            Navigator.pop(context, true);
+          await pageContext.read<SplitCubit>().deleteSplit(_split!.id!);
+          if (pageContext.mounted) {
+            showSuccessSnackbar(pageContext, tr.splitExpenseDeleted);
+            Navigator.pop(pageContext, true);
           }
         },
       ),

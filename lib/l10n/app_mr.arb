@@ -709,5 +709,133 @@
   "zeroDecimal": "0.00",
   "collectionProgress": "पैशांची प्रगती",
   "personSmall": "व्यक्ति",
-  "peopleSmall": "लोक"
+  "peopleSmall": "लोक",
+  "restartRecommended": "चांगल्या अनुभवासाठी रीस्टार्ट सुचवले आहे",
+  "restartRecommendedMessage": "रीस्टार्ट सुचवले आहे",
+  "contactFallback": "संपर्क",
+  "moneyTransaction": "पैशांचा व्यवहार",
+  "moneyTransactionDescription": "थेट पैसे दिले किंवा घेतले",
+  "moneyTransactionOnePersonDescription": "एका व्यक्तीसोबत थेट पैसे दिले किंवा घेतले",
+  "udhariItemCredit": "उधारी / वस्तू क्रेडिट",
+  "udhariItemCreditDescription": "वस्तू किंवा सेवा उधारीवर घेतली/विकली",
+  "sharedSpend": "सामायिक खर्च",
+  "sharedSpendDescription": "तुमच्यापैकी एकाने एकत्रित खर्च भरला",
+  "groupSplit": "ग्रुप स्प्लिट",
+  "groupSplitDescription": "एक खर्च अनेक लोकांमध्ये विभागा",
+  "purposeRequired": "उद्देश *",
+  "purposeHint": "जेवण, पेट्रोल, शॉपिंग...",
+  "pleaseEnterPurpose": "कृपया उद्देश टाका",
+  "totalBill": "एकूण बिल",
+  "totalBillAmountRequired": "एकूण बिल रक्कम *",
+  "totalBillAmountOptional": "एकूण बिल रक्कम (ऐच्छिक)",
+  "enterFullBillAmount": "पूर्ण बिल रक्कम टाका",
+  "contactShareBecomesHalf": "संपर्काचा हिस्सा एकूण रकमेच्या अर्धा होईल",
+  "yourShareBecomesHalf": "एकूण रक्कम टाकल्यावर तुमचा हिस्सा अर्धा होईल",
+  "personShare": "{personName} चा हिस्सा",
+  "@personShare": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "personShareRequired": "{personName} चा हिस्सा *",
+  "@personShareRequired": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "myShareRequired": "माझा हिस्सा *",
+  "amountPersonShouldPay": "{personName} ने द्यायची रक्कम",
+  "@amountPersonShouldPay": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "amountYouShouldPay": "तुम्ही द्यायची रक्कम",
+  "shareCannotExceedTotalBill": "हिस्सा एकूण बिलापेक्षा जास्त असू शकत नाही",
+  "whoPaid": "कोणी पैसे दिले?",
+  "udhariDirection": "उधारी दिशा",
+  "moneyDirection": "पैशांची दिशा",
+  "iPaid": "मी पैसे दिले",
+  "iGaveItem": "मी वस्तू दिली",
+  "iGave": "मी दिले",
+  "iTookItem": "मी वस्तू घेतली",
+  "iGot": "मला मिळाले",
+  "youPaidLabel": "तुम्ही पैसे दिले",
+  "personPaid": "{personName} ने पैसे दिले",
+  "@personPaid": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "personPays": "{personName} पैसे देईल",
+  "@personPays": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "paysPerson": "{personName} ला पैसे",
+  "@paysPerson": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "preparingInvoice": "इनव्हॉइस तयार होत आहे...",
+  "splitInvoice": "स्प्लिट इनव्हॉइस",
+  "splitInvoiceFrom": "{ownerName} कडून स्प्लिट इनव्हॉइस: {splitTitle}",
+  "@splitInvoiceFrom": {
+    "placeholders": {
+      "ownerName": {},
+      "splitTitle": {}
+    }
+  },
+  "splitInvoiceSubject": "स्प्लिट इनव्हॉइस - {splitTitle}",
+  "@splitInvoiceSubject": {
+    "placeholders": {
+      "splitTitle": {}
+    }
+  },
+  "ownerPaid": "{ownerName} ने पैसे दिले",
+  "@ownerPaid": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerShare": "{ownerName} चा हिस्सा",
+  "@ownerShare": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerBalance": "{ownerName} चा बॅलन्स",
+  "@ownerBalance": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerGets": "{ownerName} ला मिळेल",
+  "@ownerGets": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerGives": "{ownerName} देईल",
+  "@ownerGives": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerGave": "{ownerName} ने दिले",
+  "@ownerGave": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerGot": "{ownerName} ला मिळाले",
+  "@ownerGot": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "routedThroughTrustedPerson": "विश्वासू व्यक्तीमार्फत रूट केले",
+  "optimizedRouteLabel": "ऑप्टिमाइझ्ड रूट"
 }

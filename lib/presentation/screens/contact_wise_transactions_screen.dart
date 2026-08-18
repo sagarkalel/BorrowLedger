@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
-import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
@@ -70,6 +70,7 @@ class _ContactWiseTransactionsScreenState
   bool _isLoadingMore = false;
   bool _hasMoreData = true;
   int _currentPage = 0;
+  int _totalActivityCount = 0;
   int _filteredTotalCount = 0;
   final ScrollController _scrollController = ScrollController();
   List<TransactionModel> _allTransactions = [];
@@ -81,9 +82,10 @@ class _ContactWiseTransactionsScreenState
   double _splitNetBalance = 0;
 
   // Category filtering
-  String? _filterCategory; // null, 'cash', 'udhari', or 'split'
+  String? _filterCategory; // null, 'cash', 'udhari', 'shared_spend', or 'split'
   int _cashCount = 0;
   int _udhariCount = 0;
+  int _sharedSpendCount = 0;
   int _splitCount = 0;
 
   @override
@@ -122,72 +124,76 @@ class _ContactWiseTransactionsScreenState
       await splitRepo.syncAllSplitTransactions();
 
       if (widget.contactId != null) {
-        final directTransactions = await repo.getTransactionsByContact(
-          widget.contactId!,
-        );
-        final contactSplits = await splitRepo.getSplitsByContact(
-          widget.contactId!,
-          limit: 100000,
-          offset: 0,
-        );
-        _allTransactions = _mergeContactTransactionsWithSplitHistory(
-          directTransactions,
-          contactSplits,
-        );
+        final stats = await repo.getContactActivityStats(widget.contactId!);
+        _allTransactions = [];
+        _totalActivityCount = stats['total_transactions'] as int? ?? 0;
+        _totalLent = (stats['total_lent'] as num?)?.toDouble() ?? 0.0;
+        _totalBorrowed = (stats['total_borrowed'] as num?)?.toDouble() ?? 0.0;
+        _netBalance = (stats['net_balance'] as num?)?.toDouble() ?? 0.0;
+        _normalNetBalance =
+            (stats['normal_net_balance'] as num?)?.toDouble() ?? 0.0;
+        _splitNetBalance =
+            (stats['split_net_balance'] as num?)?.toDouble() ?? 0.0;
+        _cashCount = stats['cash_count'] as int? ?? 0;
+        _udhariCount = stats['udhari_count'] as int? ?? 0;
+        _sharedSpendCount = stats['shared_spend_count'] as int? ?? 0;
+        _splitCount = stats['split_count'] as int? ?? 0;
       } else {
         _allTransactions = await repo.getAllTransactions();
-      }
+        _totalActivityCount = _allTransactions.length;
+        _totalLent = 0;
+        _totalBorrowed = 0;
+        _cashCount = 0;
+        _udhariCount = 0;
+        _sharedSpendCount = 0;
+        _splitCount = 0;
+        var normalLent = 0.0;
+        var normalBorrowed = 0.0;
+        var splitLent = 0.0;
+        var splitBorrowed = 0.0;
 
-      _totalLent = 0;
-      _totalBorrowed = 0;
-      _cashCount = 0;
-      _udhariCount = 0;
-      _splitCount = 0;
-      var normalLent = 0.0;
-      var normalBorrowed = 0.0;
-      var splitLent = 0.0;
-      var splitBorrowed = 0.0;
+        for (var transaction in _allTransactions) {
+          final affectsBalance = !_isSplitHistoryOnly(transaction);
 
-      for (var transaction in _allTransactions) {
-        final affectsBalance = !_isSplitHistoryOnly(transaction);
+          if (affectsBalance) {
+            if (transaction.type == AppConstants.typeLend) {
+              _totalLent += transaction.amount;
+            } else {
+              _totalBorrowed += transaction.amount;
+            }
+          }
 
-        if (affectsBalance) {
-          if (transaction.type == AppConstants.typeLend) {
-            _totalLent += transaction.amount;
+          if (transaction.category == AppConstants.categoryCash) {
+            _cashCount++;
+          } else if (transaction.category == AppConstants.categoryUdhari) {
+            _udhariCount++;
+          } else if (transaction.category == AppConstants.categorySharedSpend) {
+            _sharedSpendCount++;
+          } else if (transaction.category == AppConstants.categorySplit) {
+            _splitCount++;
+          }
+
+          if (!affectsBalance) {
+            continue;
+          }
+
+          if (transaction.category == AppConstants.categorySplit) {
+            if (transaction.type == AppConstants.typeLend) {
+              splitLent += transaction.amount;
+            } else {
+              splitBorrowed += transaction.amount;
+            }
+          } else if (transaction.type == AppConstants.typeLend) {
+            normalLent += transaction.amount;
           } else {
-            _totalBorrowed += transaction.amount;
+            normalBorrowed += transaction.amount;
           }
         }
 
-        // Count by category
-        if (transaction.category == AppConstants.categoryCash) {
-          _cashCount++;
-        } else if (transaction.category == AppConstants.categoryUdhari) {
-          _udhariCount++;
-        } else if (transaction.category == AppConstants.categorySplit) {
-          _splitCount++;
-        }
-
-        if (!affectsBalance) {
-          continue;
-        }
-
-        if (transaction.category == AppConstants.categorySplit) {
-          if (transaction.type == AppConstants.typeLend) {
-            splitLent += transaction.amount;
-          } else {
-            splitBorrowed += transaction.amount;
-          }
-        } else if (transaction.type == AppConstants.typeLend) {
-          normalLent += transaction.amount;
-        } else {
-          normalBorrowed += transaction.amount;
-        }
+        _netBalance = _totalLent - _totalBorrowed;
+        _normalNetBalance = normalLent - normalBorrowed;
+        _splitNetBalance = splitLent - splitBorrowed;
       }
-
-      _netBalance = _totalLent - _totalBorrowed;
-      _normalNetBalance = normalLent - normalBorrowed;
-      _splitNetBalance = splitLent - splitBorrowed;
 
       final page = await _loadTransactionsPage(0);
       final totalCount = await _getTransactionCount();
@@ -199,7 +205,7 @@ class _ContactWiseTransactionsScreenState
         _transactions = page;
         _filteredTotalCount = totalCount;
         _currentPage = 0;
-        _hasMoreData = page.length >= _pageSize;
+        _hasMoreData = page.length < totalCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -227,7 +233,7 @@ class _ContactWiseTransactionsScreenState
       setState(() {
         _transactions = [..._transactions, ...newTransactions];
         _currentPage = nextPage;
-        _hasMoreData = newTransactions.length >= _pageSize;
+        _hasMoreData = _transactions.length < _filteredTotalCount;
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -243,12 +249,12 @@ class _ContactWiseTransactionsScreenState
     final offset = page * _pageSize;
 
     if (widget.contactId != null) {
-      final filtered = _filterCategory == null
-          ? _allTransactions
-          : _allTransactions
-                .where((transaction) => transaction.category == _filterCategory)
-                .toList();
-      return filtered.skip(offset).take(_pageSize).toList();
+      return repo.getContactActivity(
+        widget.contactId!,
+        limit: _pageSize,
+        offset: offset,
+        category: _filterCategory,
+      );
     }
 
     if (_filterCategory != null) {
@@ -264,11 +270,9 @@ class _ContactWiseTransactionsScreenState
 
   Future<int> _getTransactionCount() {
     if (widget.contactId != null) {
-      if (_filterCategory == null) return Future.value(_allTransactions.length);
-      return Future.value(
-        _allTransactions
-            .where((transaction) => transaction.category == _filterCategory)
-            .length,
+      return context.read<TransactionRepository>().getContactActivityCount(
+        widget.contactId!,
+        category: _filterCategory,
       );
     }
 
@@ -276,67 +280,6 @@ class _ContactWiseTransactionsScreenState
       contactId: widget.contactId,
       category: _filterCategory,
     );
-  }
-
-  List<TransactionModel> _mergeContactTransactionsWithSplitHistory(
-    List<TransactionModel> directTransactions,
-    List<SplitExpenseModel> contactSplits,
-  ) {
-    final existingSplitIds = directTransactions
-        .where(
-          (transaction) =>
-              transaction.category == AppConstants.categorySplit &&
-              transaction.sourceType == AppConstants.sourceTypeSplit &&
-              transaction.sourceId != null,
-        )
-        .map((transaction) => transaction.sourceId!)
-        .toSet();
-
-    final splitHistoryRows = <TransactionModel>[];
-    for (final split in contactSplits) {
-      final splitId = split.id;
-      if (splitId == null || existingSplitIds.contains(splitId)) continue;
-
-      final participants = split.participants ?? [];
-      SplitParticipantModel? contactParticipant;
-      for (final participant in participants) {
-        if (participant.contactId == widget.contactId) {
-          contactParticipant = participant;
-          break;
-        }
-      }
-      if (contactParticipant == null) continue;
-
-      final netAmount =
-          contactParticipant.shareAmount - contactParticipant.expensePaid;
-      final displayAmount = netAmount.abs() >= 0.01
-          ? netAmount.abs()
-          : contactParticipant.shareAmount;
-
-      splitHistoryRows.add(
-        TransactionModel(
-          type: netAmount >= 0
-              ? AppConstants.typeLend
-              : AppConstants.typeBorrow,
-          category: AppConstants.categorySplit,
-          contactId: widget.contactId!,
-          amount: displayAmount,
-          description: '$_splitHistoryDescriptionPrefix${split.title}',
-          date: split.date,
-          isSettlement: true,
-          sourceType: AppConstants.sourceTypeSplit,
-          sourceId: splitId,
-          contactName: widget.contactName,
-          contactPhone: widget.contactPhone,
-        ),
-      );
-    }
-
-    return [...directTransactions, ...splitHistoryRows]..sort((a, b) {
-      final dateCompare = b.date.compareTo(a.date);
-      if (dateCompare != 0) return dateCompare;
-      return (b.id ?? 0).compareTo(a.id ?? 0);
-    });
   }
 
   bool _isSplitHistoryOnly(TransactionModel transaction) {
@@ -372,7 +315,7 @@ class _ContactWiseTransactionsScreenState
       appBar: AppBar(
         title: Text(widget.contactName ?? tr.allContacts),
         actions: [
-          if (widget.contactId != null && _allTransactions.isNotEmpty)
+          if (widget.contactId != null && _totalActivityCount > 0)
             PopupMenuButton<String>(
               tooltip: tr.moreOptions,
               icon: const Icon(Icons.more_vert_rounded),
@@ -396,11 +339,11 @@ class _ContactWiseTransactionsScreenState
             ),
         ],
       ),
-      body: _isLoading && _allTransactions.isEmpty
+      body: _isLoading && _totalActivityCount == 0
           ? const AppPageLoadingState(compact: true)
           : RefreshIndicator(
               onRefresh: () => _loadTransactions(showLoading: false),
-              child: _allTransactions.isEmpty && !_isLoading
+              child: _totalActivityCount == 0 && !_isLoading
                   ? SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: SizedBox(
@@ -438,6 +381,7 @@ class _ContactWiseTransactionsScreenState
                         // Category filter chips
                         if (_cashCount > 0 ||
                             _udhariCount > 0 ||
+                            _sharedSpendCount > 0 ||
                             _splitCount > 0)
                           SliverPersistentHeader(
                             pinned: true,
@@ -543,6 +487,8 @@ class _ContactWiseTransactionsScreenState
         return tr.cash.toLowerCase();
       case AppConstants.categoryUdhari:
         return tr.udhari.toLowerCase();
+      case AppConstants.categorySharedSpend:
+        return 'shared';
       case AppConstants.categorySplit:
         return tr.split.toLowerCase();
       default:
@@ -562,7 +508,7 @@ class _ContactWiseTransactionsScreenState
         child: Row(
           children: [
             FilterChipWidget(
-              label: '${tr.all} (${_allTransactions.length})',
+              label: '${tr.all} ($_totalActivityCount)',
               isSelected: _filterCategory == null,
               onSelected: () => _setCategoryFilter(null),
             ),
@@ -585,6 +531,17 @@ class _ContactWiseTransactionsScreenState
                 isSelected: _filterCategory == AppConstants.categoryUdhari,
                 onSelected: () =>
                     _setCategoryFilter(AppConstants.categoryUdhari),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (_sharedSpendCount > 0) ...[
+              FilterChipWidget(
+                label: '${tr.sharedSpend} ($_sharedSpendCount)',
+                icon: Icons.receipt_long_outlined,
+                color: AppTheme.sharedSpendColor,
+                isSelected: _filterCategory == AppConstants.categorySharedSpend,
+                onSelected: () =>
+                    _setCategoryFilter(AppConstants.categorySharedSpend),
               ),
               const SizedBox(width: 8),
             ],
@@ -803,8 +760,11 @@ class _ContactWiseTransactionsScreenState
                     const SizedBox(height: 4),
                     Text(
                       isSettled
-                          ? '₹0'
-                          : '${isPositive ? '+' : '-'}₹${_netBalance.abs().toStringAsFixed(2)}',
+                          ? CurrencyFormatter.format(0)
+                          : CurrencyFormatter.format(
+                              _netBalance.abs(),
+                              showSign: true,
+                            ).replaceFirst('+', isPositive ? '+' : '-'),
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 28,
@@ -1141,20 +1101,34 @@ class _ContactWiseTransactionsScreenState
     final tr = AppLocalizations.of(context)!;
     final contactName = widget.contactName ?? tr.allContacts;
     final contactPhone = widget.contactPhone;
-    final periodTransactions = _allTransactions
-        .where((transaction) => _matchesStatementFilter(transaction))
-        .where(
-          (transaction) =>
-              !transaction.date.isBefore(range.start) &&
-              !transaction.date.isAfter(range.end),
-        )
-        .toList();
-    final openingTransactions = _allTransactions
-        .where((transaction) => _matchesStatementFilter(transaction))
-        .where((transaction) => transaction.date.isBefore(range.start))
-        .toList();
-
-    final openingBalance = _netForTransactions(openingTransactions);
+    final repo = context.read<TransactionRepository>();
+    final periodTransactions = widget.contactId == null
+        ? _allTransactions
+              .where((transaction) => _matchesStatementFilter(transaction))
+              .where(
+                (transaction) =>
+                    !transaction.date.isBefore(range.start) &&
+                    !transaction.date.isAfter(range.end),
+              )
+              .toList()
+        : await repo.getContactActivityByDateRange(
+            widget.contactId!,
+            range.start,
+            range.end,
+            category: _filterCategory,
+          );
+    final openingBalance = widget.contactId == null
+        ? _netForTransactions(
+            _allTransactions
+                .where((transaction) => _matchesStatementFilter(transaction))
+                .where((transaction) => transaction.date.isBefore(range.start))
+                .toList(),
+          )
+        : await repo.getContactOpeningBalanceBefore(
+            widget.contactId!,
+            range.start,
+            category: _filterCategory,
+          );
     final periodLent = _sumByType(periodTransactions, AppConstants.typeLend);
     final periodBorrowed = _sumByType(
       periodTransactions,
@@ -1185,6 +1159,7 @@ class _ContactWiseTransactionsScreenState
             periodLent: periodLent,
             periodBorrowed: periodBorrowed,
             closingBalance: closingBalance,
+            ownerName: ownerName,
             tr: tr,
           ),
           pw.SizedBox(height: 18),
@@ -1201,7 +1176,7 @@ class _ContactWiseTransactionsScreenState
               child: pw.Text(tr.noTransactionsInDateRange),
             )
           else
-            _statementTransactionTable(periodTransactions, tr),
+            _statementTransactionTable(periodTransactions, ownerName, tr),
         ],
       ),
     );
@@ -1288,10 +1263,16 @@ class _ContactWiseTransactionsScreenState
     required double periodLent,
     required double periodBorrowed,
     required double closingBalance,
+    required String ownerName,
     required AppLocalizations tr,
   }) {
     return pw.TableHelper.fromTextArray(
-      headers: [tr.opening, tr.youGave, tr.youGot, tr.closing],
+      headers: [
+        tr.opening,
+        tr.ownerGave(ownerName),
+        tr.ownerGot(ownerName),
+        tr.closing,
+      ],
       data: [
         [
           _statementMoney(openingBalance),
@@ -1310,6 +1291,7 @@ class _ContactWiseTransactionsScreenState
 
   pw.Widget _statementTransactionTable(
     List<TransactionModel> transactions,
+    String ownerName,
     AppLocalizations tr,
   ) {
     return pw.TableHelper.fromTextArray(
@@ -1321,10 +1303,10 @@ class _ContactWiseTransactionsScreenState
           isSplitHistory
               ? tr.settledBadge
               : transaction.type == AppConstants.typeLend
-              ? tr.youGave
-              : tr.youGot,
+              ? tr.ownerGave(ownerName)
+              : tr.ownerGot(ownerName),
           _categoryLabel(transaction.category, tr),
-          _transactionDetails(transaction, tr),
+          _transactionDetails(transaction, ownerName, tr),
           isSplitHistory
               ? tr.settled
               : _statementMoney(
@@ -1412,6 +1394,8 @@ class _ContactWiseTransactionsScreenState
         return tr.cash;
       case AppConstants.categoryUdhari:
         return tr.udhari;
+      case AppConstants.categorySharedSpend:
+        return tr.sharedSpend;
       case AppConstants.categorySplit:
         return tr.split;
       default:
@@ -1421,6 +1405,7 @@ class _ContactWiseTransactionsScreenState
 
   String _transactionDetails(
     TransactionModel transaction,
+    String ownerName,
     AppLocalizations tr,
   ) {
     if (_isSplitHistoryOnly(transaction)) {
@@ -1429,7 +1414,23 @@ class _ContactWiseTransactionsScreenState
           .trim();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
-    if (transaction.isSettlement) return 'Settlement';
+    if (transaction.isSettlement) return tr.settlement;
+    if (transaction.category == AppConstants.categorySharedSpend) {
+      final contactName = transaction.contactName ?? tr.unknown;
+      final payer = transaction.sharedPaidByUser == true
+          ? tr.ownerPaid(ownerName)
+          : tr.personPaid(contactName);
+      final total = transaction.sharedTotalAmount;
+      final shareLabel = transaction.sharedPaidByUser == true
+          ? tr.personShare(contactName)
+          : tr.ownerShare(ownerName);
+      return [
+        if (transaction.description?.trim().isNotEmpty == true)
+          transaction.description!.trim(),
+        total == null ? payer : '$payer ${CurrencyFormatter.format(total)}',
+        '$shareLabel ${CurrencyFormatter.format(transaction.amount)}',
+      ].join(' | ');
+    }
     final parts = [
       if (transaction.description?.trim().isNotEmpty == true)
         transaction.description!.trim(),
@@ -1442,8 +1443,7 @@ class _ContactWiseTransactionsScreenState
   }
 
   String _statementMoney(double amount) {
-    final sign = amount < 0 ? '-' : '';
-    return '${sign}INR ${amount.abs().toStringAsFixed(2)}';
+    return CurrencyFormatter.format(amount, symbol: 'Rs');
   }
 
   String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
@@ -1564,6 +1564,7 @@ class _CompactContactTransactionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isLend = transaction.type == AppConstants.typeLend;
     final isSplit = transaction.category == AppConstants.categorySplit;
+    final isShared = transaction.category == AppConstants.categorySharedSpend;
     final directionColor = AppTheme.getTransactionDirectionColor(
       transaction.type,
     );
@@ -1593,6 +1594,8 @@ class _CompactContactTransactionCard extends StatelessWidget {
                 child: Icon(
                   isSplit
                       ? Icons.call_split_rounded
+                      : isShared
+                      ? Icons.receipt_long_outlined
                       : transaction.isSettlement
                       ? Icons.done_all_rounded
                       : transaction.category == AppConstants.categoryCash
@@ -1625,7 +1628,7 @@ class _CompactContactTransactionCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '₹${transaction.amount.toStringAsFixed(2)}',
+                          CurrencyFormatter.format(transaction.amount),
                           style: TextStyle(
                             fontSize: 15.5,
                             height: 1.08,
@@ -1640,7 +1643,11 @@ class _CompactContactTransactionCard extends StatelessWidget {
                       children: [
                         AppPillBadge(
                           label: _categoryLabel(context),
-                          icon: isSplit ? Icons.call_split_rounded : null,
+                          icon: isSplit
+                              ? Icons.call_split_rounded
+                              : isShared
+                              ? Icons.receipt_long_outlined
+                              : null,
                           color: categoryColor,
                           fontSize: 8.5,
                           padding: const EdgeInsets.symmetric(
@@ -1742,6 +1749,12 @@ class _CompactContactTransactionCard extends StatelessWidget {
           .trim();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
+    if (transaction.category == AppConstants.categorySharedSpend) {
+      if (transaction.description?.trim().isNotEmpty == true) {
+        return transaction.description!.trim();
+      }
+      return tr.sharedSpend;
+    }
     if (transaction.isSettlement) return tr.settlementTransaction;
     if (transaction.category == AppConstants.categoryUdhari &&
         transaction.itemName?.trim().isNotEmpty == true) {
@@ -1757,8 +1770,11 @@ class _CompactContactTransactionCard extends StatelessWidget {
 
   String? _subtitle(BuildContext context) {
     if (transaction.category == AppConstants.categorySplit ||
+        transaction.category == AppConstants.categorySharedSpend ||
         transaction.isSettlement) {
-      return null;
+      return transaction.category == AppConstants.categorySharedSpend
+          ? _sharedSpendSubtitle(context)
+          : null;
     }
     final parts = [
       if (transaction.itemName?.trim().isNotEmpty == true &&
@@ -1780,10 +1796,28 @@ class _CompactContactTransactionCard extends StatelessWidget {
         return tr.cashBadge;
       case AppConstants.categoryUdhari:
         return tr.udhariBadge;
+      case AppConstants.categorySharedSpend:
+        return tr.sharedSpend;
       case AppConstants.categorySplit:
         return tr.split;
       default:
         return transaction.category;
     }
+  }
+
+  String _sharedSpendSubtitle(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final contactName = transaction.contactName ?? tr.unknown;
+    final payer = transaction.sharedPaidByUser == true
+        ? tr.youPaidLabel
+        : tr.personPaid(contactName);
+    final total = transaction.sharedTotalAmount;
+    final totalText = total == null
+        ? ''
+        : ' ${CurrencyFormatter.format(total)}';
+    final shareLabel = transaction.sharedPaidByUser == true
+        ? tr.personShare(contactName)
+        : tr.yourShare;
+    return '$payer$totalText • $shareLabel ${CurrencyFormatter.format(transaction.amount)}';
   }
 }

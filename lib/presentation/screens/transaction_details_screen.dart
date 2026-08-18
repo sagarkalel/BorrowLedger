@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_formatter.dart';
 import 'add_transaction_screen.dart';
 import 'split_detail_screen.dart';
 
@@ -57,11 +58,15 @@ class TransactionDetailsScreen extends StatelessWidget {
                 _buildBadge(
                   icon: transaction.isSplit
                       ? Icons.call_split_rounded
+                      : transaction.isSharedSpend
+                      ? Icons.receipt_long_outlined
                       : transaction.isCash
                       ? Icons.currency_rupee
                       : Icons.shopping_bag,
                   label: transaction.isSplit
                       ? tr.split
+                      : transaction.isSharedSpend
+                      ? 'Shared'
                       : transaction.isCash
                       ? tr.cashBadge
                       : tr.udhariBadge,
@@ -126,28 +131,14 @@ class TransactionDetailsScreen extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '₹',
-                              style: TextStyle(
-                                color: directionColor,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                height: 1.2,
-                              ),
-                            ),
-                            Text(
-                              transaction.amount.toStringAsFixed(2),
-                              style: TextStyle(
-                                color: directionColor,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                height: 1.2,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          CurrencyFormatter.format(transaction.amount),
+                          style: TextStyle(
+                            color: directionColor,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                          ),
                         ),
                       ],
                     ),
@@ -183,6 +174,52 @@ class TransactionDetailsScreen extends StatelessWidget {
               isDark: isDark,
             ),
             const SizedBox(height: 8),
+            if (transaction.isSharedSpend) ...[
+              _buildDetailCard(
+                context,
+                icon: Icons.account_balance_wallet_outlined,
+                label: tr.paidByUser,
+                value: transaction.sharedPaidByUser == true
+                    ? tr.you
+                    : transaction.contactName ?? tr.unknown,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              if (transaction.sharedTotalAmount != null) ...[
+                _buildDetailCard(
+                  context,
+                  icon: Icons.receipt_long_outlined,
+                  label: tr.totalBill,
+                  value: CurrencyFormatter.format(
+                    transaction.sharedTotalAmount!,
+                  ),
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (transaction.sharedUserShare != null) ...[
+                _buildDetailCard(
+                  context,
+                  icon: Icons.person_outline_rounded,
+                  label: tr.yourShare,
+                  value: CurrencyFormatter.format(transaction.sharedUserShare!),
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (transaction.sharedContactShare != null) ...[
+                _buildDetailCard(
+                  context,
+                  icon: Icons.group_outlined,
+                  label: tr.personShare(transaction.contactName ?? tr.unknown),
+                  value: CurrencyFormatter.format(
+                    transaction.sharedContactShare!,
+                  ),
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ],
             if (transaction.isUdhari && transaction.itemName != null) ...[
               _buildDetailCard(
                 context,
@@ -458,25 +495,26 @@ class TransactionDetailsScreen extends StatelessWidget {
 
   void _showDeleteConfirmation(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+    final pageContext = context;
 
     showDialog(
-      context: context,
-      builder: (context) => DeleteTransactionDialog(
+      context: pageContext,
+      builder: (dialogContext) => DeleteTransactionDialog(
         onConfirm: () async {
           // Delete transaction
-          await context.read<BorrowLendCubit>().deleteTransaction(
+          await pageContext.read<BorrowLendCubit>().deleteTransaction(
             transaction.id!,
             transaction.contactId,
           );
 
           // Show success message
-          if (context.mounted) {
-            showSuccessSnackbar(context, tr.transactionDeleted);
+          if (pageContext.mounted) {
+            showSuccessSnackbar(pageContext, tr.transactionDeleted);
             // Call update callback
             if (onUpdate != null) onUpdate!();
 
             // Navigate back
-            Navigator.pop(context, true);
+            Navigator.pop(pageContext, true);
           }
         },
       ),

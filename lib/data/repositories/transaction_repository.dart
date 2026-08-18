@@ -1,11 +1,15 @@
 import 'dart:developer';
 
+import 'package:borrow_ledger/core/constants/app_constants.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 
 import '../database/database_helper.dart';
 
 class TransactionRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  static const String _activityOrder =
+      'datetime(COALESCE(t.updated_at, t.created_at, t.date)) DESC, t.id DESC';
+  static const String _splitHistoryDescriptionPrefix = 'Split history: ';
 
   /* =======================
      WRITE OPERATIONS
@@ -46,7 +50,7 @@ class TransactionRepository {
       SELECT t.*, c.name AS contact_name, c.phone AS contact_phone, c.avatar AS contact_avatar
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -71,7 +75,7 @@ class TransactionRepository {
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE t.type = ?
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -97,7 +101,7 @@ class TransactionRepository {
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE t.transaction_category = ?
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -124,7 +128,7 @@ class TransactionRepository {
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE t.transaction_category = ? AND t.type = ?
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -158,7 +162,7 @@ class TransactionRepository {
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE ${whereConditions.join(' AND ')}
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -170,6 +174,305 @@ class TransactionRepository {
 
     final maps = await _dbHelper.rawQuery(sql.toString(), whereArgs);
     return maps.map(TransactionModel.fromMap).toList();
+  }
+
+  Future<List<TransactionModel>> getContactActivity(
+    int contactId, {
+    int? limit,
+    int? offset,
+    String? category,
+  }) async {
+    final args = <dynamic>[];
+    final sql = _buildContactActivitySql(
+      contactId: contactId,
+      category: category,
+      args: args,
+    );
+
+    final pagedSql = StringBuffer('''
+      SELECT *
+      FROM ($sql) activity
+      ORDER BY datetime(COALESCE(updated_at, created_at, date)) DESC, id DESC
+    ''');
+
+    if (limit != null) {
+      pagedSql.write(' LIMIT ?');
+      args.add(limit);
+      if (offset != null) {
+        pagedSql.write(' OFFSET ?');
+        args.add(offset);
+      }
+    }
+
+    final maps = await _dbHelper.rawQuery(pagedSql.toString(), args);
+    return maps.map(TransactionModel.fromMap).toList();
+  }
+
+  Future<List<TransactionModel>> getContactActivityByDateRange(
+    int contactId,
+    DateTime start,
+    DateTime end, {
+    String? category,
+    int? limit,
+    int? offset,
+  }) async {
+    final args = <dynamic>[];
+    final sql = _buildContactActivitySql(
+      contactId: contactId,
+      category: category,
+      args: args,
+    );
+
+    final rangeSql = StringBuffer('''
+      SELECT *
+      FROM ($sql) activity
+      WHERE date BETWEEN ? AND ?
+      ORDER BY datetime(date) DESC, datetime(COALESCE(updated_at, created_at, date)) DESC, id DESC
+    ''');
+    args.add(start.toIso8601String());
+    args.add(end.toIso8601String());
+
+    if (limit != null) {
+      rangeSql.write(' LIMIT ?');
+      args.add(limit);
+      if (offset != null) {
+        rangeSql.write(' OFFSET ?');
+        args.add(offset);
+      }
+    }
+
+    final maps = await _dbHelper.rawQuery(rangeSql.toString(), args);
+    return maps.map(TransactionModel.fromMap).toList();
+  }
+
+  Future<int> getContactActivityCount(int contactId, {String? category}) async {
+    final args = <dynamic>[];
+    final sql = _buildContactActivitySql(
+      contactId: contactId,
+      category: category,
+      args: args,
+    );
+    final result = await _dbHelper.rawQuery(
+      'SELECT COUNT(*) AS count FROM ($sql) activity',
+      args,
+    );
+    return (result.first['count'] as int?) ?? 0;
+  }
+
+  Future<double> getContactOpeningBalanceBefore(
+    int contactId,
+    DateTime before, {
+    String? category,
+  }) async {
+    final whereConditions = <String>['contact_id = ?', 'date < ?'];
+    final args = <dynamic>[contactId, before.toIso8601String()];
+
+    if (category != null) {
+      whereConditions.add('transaction_category = ?');
+      args.add(category);
+    }
+
+    final result = await _dbHelper.rawQuery(
+      '''
+      SELECT
+        COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END), 0) -
+        COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END), 0) AS opening_balance
+      FROM transactions
+      WHERE ${whereConditions.join(' AND ')}
+      ''',
+      [AppConstants.typeLend, AppConstants.typeBorrow, ...args],
+    );
+
+    return (result.first['opening_balance'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  Future<Map<String, dynamic>> getContactActivityStats(int contactId) async {
+    final result = await _dbHelper.rawQuery(
+      '''
+      WITH direct AS (
+        SELECT
+          COUNT(id) AS total_transactions,
+          COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END), 0) AS total_lent,
+          COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END), 0) AS total_borrowed,
+          COUNT(CASE WHEN transaction_category = ? THEN 1 END) AS cash_count,
+          COUNT(CASE WHEN transaction_category = ? THEN 1 END) AS udhari_count,
+          COUNT(CASE WHEN transaction_category = ? THEN 1 END) AS shared_spend_count,
+          COUNT(CASE WHEN transaction_category = ? THEN 1 END) AS split_transaction_count,
+          COALESCE(SUM(CASE WHEN transaction_category = ? AND type = ? THEN amount ELSE 0 END), 0) AS split_lent,
+          COALESCE(SUM(CASE WHEN transaction_category = ? AND type = ? THEN amount ELSE 0 END), 0) AS split_borrowed
+        FROM transactions
+        WHERE contact_id = ?
+      ),
+      split_history AS (
+        SELECT COUNT(se.id) AS split_history_count
+        FROM split_expenses se
+        INNER JOIN split_participants sp ON se.id = sp.split_id
+        WHERE sp.contact_id = ?
+          AND NOT EXISTS (
+            SELECT 1
+            FROM transactions t
+            WHERE t.contact_id = sp.contact_id
+              AND t.transaction_category = ?
+              AND t.source_type = ?
+              AND t.source_id = se.id
+          )
+      )
+      SELECT
+        COALESCE(direct.total_transactions, 0) + COALESCE(split_history.split_history_count, 0) AS total_transactions,
+        COALESCE(direct.total_lent, 0) AS total_lent,
+        COALESCE(direct.total_borrowed, 0) AS total_borrowed,
+        COALESCE(direct.cash_count, 0) AS cash_count,
+        COALESCE(direct.udhari_count, 0) AS udhari_count,
+        COALESCE(direct.shared_spend_count, 0) AS shared_spend_count,
+        COALESCE(direct.split_transaction_count, 0) + COALESCE(split_history.split_history_count, 0) AS split_count,
+        COALESCE(direct.split_lent, 0) AS split_lent,
+        COALESCE(direct.split_borrowed, 0) AS split_borrowed
+      FROM direct, split_history
+      ''',
+      [
+        AppConstants.typeLend,
+        AppConstants.typeBorrow,
+        AppConstants.categoryCash,
+        AppConstants.categoryUdhari,
+        AppConstants.categorySharedSpend,
+        AppConstants.categorySplit,
+        AppConstants.categorySplit,
+        AppConstants.typeLend,
+        AppConstants.categorySplit,
+        AppConstants.typeBorrow,
+        contactId,
+        contactId,
+        AppConstants.categorySplit,
+        AppConstants.sourceTypeSplit,
+      ],
+    );
+
+    final row = result.first;
+    final totalLent = (row['total_lent'] as num?)?.toDouble() ?? 0.0;
+    final totalBorrowed = (row['total_borrowed'] as num?)?.toDouble() ?? 0.0;
+    final splitLent = (row['split_lent'] as num?)?.toDouble() ?? 0.0;
+    final splitBorrowed = (row['split_borrowed'] as num?)?.toDouble() ?? 0.0;
+
+    return {
+      'total_transactions': (row['total_transactions'] as int?) ?? 0,
+      'total_lent': totalLent,
+      'total_borrowed': totalBorrowed,
+      'net_balance': totalLent - totalBorrowed,
+      'normal_net_balance':
+          (totalLent - splitLent) - (totalBorrowed - splitBorrowed),
+      'split_net_balance': splitLent - splitBorrowed,
+      'cash_count': (row['cash_count'] as int?) ?? 0,
+      'udhari_count': (row['udhari_count'] as int?) ?? 0,
+      'shared_spend_count': (row['shared_spend_count'] as int?) ?? 0,
+      'split_count': (row['split_count'] as int?) ?? 0,
+      'split_lent': splitLent,
+      'split_borrowed': splitBorrowed,
+    };
+  }
+
+  String _buildContactActivitySql({
+    required int contactId,
+    required String? category,
+    required List<dynamic> args,
+  }) {
+    final includeSplitHistory =
+        category == null || category == AppConstants.categorySplit;
+    final directConditions = <String>['t.contact_id = ?'];
+    args.add(contactId);
+
+    if (category != null) {
+      directConditions.add('t.transaction_category = ?');
+      args.add(category);
+    }
+
+    final directSql =
+        '''
+      SELECT
+        t.id AS id,
+        t.type AS type,
+        t.transaction_category AS transaction_category,
+        t.contact_id AS contact_id,
+        t.amount AS amount,
+        t.description AS description,
+        t.date AS date,
+        t.created_at AS created_at,
+        t.updated_at AS updated_at,
+        t.item_name AS item_name,
+        t.quantity AS quantity,
+        t.expected_date AS expected_date,
+        t.paid_amount AS paid_amount,
+        t.is_settlement AS is_settlement,
+        t.source_type AS source_type,
+        t.source_id AS source_id,
+        t.shared_total_amount AS shared_total_amount,
+        t.shared_user_share AS shared_user_share,
+        t.shared_contact_share AS shared_contact_share,
+        t.shared_paid_by_user AS shared_paid_by_user,
+        c.name AS contact_name,
+        c.phone AS contact_phone,
+        c.avatar AS contact_avatar
+      FROM transactions t
+      LEFT JOIN contacts c ON t.contact_id = c.id
+      WHERE ${directConditions.join(' AND ')}
+    ''';
+
+    if (!includeSplitHistory) return directSql;
+
+    args.add(AppConstants.typeLend);
+    args.add(AppConstants.typeBorrow);
+    args.add(AppConstants.categorySplit);
+    args.add(_splitHistoryDescriptionPrefix);
+    args.add(AppConstants.sourceTypeSplit);
+    args.add(contactId);
+    args.add(AppConstants.categorySplit);
+    args.add(AppConstants.sourceTypeSplit);
+
+    final splitHistorySql = '''
+      SELECT
+        -se.id AS id,
+        CASE
+          WHEN (sp.share_amount - sp.expense_paid) >= 0 THEN ?
+          ELSE ?
+        END AS type,
+        ? AS transaction_category,
+        sp.contact_id AS contact_id,
+        CASE
+          WHEN ABS(sp.share_amount - sp.expense_paid) >= 0.01 THEN ABS(sp.share_amount - sp.expense_paid)
+          ELSE sp.share_amount
+        END AS amount,
+        ? || se.title AS description,
+        se.date AS date,
+        se.created_at AS created_at,
+        se.updated_at AS updated_at,
+        NULL AS item_name,
+        NULL AS quantity,
+        NULL AS expected_date,
+        NULL AS paid_amount,
+        1 AS is_settlement,
+        ? AS source_type,
+        se.id AS source_id,
+        NULL AS shared_total_amount,
+        NULL AS shared_user_share,
+        NULL AS shared_contact_share,
+        NULL AS shared_paid_by_user,
+        c.name AS contact_name,
+        c.phone AS contact_phone,
+        c.avatar AS contact_avatar
+      FROM split_expenses se
+      INNER JOIN split_participants sp ON se.id = sp.split_id
+      LEFT JOIN contacts c ON sp.contact_id = c.id
+      WHERE sp.contact_id = ?
+        AND NOT EXISTS (
+          SELECT 1
+          FROM transactions t
+          WHERE t.contact_id = sp.contact_id
+            AND t.transaction_category = ?
+            AND t.source_type = ?
+            AND t.source_id = se.id
+        )
+    ''';
+
+    return '$directSql UNION ALL $splitHistorySql';
   }
 
   // Search transactions (uses description + contact name + item name indexes)
@@ -206,7 +509,7 @@ class TransactionRepository {
       FROM transactions t
       LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE $where
-      ORDER BY t.date DESC, t.id DESC
+      ORDER BY $_activityOrder
     ''');
 
     if (limit != null) {
@@ -362,10 +665,11 @@ class TransactionRepository {
           COUNT(CASE WHEN transaction_category = 'udhari' THEN 1 END) AS udhari_count,
           COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'lend' THEN amount ELSE 0 END), 0) AS udhari_given,
           COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS udhari_taken,
+          COUNT(CASE WHEN transaction_category = 'shared_spend' THEN 1 END) AS shared_spend_count,
           COUNT(CASE WHEN transaction_category = 'split' THEN 1 END) AS split_transaction_count,
           COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'lend' THEN amount ELSE 0 END), 0) AS split_lent,
           COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS split_borrowed,
-          MAX(date) AS last_transaction_date
+          MAX(COALESCE(updated_at, created_at, date)) AS last_transaction_date
         FROM transactions
         GROUP BY contact_id
       ),
@@ -373,7 +677,7 @@ class TransactionRepository {
         SELECT
           sp.contact_id,
           COUNT(sp.id) AS split_history_count,
-          MAX(se.date) AS last_split_date
+          MAX(COALESCE(se.updated_at, se.created_at, se.date)) AS last_split_date
         FROM split_participants sp
         INNER JOIN split_expenses se ON se.id = sp.split_id
         GROUP BY sp.contact_id
@@ -392,6 +696,7 @@ class TransactionRepository {
         COALESCE(ts.udhari_count, 0) AS udhari_count,
         COALESCE(ts.udhari_given, 0) AS udhari_given,
         COALESCE(ts.udhari_taken, 0) AS udhari_taken,
+        COALESCE(ts.shared_spend_count, 0) AS shared_spend_count,
         COALESCE(ts.split_transaction_count, 0) + COALESCE(sh.split_history_count, 0) AS split_count,
         COALESCE(ts.split_lent, 0) AS split_lent,
         COALESCE(ts.split_borrowed, 0) AS split_borrowed,

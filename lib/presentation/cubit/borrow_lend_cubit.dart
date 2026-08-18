@@ -463,6 +463,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           : DateTime.now();
       final cashCount = summary['cash_count'] as int? ?? 0;
       final udhariCount = summary['udhari_count'] as int? ?? 0;
+      final sharedSpendCount = summary['shared_spend_count'] as int? ?? 0;
       final splitCount = summary['split_count'] as int? ?? 0;
       final splitLent = (summary['split_lent'] as num?)?.toDouble() ?? 0.0;
       final splitBorrowed =
@@ -484,6 +485,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           lastTransactionDate: lastTransactionDate,
           cashCount: cashCount,
           udhariCount: udhariCount,
+          sharedSpendCount: sharedSpendCount,
           splitCount: splitCount,
           splitLent: splitLent,
           splitBorrowed: splitBorrowed,

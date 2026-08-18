@@ -67,10 +67,14 @@ class DatabaseHelper {
       item_name TEXT,
       quantity TEXT,
 	      expected_date TEXT,
-	      paid_amount REAL,
-	      is_settlement INTEGER NOT NULL DEFAULT 0,
-	      source_type TEXT,
-	      source_id INTEGER,
+      paid_amount REAL,
+      is_settlement INTEGER NOT NULL DEFAULT 0,
+      source_type TEXT,
+      source_id INTEGER,
+      shared_total_amount REAL,
+      shared_user_share REAL,
+      shared_contact_share REAL,
+      shared_paid_by_user INTEGER,
 	      FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
 	    )
   ''');
@@ -99,6 +103,18 @@ class DatabaseHelper {
     )
   ''');
     log('DatabaseHelper: Udhari quantities table created');
+
+    // Shared spend purposes table
+    await db.execute('''
+    CREATE TABLE shared_spend_purposes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purpose TEXT NOT NULL UNIQUE,
+      usage_count INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  ''');
+    log('DatabaseHelper: Shared spend purposes table created');
 
     // Expenses table
     await db.execute('''
@@ -163,6 +179,9 @@ class DatabaseHelper {
       'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)',
     );
     await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_activity ON transactions(updated_at DESC, created_at DESC)',
+    );
+    await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type)',
     );
     await db.execute(
@@ -177,10 +196,22 @@ class DatabaseHelper {
       'CREATE INDEX IF NOT EXISTS idx_transactions_contact_date ON transactions(contact_id, date DESC)',
     );
     await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_contact_category_date ON transactions(contact_id, transaction_category, date DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_contact_activity ON transactions(contact_id, updated_at DESC, created_at DESC, date DESC, id DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_contact_category_activity ON transactions(contact_id, transaction_category, updated_at DESC, created_at DESC, date DESC, id DESC)',
+    );
+    await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_type_category ON transactions(type, transaction_category)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_source ON transactions(source_type, source_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_transactions_contact_split_source ON transactions(contact_id, transaction_category, source_type, source_id)',
     );
 
     // Contact search index
@@ -202,9 +233,20 @@ class DatabaseHelper {
       'CREATE INDEX IF NOT EXISTS idx_udhari_quantities_usage ON udhari_quantities(usage_count DESC)',
     );
 
+    await _createSharedSpendPurposeTable(db);
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shared_spend_purposes_name ON shared_spend_purposes(purpose COLLATE NOCASE)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shared_spend_purposes_usage ON shared_spend_purposes(usage_count DESC)',
+    );
+
     // Expense indexes
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_expenses_activity ON expenses(updated_at DESC, created_at DESC)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)',
@@ -213,6 +255,12 @@ class DatabaseHelper {
     // Split expenses indexes
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_expenses_date ON split_expenses(date DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_expenses_activity ON split_expenses(updated_at DESC, created_at DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_expenses_date_activity ON split_expenses(date DESC, updated_at DESC, created_at DESC, id DESC)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_expenses_status ON split_expenses(status)',
@@ -227,6 +275,9 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_participants_contact ON split_participants(contact_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_participants_contact_split ON split_participants(contact_id, split_id)',
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_participants_status ON split_participants(status)',
@@ -524,6 +575,54 @@ class DatabaseHelper {
       log('DatabaseHelper: Split settlement routing added');
     }
 
+    if (oldVersion < 11) {
+      log(
+        'DatabaseHelper: Upgrading to version 11 - Adding shared spend fields',
+      );
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN shared_total_amount REAL',
+        );
+      } catch (e) {
+        log('DatabaseHelper: shared_total_amount may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN shared_user_share REAL',
+        );
+      } catch (e) {
+        log('DatabaseHelper: shared_user_share may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN shared_contact_share REAL',
+        );
+      } catch (e) {
+        log('DatabaseHelper: shared_contact_share may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE transactions ADD COLUMN shared_paid_by_user INTEGER',
+        );
+      } catch (e) {
+        log('DatabaseHelper: shared_paid_by_user may already exist: $e');
+      }
+
+      await _createSharedSpendPurposeTable(db);
+
+      log('DatabaseHelper: Shared spend fields added');
+    }
+
+    if (oldVersion < 12) {
+      log(
+        'DatabaseHelper: Upgrading to version 12 - Adding contact activity indexes',
+      );
+    }
+
     // Ensure all indexes exist (for any version upgrade)
     await _createIndexes(db);
     log('DatabaseHelper: Database upgrade completed');
@@ -623,6 +722,11 @@ class DatabaseHelper {
     return db.transaction(action);
   }
 
+  Future<void> ensureSharedSpendPurposeTable() async {
+    final db = await database;
+    await _createSharedSpendPurposeTable(db);
+  }
+
   Future<int> rawInsert(String query, [List<Object?>? arguments]) async {
     try {
       final db = await database;
@@ -674,6 +778,7 @@ class DatabaseHelper {
   Future<void> clearAllData() async {
     log('DatabaseHelper: Clearing all data...');
     final db = await database;
+    await _createSharedSpendPurposeTable(db);
     await db.delete('split_participants');
     await db.delete('split_expenses');
     await db.delete('expenses');
@@ -681,12 +786,14 @@ class DatabaseHelper {
     await db.delete('contacts');
     await db.delete('udhari_items');
     await db.delete('udhari_quantities');
+    await db.delete('shared_spend_purposes');
     log('DatabaseHelper: All data cleared');
   }
 
   // Get database statistics
   Future<Map<String, int>> getDatabaseStats() async {
     final db = await database;
+    await _createSharedSpendPurposeTable(db);
 
     final contacts = await db.rawQuery(
       'SELECT COUNT(*) as count FROM contacts',
@@ -706,6 +813,9 @@ class DatabaseHelper {
     final udhariQuantities = await db.rawQuery(
       'SELECT COUNT(*) as count FROM udhari_quantities',
     );
+    final sharedSpendPurposes = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM shared_spend_purposes',
+    );
 
     return {
       'contacts': (contacts.first['count'] as int?) ?? 0,
@@ -714,6 +824,26 @@ class DatabaseHelper {
       'splits': (splits.first['count'] as int?) ?? 0,
       'udhari_items': (udhariItems.first['count'] as int?) ?? 0,
       'udhari_quantities': (udhariQuantities.first['count'] as int?) ?? 0,
+      'shared_spend_purposes':
+          (sharedSpendPurposes.first['count'] as int?) ?? 0,
     };
+  }
+
+  Future<void> _createSharedSpendPurposeTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS shared_spend_purposes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        purpose TEXT NOT NULL UNIQUE,
+        usage_count INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shared_spend_purposes_name ON shared_spend_purposes(purpose COLLATE NOCASE)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shared_spend_purposes_usage ON shared_spend_purposes(usage_count DESC)',
+    );
   }
 }

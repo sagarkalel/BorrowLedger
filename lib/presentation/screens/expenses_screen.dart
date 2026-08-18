@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/data/models/expense_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/app_loading_state.dart';
@@ -331,7 +332,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '₹${_totalExpenses.toStringAsFixed(2)}',
+                    CurrencyFormatter.format(_totalExpenses),
                     style: TextStyle(
                       color: colorScheme.onSurface,
                       fontSize: 27,
@@ -697,20 +698,10 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                       interval: effectiveMaxY > 0 ? effectiveMaxY / 4 : 250,
                       getTitlesWidget: (value, meta) {
                         if (value < 0) return const SizedBox.shrink();
-                        if (value >= 1000) {
-                          return Text(
-                            '₹${(value / 1000).toStringAsFixed(0)}k',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          );
-                        }
                         return Text(
-                          '₹${value.toStringAsFixed(0)}',
+                          CurrencyFormatter.format(value),
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: value >= 1000 ? 9 : 10,
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
@@ -837,7 +828,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '₹${total.toStringAsFixed(0)}',
+                            CurrencyFormatter.format(total),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -1061,7 +1052,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '₹${expense.amount.toStringAsFixed(2)}',
+                    CurrencyFormatter.format(expense.amount),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,

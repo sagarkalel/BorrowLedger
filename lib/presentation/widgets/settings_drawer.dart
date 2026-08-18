@@ -48,6 +48,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     'split_participants',
     'udhari_items',
     'udhari_quantities',
+    'shared_spend_purposes',
   ];
 
   static const List<String> _backupDeleteOrder = [
@@ -58,6 +59,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     'contacts',
     'udhari_items',
     'udhari_quantities',
+    'shared_spend_purposes',
   ];
 
   @override
@@ -743,6 +745,12 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final udhariQuantities = await dbHelper.query('udhari_quantities');
       developer.log('✅ Udhari quantities fetched: ${udhariQuantities.length}');
 
+      await dbHelper.ensureSharedSpendPurposeTable();
+      final sharedSpendPurposes = await dbHelper.query('shared_spend_purposes');
+      developer.log(
+        '✅ Shared spend purposes fetched: ${sharedSpendPurposes.length}',
+      );
+
       final exportData = {
         'app': tr.appName,
         'version': AppConstants.appVersion,
@@ -755,6 +763,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           'split_participants': participants,
           'udhari_items': udhariItems,
           'udhari_quantities': udhariQuantities,
+          'shared_spend_purposes': sharedSpendPurposes,
         },
         'stats': {
           'total_transactions': transactions.length,
@@ -762,6 +771,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           'total_splits': splits.length,
           'total_udhari_items': udhariItems.length,
           'total_udhari_quantities': udhariQuantities.length,
+          'total_shared_spend_purposes': sharedSpendPurposes.length,
         },
       };
 
@@ -920,6 +930,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         '  - Participants: ${backupRows['split_participants']?.length ?? 0}',
       );
 
+      await dbHelper.ensureSharedSpendPurposeTable();
       final db = await dbHelper.database;
       await db.transaction((txn) async {
         developer.log('🗑️ Clearing existing data...');

@@ -1,6 +1,8 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 
+import 'app_form_field_metrics.dart';
+
 class AppDropdownItem<T> {
   final T value;
   final String label;
@@ -82,7 +84,10 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         fillColor: fillColor,
         prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
         prefixIconConstraints: widget.isDense
-            ? const BoxConstraints(minWidth: 42, minHeight: 32)
+            ? const BoxConstraints(
+                minWidth: AppFormFieldMetrics.denseIconSlot,
+                minHeight: AppFormFieldMetrics.denseIconSlot,
+              )
             : null,
         isDense: widget.isDense,
         contentPadding: widget.isDense
@@ -110,7 +115,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
             child: Icon(
               Icons.keyboard_arrow_down_rounded,
               color: colorScheme.onSurfaceVariant,
-              size: widget.isDense ? 20 : 22,
+              size: widget.isDense ? AppFormFieldMetrics.denseIconSize : 22,
             ),
           ),
         ),
@@ -120,7 +125,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
             child: Icon(
               Icons.keyboard_arrow_up_rounded,
               color: colorScheme.onSurfaceVariant,
-              size: widget.isDense ? 20 : 22,
+              size: widget.isDense ? AppFormFieldMetrics.denseIconSize : 22,
             ),
           ),
         ),
@@ -130,7 +135,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
       ),
       buttonStyleData: FormFieldButtonStyleData(
         padding: EdgeInsets.zero,
-        height: widget.isDense ? 42 : null,
+        height: widget.isDense ? AppFormFieldMetrics.denseIconSlot : null,
       ),
       dropdownStyleData: DropdownStyleData(
         maxHeight: MediaQuery.of(context).size.height * 0.4,
@@ -143,7 +148,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         ),
       ),
       menuItemStyleData: MenuItemStyleData(
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         borderRadius: BorderRadius.circular(10),
       ),
       items: widget.items

@@ -364,6 +364,18 @@ abstract class AppLocalizations {
   /// **'Collection Progress'**
   String get collectionProgress;
 
+  /// No description provided for @contactFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contactFallback;
+
+  /// No description provided for @balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get balance;
+
   /// No description provided for @comment_navigation.
   ///
   /// In en, this message translates to:
@@ -628,6 +640,120 @@ abstract class AppLocalizations {
   /// **'Who Needs to Pay You'**
   String get whoNeedsToPayYou;
 
+  /// No description provided for @moneyTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Money Transaction'**
+  String get moneyTransaction;
+
+  /// No description provided for @moneyTransactionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct money given or received'**
+  String get moneyTransactionDescription;
+
+  /// No description provided for @moneyTransactionOnePersonDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct money given or received with one person'**
+  String get moneyTransactionOnePersonDescription;
+
+  /// No description provided for @udhariItemCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Udhari / Item Credit'**
+  String get udhariItemCredit;
+
+  /// No description provided for @udhariItemCreditDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Item or service bought/sold on credit'**
+  String get udhariItemCreditDescription;
+
+  /// No description provided for @sharedSpend.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Spend'**
+  String get sharedSpend;
+
+  /// No description provided for @sharedSpendDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'One of you paid for something together'**
+  String get sharedSpendDescription;
+
+  /// No description provided for @whoPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Who paid?'**
+  String get whoPaid;
+
+  /// No description provided for @udhariDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Udhari direction'**
+  String get udhariDirection;
+
+  /// No description provided for @moneyDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Money direction'**
+  String get moneyDirection;
+
+  /// No description provided for @iPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'I paid'**
+  String get iPaid;
+
+  /// No description provided for @iGaveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'I gave item'**
+  String get iGaveItem;
+
+  /// No description provided for @iGave.
+  ///
+  /// In en, this message translates to:
+  /// **'I gave'**
+  String get iGave;
+
+  /// No description provided for @iTookItem.
+  ///
+  /// In en, this message translates to:
+  /// **'I took item'**
+  String get iTookItem;
+
+  /// No description provided for @iGot.
+  ///
+  /// In en, this message translates to:
+  /// **'I got'**
+  String get iGot;
+
+  /// No description provided for @youPaidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid'**
+  String get youPaidLabel;
+
+  /// No description provided for @personPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} paid'**
+  String personPaid(Object personName);
+
+  /// No description provided for @personPays.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} pays'**
+  String personPays(Object personName);
+
+  /// No description provided for @paysPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Pays {personName}'**
+  String paysPerson(Object personName);
+
   /// No description provided for @comment_categories.
   ///
   /// In en, this message translates to:
@@ -687,6 +813,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cash & Udhari'**
   String get cashAndUdhari;
+
+  /// No description provided for @groupSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Group split'**
+  String get groupSplit;
+
+  /// No description provided for @groupSplitDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Split one expense with multiple people'**
+  String get groupSplitDescription;
 
   /// No description provided for @comment_amounts.
   ///
@@ -813,6 +951,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Pending'**
   String get totalPending;
+
+  /// No description provided for @purposeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose *'**
+  String get purposeRequired;
+
+  /// No description provided for @purposeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner, petrol, shopping...'**
+  String get purposeHint;
+
+  /// No description provided for @pleaseEnterPurpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter purpose'**
+  String get pleaseEnterPurpose;
+
+  /// No description provided for @totalBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Total bill'**
+  String get totalBill;
+
+  /// No description provided for @totalBillAmountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Total bill amount *'**
+  String get totalBillAmountRequired;
+
+  /// No description provided for @totalBillAmountOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Total bill amount (Optional)'**
+  String get totalBillAmountOptional;
+
+  /// No description provided for @enterFullBillAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter full bill amount'**
+  String get enterFullBillAmount;
+
+  /// No description provided for @contactShareBecomesHalf.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact share becomes half of total'**
+  String get contactShareBecomesHalf;
+
+  /// No description provided for @yourShareBecomesHalf.
+  ///
+  /// In en, this message translates to:
+  /// **'Your share becomes half when total is entered'**
+  String get yourShareBecomesHalf;
+
+  /// No description provided for @personShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} share'**
+  String personShare(Object personName);
+
+  /// No description provided for @personShareRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} share *'**
+  String personShareRequired(Object personName);
+
+  /// No description provided for @myShareRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'My share *'**
+  String get myShareRequired;
+
+  /// No description provided for @amountPersonShouldPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount {personName} should pay'**
+  String amountPersonShouldPay(Object personName);
+
+  /// No description provided for @amountYouShouldPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount you should pay'**
+  String get amountYouShouldPay;
+
+  /// No description provided for @shareCannotExceedTotalBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Share cannot exceed total bill'**
+  String get shareCannotExceedTotalBill;
 
   /// No description provided for @comment_contacts.
   ///
@@ -3914,6 +4142,12 @@ abstract class AppLocalizations {
   /// **'Preparing statement...'**
   String get preparingStatement;
 
+  /// No description provided for @preparingInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing invoice...'**
+  String get preparingInvoice;
+
   /// No description provided for @last15Days.
   ///
   /// In en, this message translates to:
@@ -3956,6 +4190,24 @@ abstract class AppLocalizations {
   /// **'HisaabMate Full Statement'**
   String get borrowLedgerFullStatement;
 
+  /// No description provided for @splitInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Split Invoice'**
+  String get splitInvoice;
+
+  /// No description provided for @splitInvoiceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Split invoice from {ownerName}: {splitTitle}'**
+  String splitInvoiceFrom(Object ownerName, Object splitTitle);
+
+  /// No description provided for @splitInvoiceSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Split Invoice - {splitTitle}'**
+  String splitInvoiceSubject(Object splitTitle);
+
   /// No description provided for @period.
   ///
   /// In en, this message translates to:
@@ -3973,6 +4225,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generated on'**
   String get generatedOn;
+
+  /// No description provided for @ownerPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} paid'**
+  String ownerPaid(Object ownerName);
+
+  /// No description provided for @ownerShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName}\'s share'**
+  String ownerShare(Object ownerName);
+
+  /// No description provided for @ownerBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName}\'s balance'**
+  String ownerBalance(Object ownerName);
+
+  /// No description provided for @ownerGets.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} gets'**
+  String ownerGets(Object ownerName);
+
+  /// No description provided for @ownerGives.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} gives'**
+  String ownerGives(Object ownerName);
+
+  /// No description provided for @ownerGave.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} gave'**
+  String ownerGave(Object ownerName);
+
+  /// No description provided for @ownerGot.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} got'**
+  String ownerGot(Object ownerName);
+
+  /// No description provided for @routedThroughTrustedPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Routed through trusted person'**
+  String get routedThroughTrustedPerson;
+
+  /// No description provided for @optimizedRouteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimized route'**
+  String get optimizedRouteLabel;
 
   /// No description provided for @opening.
   ///

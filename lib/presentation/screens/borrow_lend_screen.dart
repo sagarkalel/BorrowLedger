@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -604,6 +605,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
             periodLent: periodLent,
             periodBorrowed: periodBorrowed,
             closingBalance: closingBalance,
+            ownerName: ownerName,
             tr: tr,
           ),
           pw.SizedBox(height: 18),
@@ -620,7 +622,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               child: pw.Text(tr.noTransactionsInDateRange),
             )
           else
-            _ledgerTransactionTable(periodTransactions, tr),
+            _ledgerTransactionTable(periodTransactions, ownerName, tr),
         ],
       ),
     );
@@ -703,10 +705,16 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     required double periodLent,
     required double periodBorrowed,
     required double closingBalance,
+    required String ownerName,
     required AppLocalizations tr,
   }) {
     return pw.TableHelper.fromTextArray(
-      headers: [tr.opening, tr.youGave, tr.youGot, tr.closing],
+      headers: [
+        tr.opening,
+        tr.ownerGave(ownerName),
+        tr.ownerGot(ownerName),
+        tr.closing,
+      ],
       data: [
         [
           _ledgerMoney(openingBalance),
@@ -725,6 +733,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   pw.Widget _ledgerTransactionTable(
     List<TransactionModel> transactions,
+    String ownerName,
     AppLocalizations tr,
   ) {
     return pw.TableHelper.fromTextArray(
@@ -744,10 +753,10 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           isSplitHistory
               ? tr.settledBadge
               : transaction.type == AppConstants.typeLend
-              ? tr.youGave
-              : tr.youGot,
+              ? tr.ownerGave(ownerName)
+              : tr.ownerGot(ownerName),
           _ledgerCategoryLabel(transaction.category, tr),
-          _ledgerTransactionDetails(transaction, tr),
+          _ledgerTransactionDetails(transaction, ownerName, tr),
           isSplitHistory
               ? tr.settled
               : _ledgerMoney(
@@ -872,6 +881,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         return tr.cash;
       case AppConstants.categoryUdhari:
         return tr.udhari;
+      case AppConstants.categorySharedSpend:
+        return tr.sharedSpend;
       case AppConstants.categorySplit:
         return tr.split;
       default:
@@ -881,6 +892,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   String _ledgerTransactionDetails(
     TransactionModel transaction,
+    String ownerName,
     AppLocalizations tr,
   ) {
     if (_isSplitHistoryOnly(transaction)) {
@@ -889,7 +901,23 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           .trim();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
-    if (transaction.isSettlement) return 'Settlement';
+    if (transaction.isSettlement) return tr.settlement;
+    if (transaction.category == AppConstants.categorySharedSpend) {
+      final contactName = transaction.contactName ?? tr.unknown;
+      final payer = transaction.sharedPaidByUser == true
+          ? tr.ownerPaid(ownerName)
+          : tr.personPaid(contactName);
+      final total = transaction.sharedTotalAmount;
+      final shareLabel = transaction.sharedPaidByUser == true
+          ? tr.personShare(contactName)
+          : tr.ownerShare(ownerName);
+      return [
+        if (transaction.description?.trim().isNotEmpty == true)
+          transaction.description!.trim(),
+        total == null ? payer : '$payer ${CurrencyFormatter.format(total)}',
+        '$shareLabel ${CurrencyFormatter.format(transaction.amount)}',
+      ].join(' | ');
+    }
     final parts = [
       if (transaction.description?.trim().isNotEmpty == true)
         transaction.description!.trim(),
@@ -902,8 +930,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   }
 
   String _ledgerMoney(double amount) {
-    final sign = amount < 0 ? '-' : '';
-    return '${sign}INR ${amount.abs().toStringAsFixed(2)}';
+    return CurrencyFormatter.format(amount, symbol: 'Rs');
   }
 
   String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
@@ -1064,11 +1091,17 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   const SizedBox(height: 4),
 
                   Text(
-                    '${isSettled
-                        ? ''
-                        : isPositive
-                        ? '+'
-                        : '-'}₹${state.netBalance.abs().toStringAsFixed(2)}',
+                    CurrencyFormatter.format(
+                      state.netBalance.abs(),
+                      showSign: !isSettled,
+                    ).replaceFirst(
+                      '+',
+                      isSettled
+                          ? ''
+                          : isPositive
+                          ? '+'
+                          : '-',
+                    ),
                     style: TextStyle(
                       color: isSettled ? colorScheme.onSurface : accentColor,
                       fontSize: 27,
@@ -1339,6 +1372,23 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                       },
                     ),
                     FilterChipWidget(
+                      label: tr.sharedSpend,
+                      icon: Icons.receipt_long_outlined,
+                      color: AppTheme.sharedSpendColor,
+                      isSelected:
+                          state.filterCategory ==
+                          AppConstants.categorySharedSpend,
+                      onSelected: () {
+                        _searchController.clear();
+                        log(
+                          'MergedBorrowLendScreen: Filtering ledger by Shared',
+                        );
+                        context.read<BorrowLendCubit>().setLedgerCategoryFilter(
+                          AppConstants.categorySharedSpend,
+                        );
+                      },
+                    ),
+                    FilterChipWidget(
                       label: tr.split,
                       icon: Icons.call_split_rounded,
                       color: AppTheme.splitColor,
@@ -1532,6 +1582,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   netBalance: contactSummary.netBalance,
                   cashCount: contactSummary.cashCount,
                   udhariCount: contactSummary.udhariCount,
+                  sharedSpendCount: contactSummary.sharedSpendCount,
                   splitCount: contactSummary.splitCount,
                   splitNet: contactSummary.splitNet,
                   onTap: () async {

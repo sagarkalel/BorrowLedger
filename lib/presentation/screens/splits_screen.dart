@@ -1,4 +1,5 @@
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
@@ -380,7 +381,10 @@ class _SplitsScreenState extends State<SplitsScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${isPositive ? '+' : '-'}₹${netBalance.abs().toStringAsFixed(2)}',
+                    CurrencyFormatter.format(
+                      netBalance.abs(),
+                      showSign: true,
+                    ).replaceFirst('+', isPositive ? '+' : '-'),
                     style: TextStyle(
                       color: colorScheme.onSurface,
                       fontSize: 27,
@@ -695,7 +699,7 @@ class _SplitsScreenState extends State<SplitsScreen>
           ],
         ),
         AppPillBadge(
-          label: '₹${split.totalAmount.toStringAsFixed(2)}',
+          label: CurrencyFormatter.format(split.totalAmount),
           color: colorScheme.onSurfaceVariant,
           fontSize: 9,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -724,26 +728,13 @@ class _SplitsScreenState extends State<SplitsScreen>
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '₹',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSettled ? colorScheme.onSurfaceVariant : color,
-              ),
-            ),
-            Text(
-              (isSettled ? totalAmount : balance.abs()).toStringAsFixed(2),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: isSettled ? colorScheme.onSurface : color,
-              ),
-            ),
-          ],
+        Text(
+          CurrencyFormatter.format(isSettled ? totalAmount : balance.abs()),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: isSettled ? colorScheme.onSurface : color,
+          ),
         ),
         const SizedBox(height: 4),
         AppPillBadge(

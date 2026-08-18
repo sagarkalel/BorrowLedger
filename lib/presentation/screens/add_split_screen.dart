@@ -1,4 +1,5 @@
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
@@ -18,9 +19,8 @@ import '../widgets/app_date_field.dart';
 import '../widgets/app_dialog_components.dart';
 import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
-import '../widgets/app_segmented_control.dart';
 import '../widgets/custom_text_field.dart';
-import 'contact_picker_screen.dart';
+import '../widgets/person_picker_sheet.dart';
 
 class _SettlementRouteStep {
   final String fromName;
@@ -32,18 +32,6 @@ class _SettlementRouteStep {
     required this.toName,
     required this.amount,
   });
-}
-
-class _AddParticipantSheetResult {
-  final bool shouldPickPhoneContact;
-  final ContactModel? manualContact;
-
-  const _AddParticipantSheetResult.phoneContacts()
-    : shouldPickPhoneContact = true,
-      manualContact = null;
-
-  const _AddParticipantSheetResult.manual(this.manualContact)
-    : shouldPickPhoneContact = false;
 }
 
 class AddSplitScreen extends StatefulWidget {
@@ -131,14 +119,14 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         title: Text(isEditing ? tr.editSplitExpense : tr.splitExpense),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        minimum: const EdgeInsets.fromLTRB(10, 8, 10, 10),
         child: FilledButton(
           onPressed: _saveSplit,
           child: Text(isEditing ? tr.updateSplit : tr.createSplit),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Form(
           key: _formKey,
           child: Column(
@@ -149,7 +137,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 9,
+                    vertical: 8,
                   ),
                   child: Row(
                     children: [
@@ -158,9 +146,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                         centerIcon: Icons.pie_chart_rounded,
                         indicatorIcon: Icons.group_rounded,
                         indicatorColor: Theme.of(context).colorScheme.secondary,
-                        size: 38,
+                        size: 34,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 9),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +165,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                             Text(
                               tr.shareCostsWithFriends,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
@@ -191,178 +179,125 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
 
-              CustomTextField(
-                controller: _titleController,
-                labelText: tr.titleRequired,
-                hintText: tr.egDinnerAtRestaurant,
-                prefixIcon: Icons.title_rounded,
-                isDense: true,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return tr.pleaseEnterTitle;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // Total amount and You paid row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: AppAmountField(
-                      controller: _totalAmountController,
-                      labelText: tr.totalAmountRequired,
-                      hintText: '0.00',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return tr.required;
-                        }
-                        if (double.tryParse(value) == null) {
-                          return tr.invalid;
-                        }
-                        if (double.parse(value) <= 0) {
-                          return tr.mustBeGreaterThanZero;
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        setState(() {
-                          if (_splitEqually) {
-                            _calculateShares();
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: AppAmountField(
-                      controller: _paidByUserController,
-                      labelText: tr.youPaidRequired,
-                      hintText: '0.00',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return tr.required;
-                        }
-                        if (double.tryParse(value) == null) {
-                          return tr.invalid;
-                        }
-                        final amount = double.parse(value);
-                        if (amount < 0) {
-                          return tr.cannotBeNegative;
-                        }
-                        final total =
-                            double.tryParse(_totalAmountController.text) ?? 0;
-                        if (amount > total) {
-                          return tr.exceedsTotal;
-                        }
-                        return null;
-                      },
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              AppDateField(
-                labelText: tr.dateRequired,
-                valueText: DateFormat(
-                  AppConstants.dateFormat,
-                ).format(_selectedDate),
-                onTap: () => _selectDate(context),
-              ),
-              const SizedBox(height: 10),
-
-              AppDialogNotice(
-                color: Theme.of(context).colorScheme.secondary,
-                child: Row(
+              _buildComposerSection(
+                context,
+                icon: Icons.receipt_long_outlined,
+                title: 'Split details',
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.calculate_rounded,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tr.splitEqually,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            tr.divideAmountEvenlyAmongAll,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _splitEqually,
-                      onChanged: (value) {
-                        setState(() {
-                          _splitEqually = value;
-                          if (value) {
-                            _calculateShares();
-                          }
-                        });
+                    CustomTextField(
+                      controller: _titleController,
+                      labelText: tr.titleRequired,
+                      hintText: tr.egDinnerAtRestaurant,
+                      prefixIcon: Icons.title_rounded,
+                      isDense: true,
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return tr.pleaseEnterTitle;
+                        }
+                        return null;
                       },
-                      activeThumbColor: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: AppAmountField(
+                            controller: _totalAmountController,
+                            labelText: tr.totalAmountRequired,
+                            hintText: '0.00',
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return tr.required;
+                              }
+                              if (double.tryParse(value) == null) {
+                                return tr.invalid;
+                              }
+                              if (double.parse(value) <= 0) {
+                                return tr.mustBeGreaterThanZero;
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              setState(() {
+                                if (_splitEqually) {
+                                  _calculateShares();
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AppAmountField(
+                            controller: _paidByUserController,
+                            labelText: tr.youPaidRequired,
+                            hintText: '0.00',
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return tr.required;
+                              }
+                              if (double.tryParse(value) == null) {
+                                return tr.invalid;
+                              }
+                              final amount = double.parse(value);
+                              if (amount < 0) {
+                                return tr.cannotBeNegative;
+                              }
+                              final total =
+                                  double.tryParse(
+                                    _totalAmountController.text,
+                                  ) ??
+                                  0;
+                              if (amount > total) {
+                                return tr.exceedsTotal;
+                              }
+                              return null;
+                            },
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    AppDateField(
+                      labelText: tr.dateRequired,
+                      valueText: DateFormat(
+                        AppConstants.dateFormat,
+                      ).format(_selectedDate),
+                      onTap: () => _selectDate(context),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
 
-              // Participants section header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        tr.participants,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 8),
-                      AppPillBadge(
-                        label: '${_participants.length}',
-                        color: _participants.isEmpty
-                            ? AppTheme.warningColor
-                            : Theme.of(context).colorScheme.secondary,
-                        fontSize: 11,
-                      ),
-                    ],
-                  ),
-                  FilledButton.icon(
-                    onPressed: _addParticipant,
-                    icon: const Icon(Icons.person_add_rounded, size: 18),
-                    label: Text(tr.add),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      minimumSize: const Size(0, 36),
-                    ),
-                  ),
-                ],
+              _buildComposerSection(
+                context,
+                icon: Icons.calculate_rounded,
+                title: 'Split method',
+                child: _buildCompactSwitchRow(
+                  title: tr.splitEqually,
+                  subtitle: tr.divideAmountEvenlyAmongAll,
+                  value: _splitEqually,
+                  onChanged: (value) {
+                    setState(() {
+                      _splitEqually = value;
+                      if (value) {
+                        _calculateShares();
+                      }
+                    });
+                  },
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
+
+              _buildParticipantsHeader(context, tr),
+              const SizedBox(height: 6),
 
               // Participants list or empty state
               if (_participants.isEmpty)
@@ -441,7 +376,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${tr.totalParticipantShares}: ${tr.rupee}${_calculateTotalShares().toStringAsFixed(2)}',
+                                    '${tr.totalParticipantShares}: ${CurrencyFormatter.format(_calculateTotalShares())}',
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Theme.of(
@@ -470,29 +405,189 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   ],
                 ),
 
-              const SizedBox(height: 8),
-
-              _buildPaymentCoverageSummary(context),
-              const SizedBox(height: 10),
-
-              if (_canUseSettlementRoute) ...[
-                _buildSettlementRouteSection(isDark),
-                const SizedBox(height: 10),
+              if (_participants.isNotEmpty) ...[
+                const SizedBox(height: 7),
+                _buildPaymentCoverageSummary(context),
               ],
 
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: tr.descriptionOptional,
-                prefixIcon: Icons.notes_rounded,
-                hintText: tr.whatWasThisExpenseFor,
-                isDense: true,
-                maxLines: 2,
-                maxLength: 200,
+              if (_canUseSettlementRoute) ...[
+                const SizedBox(height: 9),
+                _buildSettlementRouteSection(isDark),
+              ],
+
+              const SizedBox(height: 9),
+
+              _buildComposerSection(
+                context,
+                icon: Icons.notes_outlined,
+                title: 'Note',
+                child: CustomTextField(
+                  controller: _descriptionController,
+                  labelText: tr.descriptionOptional,
+                  prefixIcon: Icons.notes_rounded,
+                  hintText: tr.whatWasThisExpenseFor,
+                  isDense: true,
+                  maxLines: 4,
+                  maxLength: 200,
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildComposerSection(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = colorScheme.secondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 21,
+              height: 21,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(icon, size: 12.5, color: accentColor),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildParticipantsHeader(BuildContext context, AppLocalizations tr) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final countColor = _participants.isEmpty
+        ? AppTheme.warningColor
+        : colorScheme.secondary;
+
+    return Row(
+      children: [
+        Container(
+          width: 21,
+          height: 21,
+          decoration: BoxDecoration(
+            color: countColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Icon(Icons.group_outlined, size: 12.5, color: countColor),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          tr.participants,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(width: 7),
+        AppPillBadge(
+          label: '${_participants.length}',
+          color: countColor,
+          fontSize: 10,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        ),
+        const Spacer(),
+        FilledButton.icon(
+          onPressed: _addParticipant,
+          icon: const Icon(Icons.person_add_rounded, size: 15),
+          label: Text(tr.add),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            minimumSize: const Size(0, 32),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactSwitchRow({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 7, 4, 7),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.07),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.8,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    height: 1.15,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.82,
+            child: Switch.adaptive(
+              value: value,
+              activeThumbColor: colorScheme.secondary,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -511,7 +606,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
         child: Column(
           children: [
             Row(
@@ -520,9 +615,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   label: participant.contact.name,
                   indicatorIcon: Icons.group_rounded,
                   indicatorColor: colorScheme.secondary,
-                  size: 38,
+                  size: 34,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,7 +626,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                         participant.contact.name,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                          fontSize: 14,
                           color: colorScheme.onSurface,
                         ),
                         maxLines: 1,
@@ -579,7 +674,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Row(
               children: [
                 Expanded(
@@ -658,7 +753,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       ),
       child: Text(
-        '₹ ${value.toStringAsFixed(2)}',
+        CurrencyFormatter.format(value),
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
@@ -698,13 +793,13 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                     : isOver
                     ? Icons.error_outline_rounded
                     : Icons.account_balance_wallet_outlined,
-                size: 18,
+                size: 16,
                 color: statusColor,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Paid total: ₹${totalPaid.toStringAsFixed(2)} / ₹${totalAmount.toStringAsFixed(2)}',
+                  'Paid total: ${CurrencyFormatter.format(totalPaid)} / ${CurrencyFormatter.format(totalAmount)}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -714,7 +809,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Row(
             children: [
               _buildCoverageChip(
@@ -723,21 +818,21 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 value: paidByUser,
                 color: colorScheme.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               _buildCoverageChip(
                 context,
                 label: 'Others',
                 value: paidByOthers,
                 color: colorScheme.secondary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   isBalanced
                       ? 'Ready'
                       : isOver
-                      ? 'Over by ₹${remaining.abs().toStringAsFixed(2)}'
-                      : 'Left ₹${remaining.toStringAsFixed(2)}',
+                      ? 'Over by ${CurrencyFormatter.format(remaining.abs())}'
+                      : 'Left ${CurrencyFormatter.format(remaining)}',
                   textAlign: TextAlign.end,
                   style: TextStyle(
                     fontSize: 12,
@@ -761,19 +856,19 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.route_rounded, size: 18, color: AppTheme.splitColor),
-                const SizedBox(width: 8),
+                Icon(Icons.route_rounded, size: 16, color: AppTheme.splitColor),
+                const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     tr.settlementRoute,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: colorScheme.onSurface,
                     ),
@@ -781,7 +876,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               tr.routeThroughTrustedPerson,
               style: TextStyle(
@@ -790,7 +885,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -806,7 +901,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                       _settlementMediatorContactId = null;
                     }),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   _buildRouteChoiceChip(
                     label: tr.you,
                     icon: Icons.person_pin_circle_rounded,
@@ -822,7 +917,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   const SizedBox(width: 8),
                   ..._participants.map(
                     (participant) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 6),
                       child: _buildRouteChoiceChip(
                         label: participant.contact.name,
                         icon: Icons.person_pin_circle_rounded,
@@ -843,14 +938,14 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               ),
             ),
             if (previewSteps.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               AppDialogNotice(
                 color: AppTheme.splitColor,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ...previewSteps.map(_buildRoutePreviewRow),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       tr.routePlanOnly,
                       style: TextStyle(
@@ -966,7 +1061,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '₹${step.amount.toStringAsFixed(2)}',
+            CurrencyFormatter.format(step.amount),
             style: const TextStyle(
               fontSize: 12,
               color: AppTheme.splitColor,
@@ -994,7 +1089,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
-        '$label ₹${value.toStringAsFixed(2)}',
+        '$label ${CurrencyFormatter.format(value)}',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -1202,29 +1297,17 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   }
 
   Future<void> _addParticipant() async {
-    final result = await showModalBottomSheet<_AddParticipantSheetResult>(
+    final contactRepo = context.read<ContactRepository>();
+    final contacts = await contactRepo.getContactsForPicker();
+    if (!mounted) return;
+
+    final result = await showPersonPickerSheet(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => const _AddSplitParticipantSheet(),
+      contacts: contacts,
     );
 
     if (result == null || !mounted) return;
-
-    if (result.shouldPickPhoneContact) {
-      final contact = await Navigator.push<ContactModel>(
-        context,
-        MaterialPageRoute(builder: (_) => const ContactPickerScreen()),
-      );
-
-      if (contact == null || !mounted) return;
-      await _addContactAsParticipant(contact);
-      return;
-    }
-
-    final manualContact = result.manualContact;
-    if (manualContact == null) return;
-    await _addContactAsParticipant(manualContact);
+    await _addContactAsParticipant(result.contact);
   }
 
   Future<void> _addContactAsParticipant(ContactModel contact) async {
@@ -1398,7 +1481,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       if (totalPaidForExpense > totalAmount + 0.01) {
         showFailureSnackbar(
           context,
-          'Paid total exceeds total amount by ₹${(totalPaidForExpense - totalAmount).toStringAsFixed(2)}',
+          'Paid total exceeds total amount by ${CurrencyFormatter.format(totalPaidForExpense - totalAmount)}',
         );
         return;
       }
@@ -1406,7 +1489,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       if ((totalPaidForExpense - totalAmount).abs() > 0.01) {
         showFailureSnackbar(
           context,
-          '₹${(totalAmount - totalPaidForExpense).toStringAsFixed(2)} still needs to be assigned as paid',
+          '${CurrencyFormatter.format(totalAmount - totalPaidForExpense)} still needs to be assigned as paid',
         );
         return;
       }
@@ -1484,191 +1567,4 @@ class ParticipantData {
     this.expensePaid = 0,
     this.paidAmount = 0,
   });
-}
-
-class _AddSplitParticipantSheet extends StatefulWidget {
-  const _AddSplitParticipantSheet();
-
-  @override
-  State<_AddSplitParticipantSheet> createState() =>
-      _AddSplitParticipantSheetState();
-}
-
-class _AddSplitParticipantSheetState extends State<_AddSplitParticipantSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  bool _usePhoneContacts = true;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = AppLocalizations.of(context)!;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tr.addParticipants,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                AppSegmentedControl<bool>(
-                  selectedValue: _usePhoneContacts,
-                  margin: EdgeInsets.zero,
-                  segmentHeight: 40,
-                  iconSize: 16,
-                  fontSize: 10.5,
-                  selectedColor: colorScheme.secondary,
-                  onChanged: (value) =>
-                      setState(() => _usePhoneContacts = value),
-                  items: [
-                    AppSegmentedControlItem(
-                      value: true,
-                      label: tr.phoneContacts,
-                      icon: Icons.contacts_outlined,
-                    ),
-                    AppSegmentedControlItem(
-                      value: false,
-                      label: tr.manualEntry,
-                      icon: Icons.edit_outlined,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                if (_usePhoneContacts)
-                  _buildContactPickerTile(
-                    label: tr.selectContactRequired,
-                    icon: Icons.person_outline_rounded,
-                    onTap: () => Navigator.pop(
-                      context,
-                      const _AddParticipantSheetResult.phoneContacts(),
-                    ),
-                  )
-                else ...[
-                  CustomTextField(
-                    controller: _nameController,
-                    labelText: tr.contactNameRequired,
-                    hintText: tr.enterName,
-                    prefixIcon: Icons.person_outline_rounded,
-                    textCapitalization: TextCapitalization.words,
-                    isDense: true,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return tr.pleaseEnterContactName;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                    controller: _phoneController,
-                    labelText: tr.phoneNumberOptional,
-                    hintText: tr.enterPhoneNumber,
-                    prefixIcon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: FormInputUtils.phoneInputFormatters,
-                    isDense: true,
-                    validator: (value) {
-                      if (!FormInputUtils.isValidOptionalPhone(value)) {
-                        return tr.invalidPhone;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _submitManualContact,
-                      icon: const Icon(Icons.person_add_rounded),
-                      label: Text(tr.add),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _submitManualContact() {
-    if (!_formKey.currentState!.validate()) return;
-
-    final phone = _phoneController.text.trim();
-    Navigator.pop(
-      context,
-      _AddParticipantSheetResult.manual(
-        ContactModel(
-          name: _nameController.text.trim(),
-          phone: phone.isEmpty ? null : phone,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactPickerTile({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: colorScheme.secondary, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
