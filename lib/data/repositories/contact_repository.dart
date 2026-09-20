@@ -60,18 +60,13 @@ class ContactRepository {
 
   /// All contacts with summary and pagination
   Future<List<ContactSummary>> getAllContacts({int? limit, int? offset}) async {
-    final sql = StringBuffer(_contactSummaryBaseQuery);
-
-    sql.write(' ORDER BY c.name ASC');
-
-    if (limit != null) {
-      sql.write(' LIMIT $limit');
-      if (offset != null) {
-        sql.write(' OFFSET $offset');
-      }
-    }
-
-    final rows = await _dbHelper.rawQuery(sql.toString());
+    final rows = await _dbHelper.rawQuery(
+      _buildContactSummaryQuery(
+        orderBy: 'c.name ASC',
+        limit: limit,
+        offset: offset,
+      ),
+    );
     return rows.map(_mapToContactSummary).toList();
   }
 
@@ -80,19 +75,14 @@ class ContactRepository {
     int? limit,
     int? offset,
   }) async {
-    final sql = StringBuffer(_contactSummaryBaseQuery);
-
-    sql.write(' HAVING transaction_count > 0');
-    sql.write(' ORDER BY last_transaction_date DESC');
-
-    if (limit != null) {
-      sql.write(' LIMIT $limit');
-      if (offset != null) {
-        sql.write(' OFFSET $offset');
-      }
-    }
-
-    final rows = await _dbHelper.rawQuery(sql.toString());
+    final rows = await _dbHelper.rawQuery(
+      _buildContactSummaryQuery(
+        having: 'transaction_count > 0',
+        orderBy: 'last_transaction_date DESC',
+        limit: limit,
+        offset: offset,
+      ),
+    );
     return rows.map(_mapToContactSummary).toList();
   }
 
@@ -129,10 +119,7 @@ class ContactRepository {
   /// Single contact summary
   Future<ContactSummary?> getContactById(int contactId) async {
     final rows = await _dbHelper.rawQuery(
-      '''
-      $_contactSummaryBaseQuery
-      WHERE c.id = ?
-      ''',
+      _buildContactSummaryQuery(where: 'c.id = ?'),
       [contactId],
     );
 
@@ -145,12 +132,23 @@ class ContactRepository {
     String query, {
     int? limit,
     int? offset,
+    bool onlyWithTransactions = false,
   }) async {
     if (query.trim().isEmpty) return [];
 
+    final searchTerm = '%${query.trim()}%';
     final sql = StringBuffer('''
-      $_contactSummaryBaseQuery
-      WHERE LOWER(c.name) LIKE LOWER(?)
+      SELECT
+        c.*,
+        COUNT(t.id) AS transaction_count,
+        COALESCE(SUM(CASE WHEN t.type = 'lend' THEN t.amount ELSE 0 END), 0) AS total_lent,
+        COALESCE(SUM(CASE WHEN t.type = 'borrow' THEN t.amount ELSE 0 END), 0) AS total_borrowed,
+        MAX(COALESCE(t.updated_at, t.created_at, t.date)) AS last_transaction_date
+      FROM contacts c
+      LEFT JOIN transactions t ON c.id = t.contact_id
+      WHERE LOWER(c.name) LIKE LOWER(?) OR c.phone LIKE ?
+      GROUP BY c.id
+      ${onlyWithTransactions ? 'HAVING transaction_count > 0' : ''}
       ORDER BY c.name ASC
     ''');
 
@@ -162,19 +160,39 @@ class ContactRepository {
     }
 
     final rows = await _dbHelper.rawQuery(sql.toString(), [
-      '%${query.trim()}%',
+      searchTerm,
+      searchTerm,
     ]);
 
     return rows.map(_mapToContactSummary).toList();
   }
 
   /// Get contact count (for pagination)
-  Future<int> getContactCount({bool onlyWithTransactions = false}) async {
+  Future<int> getContactCount({
+    bool onlyWithTransactions = false,
+    String? searchQuery,
+  }) async {
+    final whereParts = <String>[];
+    final args = <dynamic>[];
+
+    if (onlyWithTransactions) {
+      whereParts.add(
+        'EXISTS (SELECT 1 FROM transactions t WHERE t.contact_id = c.id)',
+      );
+    }
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      whereParts.add('(LOWER(c.name) LIKE LOWER(?) OR c.phone LIKE ?)');
+      final searchTerm = '%${searchQuery.trim()}%';
+      args.addAll([searchTerm, searchTerm]);
+    }
+
+    final where = whereParts.isEmpty ? '' : 'WHERE ${whereParts.join(' AND ')}';
     final result = await _dbHelper.rawQuery('''
       SELECT COUNT(DISTINCT c.id) as count
       FROM contacts c
-      ${onlyWithTransactions ? 'INNER JOIN transactions t ON c.id = t.contact_id' : ''}
-    ''');
+      $where
+    ''', args);
 
     return (result.first['count'] as int?) ?? 0;
   }
@@ -183,7 +201,7 @@ class ContactRepository {
      SQL BASE + MAPPER
   ======================== */
 
-  static const String _contactSummaryBaseQuery = '''
+  static const String _contactSummarySelectFrom = '''
     SELECT
       c.*,
       COUNT(t.id) AS transaction_count,
@@ -192,8 +210,34 @@ class ContactRepository {
       MAX(COALESCE(t.updated_at, t.created_at, t.date)) AS last_transaction_date
     FROM contacts c
     LEFT JOIN transactions t ON c.id = t.contact_id
-    GROUP BY c.id
   ''';
+
+  String _buildContactSummaryQuery({
+    String? where,
+    String? having,
+    String? orderBy,
+    int? limit,
+    int? offset,
+  }) {
+    final sql = StringBuffer(_contactSummarySelectFrom);
+    if (where != null && where.trim().isNotEmpty) {
+      sql.write(' WHERE $where');
+    }
+    sql.write(' GROUP BY c.id');
+    if (having != null && having.trim().isNotEmpty) {
+      sql.write(' HAVING $having');
+    }
+    if (orderBy != null && orderBy.trim().isNotEmpty) {
+      sql.write(' ORDER BY $orderBy');
+    }
+    if (limit != null) {
+      sql.write(' LIMIT $limit');
+      if (offset != null) {
+        sql.write(' OFFSET $offset');
+      }
+    }
+    return sql.toString();
+  }
 
   ContactSummary _mapToContactSummary(Map<String, dynamic> row) {
     final contact = ContactModel.fromMap(row);

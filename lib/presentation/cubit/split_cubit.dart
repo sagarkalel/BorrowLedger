@@ -130,8 +130,7 @@ class SplitCubit extends Cubit<SplitState> {
       // Load first page
       final splits = await _loadSplitsPage(0);
       final totalCount = await _getSplitCount();
-      final hasMoreData =
-          splits.length >= SplitPaginationConstants.defaultPageSize;
+      final hasMoreData = splits.length < totalCount;
 
       log('SplitCubit: Loaded ${splits.length} splits (total: $totalCount)');
 
@@ -191,8 +190,7 @@ class SplitCubit extends Cubit<SplitState> {
       }
 
       final allSplits = [...state.splits, ...newSplits];
-      final hasMoreData =
-          newSplits.length >= SplitPaginationConstants.defaultPageSize;
+      final hasMoreData = allSplits.length < state.totalCount;
 
       log(
         'SplitCubit: Loaded ${newSplits.length} more splits (total: ${allSplits.length})',
@@ -229,6 +227,7 @@ class SplitCubit extends Cubit<SplitState> {
       log('SplitCubit: Searching with query: "${state.searchQuery}"');
       return await _repository.searchSplits(
         state.searchQuery!,
+        status: state.filterStatus,
         limit: limit,
         offset: offset,
       );
@@ -248,7 +247,10 @@ class SplitCubit extends Cubit<SplitState> {
   /// Get total split count for current filters
   Future<int> _getSplitCount() async {
     try {
-      return await _repository.getSplitCount(status: state.filterStatus);
+      return await _repository.getSplitCount(
+        status: state.filterStatus,
+        searchQuery: state.searchQuery,
+      );
     } catch (e) {
       log('SplitCubit: Error getting split count - $e');
       return 0;
@@ -258,13 +260,15 @@ class SplitCubit extends Cubit<SplitState> {
   /// Create a new split expense
   Future<void> createSplit(
     SplitExpenseModel split,
-    List<SplitParticipantModel> participants,
-  ) async {
+    List<SplitParticipantModel> participants, [
+    List<SplitBillModel>? bills,
+  ]) async {
     log('SplitCubit: Creating split - ${split.title}');
     try {
       final splitId = await _repository.createSplitWithParticipants(
         split,
         participants,
+        bills,
       );
       log('SplitCubit: Split created with ID: $splitId');
       log('SplitCubit: ${participants.length} participants added');
@@ -284,10 +288,11 @@ class SplitCubit extends Cubit<SplitState> {
   Future<void> updateSplit(
     SplitExpenseModel split, [
     List<SplitParticipantModel>? participants,
+    List<SplitBillModel>? bills,
   ]) async {
     log('SplitCubit: Updating split ID: ${split.id}');
     try {
-      await _repository.updateSplitWithParticipants(split, participants);
+      await _repository.updateSplitWithParticipants(split, participants, bills);
       _hasSyncedSplitTransactions = true;
       log('SplitCubit: Split updated successfully');
       emit(

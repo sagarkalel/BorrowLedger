@@ -9,6 +9,11 @@ class SettleDialog extends StatefulWidget {
   final double netBalance;
   final bool isPositive;
   final bool isDark;
+  final String? balanceLabel;
+  final String? contactName;
+  final double? directBalance;
+  final double? splitBalance;
+  final bool isZeroSettlement;
   final VoidCallback onFullSettle;
   final Function(double) onPartialSettle;
 
@@ -17,6 +22,11 @@ class SettleDialog extends StatefulWidget {
     required this.netBalance,
     required this.isPositive,
     required this.isDark,
+    this.balanceLabel,
+    this.contactName,
+    this.directBalance,
+    this.splitBalance,
+    this.isZeroSettlement = false,
     required this.onFullSettle,
     required this.onPartialSettle,
   });
@@ -38,12 +48,15 @@ class _SettleDialogState extends State<SettleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isPositive
-        ? AppTheme.moneyInColor
-        : AppTheme.moneyOutColor;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tr = AppLocalizations.of(context)!;
+    final color = widget.isZeroSettlement
+        ? colorScheme.secondary
+        : widget.isPositive
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
+    final showPartialOption = !widget.isZeroSettlement;
 
     return Dialog(
       child: SingleChildScrollView(
@@ -73,7 +86,9 @@ class _SettleDialogState extends State<SettleDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        tr.settleBalance,
+                        widget.contactName == null
+                            ? tr.settleBalance
+                            : tr.settleWithContact(widget.contactName!),
                         style: theme.dialogTheme.titleTextStyle,
                       ),
                     ),
@@ -95,7 +110,7 @@ class _SettleDialogState extends State<SettleDialog> {
                       Row(
                         children: [
                           Text(
-                            tr.currentBalance,
+                            widget.balanceLabel ?? tr.currentBalance,
                             style: TextStyle(
                               fontSize: 12,
                               color: widget.isDark
@@ -118,7 +133,9 @@ class _SettleDialogState extends State<SettleDialog> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  widget.isPositive
+                                  widget.isZeroSettlement
+                                      ? Icons.swap_horiz_rounded
+                                      : widget.isPositive
                                       ? Icons.call_received
                                       : Icons.call_made,
                                   size: 12,
@@ -126,9 +143,11 @@ class _SettleDialogState extends State<SettleDialog> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  widget.isPositive
-                                      ? tr.youWillGet
-                                      : tr.youWillGive,
+                                  widget.isZeroSettlement
+                                      ? tr.settled
+                                      : widget.isPositive
+                                      ? tr.toReceive
+                                      : tr.toPay,
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -142,10 +161,15 @@ class _SettleDialogState extends State<SettleDialog> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        CurrencyFormatter.format(
-                          widget.netBalance.abs(),
-                          showSign: true,
-                        ).replaceFirst('+', widget.isPositive ? '+' : '-'),
+                        widget.isZeroSettlement
+                            ? CurrencyFormatter.format(0)
+                            : CurrencyFormatter.format(
+                                widget.netBalance.abs(),
+                                showSign: true,
+                              ).replaceFirst(
+                                '+',
+                                widget.isPositive ? '+' : '-',
+                              ),
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -158,37 +182,46 @@ class _SettleDialogState extends State<SettleDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurface.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildSettleTypeButton(
-                          label: tr.fullSettlement,
-                          icon: Icons.check_circle_outline,
-                          isSelected: !_isPartialSettle,
-                          onTap: () {
-                            setState(() => _isPartialSettle = false);
-                            _amountController.clear();
-                          },
+                if (widget.directBalance != null ||
+                    widget.splitBalance != null) ...[
+                  _buildSettlementBreakdown(colorScheme, color, tr),
+                  const SizedBox(height: 16),
+                ],
+
+                if (showPartialOption) ...[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildSettleTypeButton(
+                            label: tr.fullSettlement,
+                            icon: Icons.check_circle_outline,
+                            isSelected: !_isPartialSettle,
+                            onTap: () {
+                              setState(() => _isPartialSettle = false);
+                              _amountController.clear();
+                            },
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: _buildSettleTypeButton(
-                          label: tr.partial,
-                          icon: Icons.payments_outlined,
-                          isSelected: _isPartialSettle,
-                          onTap: () => setState(() => _isPartialSettle = true),
+                        Expanded(
+                          child: _buildSettleTypeButton(
+                            label: tr.partial,
+                            icon: Icons.payments_outlined,
+                            isSelected: _isPartialSettle,
+                            onTap: () =>
+                                setState(() => _isPartialSettle = true),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
 
                 if (_isPartialSettle) ...[
                   TextFormField(
@@ -219,6 +252,7 @@ class _SettleDialogState extends State<SettleDialog> {
                         borderSide: BorderSide(color: color, width: 1),
                       ),
                     ),
+                    onChanged: (_) => setState(() {}),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return tr.pleaseEnterAmount;
@@ -242,6 +276,17 @@ class _SettleDialogState extends State<SettleDialog> {
                     children: _buildAmountSuggestions(color),
                   ),
                   const SizedBox(height: 16),
+                  if (_partialRemainingText(tr) != null) ...[
+                    Text(
+                      _partialRemainingText(tr)!,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
 
                 Container(
@@ -267,13 +312,7 @@ class _SettleDialogState extends State<SettleDialog> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _isPartialSettle
-                              ? (widget.isPositive
-                                    ? tr.partialSettlementInfoPositive
-                                    : tr.partialSettlementInfoNegative)
-                              : (widget.isPositive
-                                    ? tr.fullSettlementInfoPositive
-                                    : tr.fullSettlementInfoNegative),
+                          _settlementInfoText(tr),
                           style: TextStyle(
                             fontSize: 12,
                             color: colorScheme.onSurfaceVariant,
@@ -301,7 +340,11 @@ class _SettleDialogState extends State<SettleDialog> {
                         onPressed: _handleSettle,
                         icon: const Icon(Icons.check_circle, size: 20),
                         label: Text(
-                          _isPartialSettle ? tr.settlePartial : tr.settleFull,
+                          widget.isZeroSettlement
+                              ? tr.clearOffsettingBalances
+                              : _isPartialSettle
+                              ? tr.settlePartial
+                              : tr.settleFull,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color,
@@ -365,8 +408,148 @@ class _SettleDialogState extends State<SettleDialog> {
     );
   }
 
+  Widget _buildSettlementBreakdown(
+    ColorScheme colorScheme,
+    Color accent,
+    AppLocalizations tr,
+  ) {
+    final direct = widget.directBalance ?? 0;
+    final split = widget.splitBalance ?? 0;
+    final net = widget.netBalance;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildBreakdownRow(
+            label: tr.directBalance,
+            amount: direct,
+            color: _signedAmountColor(direct, colorScheme),
+          ),
+          const SizedBox(height: 8),
+          _buildBreakdownRow(
+            label: tr.splitBalance,
+            amount: split,
+            color: _signedAmountColor(split, colorScheme),
+          ),
+          const SizedBox(height: 10),
+          Divider(
+            height: 1,
+            color: colorScheme.onSurface.withValues(alpha: 0.08),
+          ),
+          const SizedBox(height: 10),
+          _buildBreakdownRow(
+            label: tr.netSettlement,
+            amount: widget.isZeroSettlement ? 0 : net,
+            color: accent,
+            isStrong: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreakdownRow({
+    required String label,
+    required double amount,
+    required Color color,
+    bool isStrong = false,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isStrong ? FontWeight.w700 : FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Text(
+          _signedMoney(amount),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isStrong ? FontWeight.w800 : FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _signedAmountColor(double amount, ColorScheme colorScheme) {
+    if (amount.abs() <= 0.01) return colorScheme.onSurfaceVariant;
+    return amount > 0 ? AppTheme.moneyInColor : AppTheme.moneyOutColor;
+  }
+
+  String _signedMoney(double amount) {
+    if (amount.abs() <= 0.01) return CurrencyFormatter.format(0);
+    return CurrencyFormatter.format(
+      amount.abs(),
+      showSign: true,
+    ).replaceFirst('+', amount > 0 ? '+' : '-');
+  }
+
+  String? _partialRemainingText(AppLocalizations tr) {
+    if (!_isPartialSettle || widget.netBalance.abs() <= 0.01) return null;
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null ||
+        amount <= 0 ||
+        amount > widget.netBalance.abs() + 0.01) {
+      return null;
+    }
+
+    final remaining = widget.netBalance.abs() - amount;
+    final signedRemaining = remaining <= 0.01
+        ? CurrencyFormatter.format(0)
+        : CurrencyFormatter.format(
+            remaining,
+            showSign: true,
+          ).replaceFirst('+', widget.isPositive ? '+' : '-');
+
+    return tr.remainingAfterSettlement(signedRemaining);
+  }
+
+  String _settlementInfoText(AppLocalizations tr) {
+    if (_isPartialSettle) {
+      return widget.isPositive
+          ? tr.partialSettlementInfoPositive
+          : tr.partialSettlementInfoNegative;
+    }
+
+    if (widget.isZeroSettlement) {
+      return tr.noCashNeededOffset;
+    }
+
+    final contactName = widget.contactName;
+    if (contactName == null || contactName.trim().isEmpty) {
+      return widget.isPositive
+          ? tr.fullSettlementInfoPositive
+          : tr.fullSettlementInfoNegative;
+    }
+
+    final amount = CurrencyFormatter.format(widget.netBalance.abs());
+    final direction = widget.isPositive
+        ? tr.contactPaysYou(contactName, amount)
+        : tr.youPayContact(contactName, amount);
+
+    return '$direction\n${tr.contactSettlementKeepsHistory}';
+  }
+
   List<Widget> _buildAmountSuggestions(Color color) {
     final fullAmount = widget.netBalance.abs();
+    if (fullAmount <= 0.01) return [];
+
     final suggestions = [
       fullAmount * 0.25,
       fullAmount * 0.5,
@@ -377,7 +560,9 @@ class _SettleDialogState extends State<SettleDialog> {
     return suggestions.map((amount) {
       final percentage = ((amount / fullAmount) * 100).round();
       return InkWell(
-        onTap: () => _amountController.text = amount.toStringAsFixed(2),
+        onTap: () => setState(() {
+          _amountController.text = amount.toStringAsFixed(2);
+        }),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

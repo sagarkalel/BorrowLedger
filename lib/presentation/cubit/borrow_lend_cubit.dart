@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_constants.dart';
-import 'package:borrow_ledger/data/models/split_model.dart';
+import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
+import 'package:borrow_ledger/data/models/contact_activity_item.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -38,10 +39,12 @@ class BorrowLendState {
 
   // Transactions
   final List<TransactionModel> transactions;
+  final List<ContactActivityItem> ledgerActivities;
   final List<TransactionModel> recentTransactions;
   final String? filterType;
   final String? filterCategory; // 'cash' or 'udhari'
   final String? searchQuery;
+  final TransactionSortOption transactionSortOption;
 
   // Contacts (for contacts view)
   final List<ContactSummary> contactSummaries;
@@ -82,10 +85,12 @@ class BorrowLendState {
     this.udhariTaken = 0.0,
     this.udhariNet = 0.0,
     this.transactions = const [],
+    this.ledgerActivities = const [],
     this.recentTransactions = const [],
     this.filterType,
     this.filterCategory,
     this.searchQuery,
+    this.transactionSortOption = TransactionSortOption.transactionDateDesc,
     this.contactSummaries = const [],
     this.isLoadingContacts = false,
     this.isLoadingMoreContacts = false,
@@ -118,6 +123,7 @@ class BorrowLendState {
     double? udhariTaken,
     double? udhariNet,
     List<TransactionModel>? transactions,
+    List<ContactActivityItem>? ledgerActivities,
     List<TransactionModel>? recentTransactions,
     String? filterType,
     bool clearFilterType = false,
@@ -125,6 +131,7 @@ class BorrowLendState {
     bool clearFilterCategory = false,
     String? searchQuery,
     bool clearSearchQuery = false,
+    TransactionSortOption? transactionSortOption,
     List<ContactSummary>? contactSummaries,
     bool? isLoadingContacts,
     bool? isLoadingMoreContacts,
@@ -159,12 +166,15 @@ class BorrowLendState {
       udhariTaken: udhariTaken ?? this.udhariTaken,
       udhariNet: udhariNet ?? this.udhariNet,
       transactions: transactions ?? this.transactions,
+      ledgerActivities: ledgerActivities ?? this.ledgerActivities,
       recentTransactions: recentTransactions ?? this.recentTransactions,
       filterType: clearFilterType ? null : (filterType ?? this.filterType),
       filterCategory: clearFilterCategory
           ? null
           : (filterCategory ?? this.filterCategory),
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      transactionSortOption:
+          transactionSortOption ?? this.transactionSortOption,
       contactSummaries: contactSummaries ?? this.contactSummaries,
       isLoadingContacts: isLoadingContacts ?? this.isLoadingContacts,
       isLoadingMoreContacts:
@@ -192,8 +202,6 @@ class BorrowLendState {
 }
 
 class BorrowLendCubit extends Cubit<BorrowLendState> {
-  static const String _splitHistoryDescriptionPrefix = 'Split history: ';
-
   final TransactionRepository _transactionRepository;
   final SplitRepository _splitRepository;
   late Timer timer;
@@ -216,7 +224,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
-      final loadingDelay = state.transactions.isEmpty
+      final loadingDelay = state.ledgerActivities.isEmpty
           ? AppLoadingDelay.initial()
           : AppLoadingDelay.refresh();
 
@@ -253,7 +261,8 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
 
       // Get first page of transactions based on filters
       log('BorrowLendCubit: Fetching first page of transactions...');
-      final transactions = await _loadTransactionsPage(0);
+      final ledgerActivities = await _loadLedgerActivityPage(0);
+      final transactions = _transactionsFromActivityItems(ledgerActivities);
 
       // Get first page of people summaries so the People tab stays fresh even
       // when a transaction was added from another screen.
@@ -265,11 +274,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
 
       // Get total count for pagination
       final totalCount = await _getTransactionCount();
-      final hasMoreData =
-          transactions.length >= PaginationConstants.defaultPageSize;
+      final hasMoreData = ledgerActivities.length < totalCount;
 
       log(
-        'BorrowLendCubit: Found ${transactions.length} transactions (total: $totalCount)',
+        'BorrowLendCubit: Found ${ledgerActivities.length} ledger activities (total: $totalCount)',
       );
 
       await loadingDelay;
@@ -289,6 +297,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           udhariTaken: udhariTaken,
           udhariNet: udhariNet,
           transactions: transactions,
+          ledgerActivities: ledgerActivities,
           recentTransactions: recentTransactions,
           contactSummaries: contacts,
           isLoadingContacts: false,
@@ -338,8 +347,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
 
       final contacts = await _loadContactSummariesPage(0);
       final totalCount = await _getContactSummariesCount();
-      final hasMoreContacts =
-          contacts.length >= PaginationConstants.contactsPageSize;
+      final hasMoreContacts = contacts.length < totalCount;
 
       log(
         'BorrowLendCubit: Loaded ${contacts.length} contact summaries (total: $totalCount)',
@@ -400,8 +408,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       }
 
       final allContacts = [...state.contactSummaries, ...newContacts];
-      final hasMoreContacts =
-          newContacts.length >= PaginationConstants.contactsPageSize;
+      final hasMoreContacts = allContacts.length < state.totalContactsCount;
 
       log(
         'BorrowLendCubit: Loaded ${newContacts.length} more contacts (total: ${allContacts.length})',
@@ -572,19 +579,19 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     try {
-      final loadingDelay = state.transactions.isEmpty
+      final loadingDelay = state.ledgerActivities.isEmpty
           ? AppLoadingDelay.initial()
           : AppLoadingDelay.refresh();
 
       await _syncSplitTransactions();
 
-      final transactions = await _loadTransactionsPage(0);
+      final ledgerActivities = await _loadLedgerActivityPage(0);
+      final transactions = _transactionsFromActivityItems(ledgerActivities);
       final totalCount = await _getTransactionCount();
-      final hasMoreData =
-          transactions.length >= PaginationConstants.defaultPageSize;
+      final hasMoreData = ledgerActivities.length < totalCount;
 
       log(
-        'BorrowLendCubit: Found ${transactions.length} transactions (total: $totalCount)',
+        'BorrowLendCubit: Found ${ledgerActivities.length} ledger activities (total: $totalCount)',
       );
 
       await loadingDelay;
@@ -593,6 +600,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
         state.copyWith(
           isLoading: false,
           transactions: transactions,
+          ledgerActivities: ledgerActivities,
           error: null,
           lastUpdate: DateTime.now(),
           currentPage: 0,
@@ -633,10 +641,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
 
     try {
       final loadingDelay = AppLoadingDelay.loadMore();
-      final newTransactions = await _loadTransactionsPage(nextPage);
+      final newActivities = await _loadLedgerActivityPage(nextPage);
       await loadingDelay;
 
-      if (newTransactions.isEmpty) {
+      if (newActivities.isEmpty) {
         log('BorrowLendCubit: No more transactions to load');
         emit(
           state.copyWith(
@@ -648,18 +656,19 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
         return;
       }
 
-      final allTransactions = [...state.transactions, ...newTransactions];
-      final hasMoreData =
-          newTransactions.length >= PaginationConstants.defaultPageSize;
+      final allActivities = [...state.ledgerActivities, ...newActivities];
+      final allTransactions = _transactionsFromActivityItems(allActivities);
+      final hasMoreData = allActivities.length < state.totalCount;
 
       log(
-        'BorrowLendCubit: Loaded ${newTransactions.length} more transactions (total: ${allTransactions.length})',
+        'BorrowLendCubit: Loaded ${newActivities.length} more ledger activities (total: ${allActivities.length})',
       );
 
       emit(
         state.copyWith(
           isLoadingMore: false,
           transactions: allTransactions,
+          ledgerActivities: allActivities,
           currentPage: nextPage,
           hasMoreData: hasMoreData,
           lastUpdate: DateTime.now(),
@@ -677,7 +686,7 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
   }
 
   /// Internal method to load a specific page of transactions
-  Future<List<TransactionModel>> _loadTransactionsPage(int page) async {
+  Future<List<ContactActivityItem>> _loadLedgerActivityPage(int page) async {
     final offset = page * PaginationConstants.defaultPageSize;
     final limit = PaginationConstants.defaultPageSize;
 
@@ -687,65 +696,100 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
     );
 
     if (_shouldUseLedgerHistoryMerge()) {
-      final transactions = await _loadMergedLedgerTransactions();
-      return transactions.skip(offset).take(limit).toList();
+      return _transactionRepository.getLedgerActivityItems(
+        category: state.filterCategory,
+        type: state.filterType,
+        searchQuery: state.searchQuery,
+        limit: limit,
+        offset: offset,
+        sortOption: state.transactionSortOption,
+      );
     }
+
+    final category = state.filterCategory == 'cash_udhari'
+        ? null
+        : state.filterCategory;
 
     if (state.searchQuery != null && state.searchQuery!.isNotEmpty) {
       log('BorrowLendCubit: Searching with query: "${state.searchQuery}"');
-      return await _transactionRepository.searchTransactions(
+      final transactions = await _transactionRepository.searchTransactions(
         state.searchQuery!,
-        category: state.filterCategory == 'cash_udhari'
-            ? null
-            : state.filterCategory,
+        category: category,
         type: state.filterType,
         limit: limit,
         offset: offset,
+        sortOption: state.transactionSortOption,
       );
-    } else if (state.filterCategory != null && state.filterType != null) {
+      return transactions.map(ContactActivityItem.transaction).toList();
+    } else if (category != null && state.filterType != null) {
       log(
-        'BorrowLendCubit: Filtering by category: ${state.filterCategory} AND type: ${state.filterType}',
+        'BorrowLendCubit: Filtering by category: $category AND type: ${state.filterType}',
       );
-      return await _transactionRepository.getTransactionsByCategoryAndType(
-        state.filterCategory!,
-        state.filterType!,
-        limit: limit * 2,
-        offset: offset,
-      );
-    } else if (state.filterCategory != null &&
-        state.filterCategory != 'cash_udhari') {
-      log('BorrowLendCubit: Filtering by category: ${state.filterCategory}');
-      return await _transactionRepository.getTransactionsByCategory(
-        state.filterCategory!,
-        limit: limit,
-        offset: offset,
-      );
+      final transactions = await _transactionRepository
+          .getTransactionsByCategoryAndType(
+            category,
+            state.filterType!,
+            limit: limit,
+            offset: offset,
+            sortOption: state.transactionSortOption,
+          );
+      return transactions.map(ContactActivityItem.transaction).toList();
+    } else if (category != null) {
+      log('BorrowLendCubit: Filtering by category: $category');
+      final transactions = await _transactionRepository
+          .getTransactionsByCategory(
+            category,
+            limit: limit,
+            offset: offset,
+            sortOption: state.transactionSortOption,
+          );
+      return transactions.map(ContactActivityItem.transaction).toList();
     } else if (state.filterType != null) {
       log('BorrowLendCubit: Filtering by type: ${state.filterType}');
-      return await _transactionRepository.getTransactionsByType(
+      final transactions = await _transactionRepository.getTransactionsByType(
         state.filterType!,
         limit: limit,
         offset: offset,
+        sortOption: state.transactionSortOption,
       );
+      return transactions.map(ContactActivityItem.transaction).toList();
     } else {
       log('BorrowLendCubit: Fetching all transactions');
-      return await _transactionRepository.getAllTransactions(
+      final transactions = await _transactionRepository.getAllTransactions(
         limit: limit,
         offset: offset,
+        sortOption: state.transactionSortOption,
       );
+      return transactions.map(ContactActivityItem.transaction).toList();
     }
+  }
+
+  List<TransactionModel> _transactionsFromActivityItems(
+    List<ContactActivityItem> items,
+  ) {
+    return items
+        .where((item) => item.kind == ContactActivityKind.transaction)
+        .map((item) => item.transaction!)
+        .toList();
   }
 
   /// Get total transaction count for current filters
   Future<int> _getTransactionCount() async {
     try {
       if (_shouldUseLedgerHistoryMerge()) {
-        return (await _loadMergedLedgerTransactions()).length;
+        return _transactionRepository.getLedgerActivityItemCount(
+          category: state.filterCategory,
+          type: state.filterType,
+          searchQuery: state.searchQuery,
+        );
       }
 
       return await _transactionRepository.getTransactionCount(
         type: state.filterType,
-        category: state.filterCategory,
+        category: state.filterCategory == 'cash_udhari'
+            ? null
+            : state.filterCategory,
+        searchQuery: state.searchQuery,
       );
     } catch (e) {
       log('BorrowLendCubit: Error getting transaction count - $e');
@@ -758,99 +802,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
         state.filterCategory == AppConstants.categorySplit;
   }
 
-  Future<List<TransactionModel>> _loadMergedLedgerTransactions() async {
-    final realTransactions = await _loadRealTransactionsForLedgerMerge();
-    final splitHistoryRows = await _loadSplitHistoryRows(realTransactions);
-    final merged = [...realTransactions, ...splitHistoryRows]
-      ..sort((a, b) {
-        final dateCompare = b.date.compareTo(a.date);
-        if (dateCompare != 0) return dateCompare;
-        return (b.id ?? 0).compareTo(a.id ?? 0);
-      });
-
-    return merged.where(_matchesLedgerDisplayFilters).toList();
-  }
-
-  Future<List<TransactionModel>> _loadRealTransactionsForLedgerMerge() {
-    if (state.filterCategory == AppConstants.categorySplit) {
-      return _transactionRepository.getTransactionsByCategory(
-        AppConstants.categorySplit,
-      );
-    }
-
-    return _transactionRepository.getAllTransactions();
-  }
-
-  Future<List<TransactionModel>> _loadSplitHistoryRows(
-    List<TransactionModel> realTransactions,
-  ) async {
-    final existingSplitIds = realTransactions
-        .where(
-          (transaction) =>
-              transaction.category == AppConstants.categorySplit &&
-              transaction.sourceType == AppConstants.sourceTypeSplit &&
-              transaction.sourceId != null,
-        )
-        .map((transaction) => transaction.sourceId!)
-        .toSet();
-
-    final splits = await _splitRepository.getAllSplits(
-      limit: 100000,
-      offset: 0,
-    );
-    final rows = <TransactionModel>[];
-
-    for (final split in splits) {
-      final splitId = split.id;
-      if (splitId == null || existingSplitIds.contains(splitId)) continue;
-
-      final participants =
-          split.participants ?? const <SplitParticipantModel>[];
-      for (final participant in participants) {
-        final netAmount = participant.shareAmount - participant.expensePaid;
-        final displayAmount = netAmount.abs() >= 0.01
-            ? netAmount.abs()
-            : participant.shareAmount;
-
-        rows.add(
-          TransactionModel(
-            type: netAmount >= 0
-                ? AppConstants.typeLend
-                : AppConstants.typeBorrow,
-            category: AppConstants.categorySplit,
-            contactId: participant.contactId,
-            amount: displayAmount,
-            description: '$_splitHistoryDescriptionPrefix${split.title}',
-            date: split.date,
-            isSettlement: true,
-            sourceType: AppConstants.sourceTypeSplit,
-            sourceId: splitId,
-            contactName: participant.contactName,
-          ),
-        );
-      }
-    }
-
-    return rows;
-  }
-
-  bool _matchesLedgerDisplayFilters(TransactionModel transaction) {
-    if (state.filterCategory != null &&
-        state.filterCategory != transaction.category) {
-      return false;
-    }
-
-    if (state.filterType != null && state.filterType != transaction.type) {
-      return false;
-    }
-
-    final query = state.searchQuery?.trim().toLowerCase();
-    if (query == null || query.isEmpty) return true;
-
-    return (transaction.description ?? '').toLowerCase().contains(query) ||
-        (transaction.contactName ?? '').toLowerCase().contains(query) ||
-        (transaction.itemName ?? '').toLowerCase().contains(query) ||
-        transaction.category.toLowerCase().contains(query);
+  void setTransactionSortOption(TransactionSortOption sortOption) {
+    log('BorrowLendCubit: Setting transaction sort to: $sortOption');
+    emit(state.copyWith(transactionSortOption: sortOption));
+    loadTransactions();
   }
 
   /* =======================

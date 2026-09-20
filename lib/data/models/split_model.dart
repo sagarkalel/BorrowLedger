@@ -13,6 +13,7 @@ class SplitExpenseModel {
 
   // For joined queries
   final List<SplitParticipantModel>? participants;
+  final List<SplitBillModel>? bills;
 
   SplitExpenseModel({
     this.id,
@@ -27,6 +28,7 @@ class SplitExpenseModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     this.participants,
+    this.bills,
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
@@ -78,6 +80,7 @@ class SplitExpenseModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<SplitParticipantModel>? participants,
+    List<SplitBillModel>? bills,
   }) {
     return SplitExpenseModel(
       id: id ?? this.id,
@@ -94,6 +97,105 @@ class SplitExpenseModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       participants: participants ?? this.participants,
+      bills: bills ?? this.bills,
+    );
+  }
+}
+
+class SplitBillModel {
+  final int? id;
+  final int splitId;
+  final String title;
+  final double amount;
+  final bool paidByUser;
+  final int? paidByContactId;
+  final DateTime date;
+  final String? note;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  // For joined queries
+  final String? paidByContactName;
+  final String? paidByContactAvatar;
+
+  SplitBillModel({
+    this.id,
+    required this.splitId,
+    required this.title,
+    required this.amount,
+    required this.paidByUser,
+    this.paidByContactId,
+    required this.date,
+    this.note,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    this.paidByContactName,
+    this.paidByContactAvatar,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'split_id': splitId,
+      'title': title,
+      'amount': amount,
+      'paid_by_user': paidByUser ? 1 : 0,
+      'paid_by_contact_id': paidByContactId,
+      'date': date.toIso8601String(),
+      'note': note,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory SplitBillModel.fromMap(Map<String, dynamic> map) {
+    return SplitBillModel(
+      id: map['id'] as int?,
+      splitId: map['split_id'] as int,
+      title: map['title'] as String,
+      amount: (map['amount'] as num).toDouble(),
+      paidByUser: ((map['paid_by_user'] as num?)?.toInt() ?? 0) == 1,
+      paidByContactId: map['paid_by_contact_id'] as int?,
+      date: DateTime.parse(map['date'] as String),
+      note: map['note'] as String?,
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+      paidByContactName: map['paid_by_contact_name'] as String?,
+      paidByContactAvatar: map['paid_by_contact_avatar'] as String?,
+    );
+  }
+
+  SplitBillModel copyWith({
+    int? id,
+    int? splitId,
+    String? title,
+    double? amount,
+    bool? paidByUser,
+    int? paidByContactId,
+    bool clearPaidByContactId = false,
+    DateTime? date,
+    String? note,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? paidByContactName,
+    String? paidByContactAvatar,
+  }) {
+    return SplitBillModel(
+      id: id ?? this.id,
+      splitId: splitId ?? this.splitId,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      paidByUser: paidByUser ?? this.paidByUser,
+      paidByContactId: clearPaidByContactId
+          ? null
+          : (paidByContactId ?? this.paidByContactId),
+      date: date ?? this.date,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      paidByContactName: paidByContactName ?? this.paidByContactName,
+      paidByContactAvatar: paidByContactAvatar ?? this.paidByContactAvatar,
     );
   }
 }
@@ -109,6 +211,7 @@ class SplitParticipantModel {
 
   // For joined queries
   final String? contactName;
+  final String? contactAvatar;
 
   SplitParticipantModel({
     this.id,
@@ -119,6 +222,7 @@ class SplitParticipantModel {
     this.paid = 0,
     required this.status,
     this.contactName,
+    this.contactAvatar,
   });
 
   Map<String, dynamic> toMap() {
@@ -148,6 +252,7 @@ class SplitParticipantModel {
       paid: (map['paid'] as num?)?.toDouble() ?? 0,
       status: map['status'] as String,
       contactName: map['contact_name'] as String?,
+      contactAvatar: map['contact_avatar'] as String?,
     );
   }
 
@@ -160,6 +265,7 @@ class SplitParticipantModel {
     double? paid,
     String? status,
     String? contactName,
+    String? contactAvatar,
   }) {
     return SplitParticipantModel(
       id: id ?? this.id,
@@ -170,6 +276,7 @@ class SplitParticipantModel {
       paid: paid ?? this.paid,
       status: status ?? this.status,
       contactName: contactName ?? this.contactName,
+      contactAvatar: contactAvatar ?? this.contactAvatar,
     );
   }
 }

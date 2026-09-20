@@ -154,6 +154,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                     _buildFinancialSummaryCard(split, participants, isDark),
                     const SizedBox(height: 8),
 
+                    if (_billsForDisplay(split, participants).isNotEmpty) ...[
+                      _buildBillsCard(split, participants, isDark),
+                      const SizedBox(height: 8),
+                    ],
+
                     if (participants.length >= 2 &&
                         (isSettled ||
                             (totalPendingCount > 0 &&
@@ -542,7 +547,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isPositive ? tr.youWillGet : tr.youWillGive,
+                            isPositive ? tr.toReceive : tr.toPay,
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -653,6 +658,156 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBillsCard(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+    bool isDark,
+  ) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final bills = _billsForDisplay(split, participants);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withValues(
+                      alpha: isDark ? 0.18 : 0.11,
+                    ),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(
+                    Icons.receipt_long_rounded,
+                    color: colorScheme.secondary,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    tr.splitBills,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                AppPillBadge(
+                  label: CurrencyFormatter.format(split.totalAmount),
+                  color: colorScheme.secondary,
+                  fontSize: 10,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: bills.length,
+              separatorBuilder: (context, index) => Divider(
+                height: 12,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+              ),
+              itemBuilder: (context, index) {
+                final bill = bills[index];
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bill.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              if (!bill.paidByUser &&
+                                  bill.paidByContactAvatar?.trim().isNotEmpty ==
+                                      true) ...[
+                                AppListAvatar(
+                                  label: _billPayerName(
+                                    bill,
+                                    tr.you,
+                                    tr.unknown,
+                                  ),
+                                  avatar: bill.paidByContactAvatar,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  '${tr.paidBy}: ${_billPayerName(bill, tr.you, tr.unknown)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _money(bill.amount),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          DateFormat(
+                            AppConstants.dateMonthFormat,
+                          ).format(bill.date),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -857,6 +1012,80 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     return tr.unknown;
   }
 
+  List<SplitBillModel> _billsForDisplay(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+  ) {
+    final bills = split.bills ?? const <SplitBillModel>[];
+    if (bills.isNotEmpty) return bills;
+
+    final fallbackBills = <SplitBillModel>[];
+    if (split.paidByUser > SplitSettlementCalculator.tolerance) {
+      fallbackBills.add(
+        SplitBillModel(
+          splitId: split.id ?? 0,
+          title: split.title,
+          amount: split.paidByUser,
+          paidByUser: true,
+          date: split.date,
+          note: split.description,
+          createdAt: split.createdAt,
+          updatedAt: split.updatedAt,
+        ),
+      );
+    }
+
+    for (final participant in participants) {
+      if (participant.expensePaid <= SplitSettlementCalculator.tolerance) {
+        continue;
+      }
+      fallbackBills.add(
+        SplitBillModel(
+          splitId: split.id ?? 0,
+          title: split.title,
+          amount: participant.expensePaid,
+          paidByUser: false,
+          paidByContactId: participant.contactId,
+          date: split.date,
+          note: split.description,
+          createdAt: split.createdAt,
+          updatedAt: split.updatedAt,
+          paidByContactName: participant.contactName,
+          paidByContactAvatar: participant.contactAvatar,
+        ),
+      );
+    }
+
+    if (fallbackBills.isEmpty &&
+        split.totalAmount > SplitSettlementCalculator.tolerance) {
+      fallbackBills.add(
+        SplitBillModel(
+          splitId: split.id ?? 0,
+          title: split.title,
+          amount: split.totalAmount,
+          paidByUser: true,
+          date: split.date,
+          note: split.description,
+          createdAt: split.createdAt,
+          updatedAt: split.updatedAt,
+        ),
+      );
+    }
+
+    return fallbackBills;
+  }
+
+  String _billPayerName(
+    SplitBillModel bill,
+    String userName,
+    String unknownName,
+  ) {
+    if (bill.paidByUser) return userName;
+    final payerName = bill.paidByContactName?.trim();
+    if (payerName == null || payerName.isEmpty) return unknownName;
+    return payerName;
+  }
+
   List<_SettlementRouteStep> _buildRouteSteps(
     SplitExpenseModel split,
     List<SplitParticipantModel> participants,
@@ -979,6 +1208,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               children: [
                 AppListAvatar(
                   label: participant.contactName ?? tr.unknown,
+                  avatar: participant.contactAvatar,
                   indicatorIcon: isPaid
                       ? Icons.check_rounded
                       : Icons.currency_rupee_rounded,
@@ -1743,6 +1973,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final userShare = SplitSettlementCalculator.userShare(split, participants);
     final balance = SplitSettlementCalculator.userBalance(split, participants);
     final isSettled = split.status == AppConstants.statusSettled;
+    final bills = _billsForDisplay(split, participants);
     final routeSteps = _buildRouteSteps(
       split,
       participants,
@@ -1752,6 +1983,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     );
     final width = 1080.0;
     final rowHeight = 58.0;
+    final billRowHeight = 50.0;
+    final billTableHeight = bills.isEmpty
+        ? 0.0
+        : 42.0 + (bills.length * billRowHeight);
+    final billsHeight = bills.isEmpty ? 0.0 : 88.0 + billTableHeight;
     final routeTableHeight = routeSteps.isEmpty
         ? 0.0
         : 42.0 + (routeSteps.length * 42.0);
@@ -1763,6 +1999,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
     final height =
         740.0 +
         descriptionHeight +
+        billsHeight +
         routeHeight +
         (participants.length * rowHeight);
     final recorder = ui.PictureRecorder();
@@ -1919,8 +2156,8 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       label: balance.abs() < 0.01
           ? tr.ownerBalance(ownerName)
           : balance >= 0
-          ? tr.ownerGets(ownerName)
-          : tr.ownerGives(ownerName),
+          ? tr.ownerToReceive(ownerName)
+          : tr.ownerToPay(ownerName),
       value: _money(balance.abs()),
       x: left + summaryWidth * 3 + 12,
       y: summaryTop + 24,
@@ -1929,6 +2166,33 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       mutedColor: mutedColor,
     );
     y += 158;
+
+    if (bills.isNotEmpty) {
+      _drawInvoiceSectionTitle(canvas, tr.splitBills, left, y, textColor);
+      _drawText(
+        canvas,
+        '${bills.length} ${bills.length == 1 ? tr.expense : tr.expenses}',
+        Offset(right - 180, y + 5),
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: mutedColor,
+        maxWidth: 180,
+        textAlign: TextAlign.right,
+      );
+      y += 42;
+      _drawBillsInvoiceTable(
+        canvas,
+        Rect.fromLTWH(left, y, right - left, billTableHeight),
+        bills,
+        ownerName,
+        textColor,
+        mutedColor,
+        lineColor,
+        headerFill,
+        tr,
+      );
+      y += billsHeight - 42;
+    }
 
     if (routeSteps.isNotEmpty) {
       _drawInvoiceSectionTitle(canvas, tr.settlementRoute, left, y, textColor);
@@ -2272,6 +2536,150 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       );
       y += 42;
     }
+  }
+
+  void _drawBillsInvoiceTable(
+    Canvas canvas,
+    Rect rect,
+    List<SplitBillModel> bills,
+    String ownerName,
+    Color textColor,
+    Color mutedColor,
+    Color lineColor,
+    Color headerFill,
+    AppLocalizations tr,
+  ) {
+    _drawRoundedRect(
+      canvas,
+      rect,
+      Colors.white,
+      radius: 14,
+      strokeColor: lineColor,
+    );
+    _drawRoundedRect(
+      canvas,
+      Rect.fromLTWH(rect.left, rect.top, rect.width, 38),
+      headerFill,
+      radius: 14,
+    );
+    _drawBillTableVerticals(canvas, rect, lineColor);
+    _drawBillTableText(
+      canvas,
+      rect,
+      tr.billName,
+      0.02,
+      0.36,
+      mutedColor,
+      isHeader: true,
+    );
+    _drawBillTableText(
+      canvas,
+      rect,
+      tr.paidBy,
+      0.42,
+      0.22,
+      mutedColor,
+      isHeader: true,
+    );
+    _drawBillTableText(
+      canvas,
+      rect,
+      tr.date,
+      0.66,
+      0.15,
+      mutedColor,
+      isHeader: true,
+    );
+    _drawBillTableText(
+      canvas,
+      rect,
+      tr.amount,
+      0.82,
+      0.16,
+      mutedColor,
+      isHeader: true,
+      alignRight: true,
+    );
+
+    var y = rect.top + 42;
+    for (final bill in bills) {
+      final rowRect = Rect.fromLTWH(rect.left, y, rect.width, 50);
+      _drawHorizontalLine(canvas, rect.left, rect.right, y, lineColor);
+      _drawBillTableVerticals(canvas, rowRect, lineColor);
+      _drawBillTableText(
+        canvas,
+        rowRect,
+        bill.title,
+        0.02,
+        0.36,
+        textColor,
+        isHeader: true,
+      );
+      _drawBillTableText(
+        canvas,
+        rowRect,
+        _billPayerName(bill, ownerName, tr.unknown),
+        0.42,
+        0.22,
+        textColor,
+      );
+      _drawBillTableText(
+        canvas,
+        rowRect,
+        DateFormat(AppConstants.dateMonthFormat).format(bill.date),
+        0.66,
+        0.15,
+        mutedColor,
+      );
+      _drawBillTableText(
+        canvas,
+        rowRect,
+        _money(bill.amount),
+        0.82,
+        0.16,
+        textColor,
+        isHeader: true,
+        alignRight: true,
+      );
+      y += 50;
+    }
+  }
+
+  void _drawBillTableVerticals(Canvas canvas, Rect rect, Color color) {
+    for (final factor in [0.40, 0.64, 0.80]) {
+      _drawVerticalLine(
+        canvas,
+        rect.left + rect.width * factor,
+        rect.top,
+        rect.bottom,
+        color,
+      );
+    }
+  }
+
+  void _drawBillTableText(
+    Canvas canvas,
+    Rect rect,
+    String text,
+    double leftFactor,
+    double widthFactor,
+    Color color, {
+    bool isHeader = false,
+    bool alignRight = false,
+  }) {
+    const fontSize = 16.0;
+    final columnLeft = rect.left + rect.width * leftFactor;
+    final columnWidth = rect.width * widthFactor;
+    _drawText(
+      canvas,
+      text,
+      Offset(columnLeft, rect.top + (rect.height - fontSize * 1.2) / 2),
+      fontSize: fontSize,
+      fontWeight: isHeader ? FontWeight.w800 : FontWeight.w700,
+      color: color,
+      maxWidth: columnWidth,
+      textAlign: alignRight ? TextAlign.right : TextAlign.left,
+    );
   }
 
   void _drawParticipantInvoiceTableHeader(

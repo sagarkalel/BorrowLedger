@@ -142,11 +142,14 @@ class DatabaseHelper {
       status TEXT NOT NULL DEFAULT 'pending',
       settlement_route_mode TEXT NOT NULL DEFAULT 'optimized',
       settlement_mediator_contact_id INTEGER,
+      generated_synced_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
-  ''');
+    ''');
     log('DatabaseHelper: Split expenses table created');
+
+    await _createSplitBillsTable(db);
 
     // Split participants table
     await db.execute('''
@@ -163,6 +166,8 @@ class DatabaseHelper {
     )
   ''');
     log('DatabaseHelper: Split participants table created');
+
+    await _createContactSettlementTables(db);
 
     // Create indexes
     await _createIndexes(db);
@@ -212,6 +217,20 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_contact_split_source ON transactions(contact_id, transaction_category, source_type, source_id)',
+    );
+
+    // Contact settlement indexes
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_settlements_contact_date ON contact_settlements(contact_id, date DESC)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_settlement_effects_settlement ON contact_settlement_effects(settlement_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_settlement_effects_transaction ON contact_settlement_effects(transaction_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_settlement_effects_split ON contact_settlement_effects(split_id, split_participant_id)',
     );
 
     // Contact search index
@@ -267,6 +286,20 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_split_expenses_route ON split_expenses(settlement_route_mode, settlement_mediator_contact_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_expenses_sync ON split_expenses(generated_synced_at, updated_at, status)',
+    );
+
+    // Split bills indexes
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_bills_split ON split_bills(split_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_bills_contact ON split_bills(paid_by_contact_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_split_bills_date ON split_bills(date DESC)',
     );
 
     // Split participants indexes
@@ -623,6 +656,37 @@ class DatabaseHelper {
       );
     }
 
+    if (oldVersion < 13) {
+      log('DatabaseHelper: Upgrading to version 13 - Adding split sync marker');
+
+      try {
+        await db.execute(
+          'ALTER TABLE split_expenses ADD COLUMN generated_synced_at TEXT',
+        );
+      } catch (e) {
+        log('DatabaseHelper: generated_synced_at may already exist: $e');
+      }
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_split_expenses_sync ON split_expenses(generated_synced_at, updated_at, status)',
+      );
+    }
+
+    if (oldVersion < 14) {
+      log('DatabaseHelper: Upgrading to version 14 - Adding split bill items');
+
+      await _createSplitBillsTable(db);
+      await _migrateExistingSplitsToBills(db);
+    }
+
+    if (oldVersion < 15) {
+      log(
+        'DatabaseHelper: Upgrading to version 15 - Adding contact settlement events',
+      );
+
+      await _createContactSettlementTables(db);
+    }
+
     // Ensure all indexes exist (for any version upgrade)
     await _createIndexes(db);
     log('DatabaseHelper: Database upgrade completed');
@@ -779,6 +843,11 @@ class DatabaseHelper {
     log('DatabaseHelper: Clearing all data...');
     final db = await database;
     await _createSharedSpendPurposeTable(db);
+    await _createSplitBillsTable(db);
+    await _createContactSettlementTables(db);
+    await db.delete('contact_settlement_effects');
+    await db.delete('contact_settlements');
+    await db.delete('split_bills');
     await db.delete('split_participants');
     await db.delete('split_expenses');
     await db.delete('expenses');
@@ -794,6 +863,7 @@ class DatabaseHelper {
   Future<Map<String, int>> getDatabaseStats() async {
     final db = await database;
     await _createSharedSpendPurposeTable(db);
+    await _createContactSettlementTables(db);
 
     final contacts = await db.rawQuery(
       'SELECT COUNT(*) as count FROM contacts',
@@ -807,6 +877,9 @@ class DatabaseHelper {
     final splits = await db.rawQuery(
       'SELECT COUNT(*) as count FROM split_expenses',
     );
+    final splitBills = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM split_bills',
+    );
     final udhariItems = await db.rawQuery(
       'SELECT COUNT(*) as count FROM udhari_items',
     );
@@ -816,16 +889,21 @@ class DatabaseHelper {
     final sharedSpendPurposes = await db.rawQuery(
       'SELECT COUNT(*) as count FROM shared_spend_purposes',
     );
+    final contactSettlements = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM contact_settlements',
+    );
 
     return {
       'contacts': (contacts.first['count'] as int?) ?? 0,
       'transactions': (transactions.first['count'] as int?) ?? 0,
       'expenses': (expenses.first['count'] as int?) ?? 0,
       'splits': (splits.first['count'] as int?) ?? 0,
+      'split_bills': (splitBills.first['count'] as int?) ?? 0,
       'udhari_items': (udhariItems.first['count'] as int?) ?? 0,
       'udhari_quantities': (udhariQuantities.first['count'] as int?) ?? 0,
       'shared_spend_purposes':
           (sharedSpendPurposes.first['count'] as int?) ?? 0,
+      'contact_settlements': (contactSettlements.first['count'] as int?) ?? 0,
     };
   }
 
@@ -845,5 +923,147 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_shared_spend_purposes_usage ON shared_spend_purposes(usage_count DESC)',
     );
+  }
+
+  Future<void> _createSplitBillsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS split_bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        split_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        amount REAL NOT NULL,
+        paid_by_user INTEGER NOT NULL DEFAULT 0,
+        paid_by_contact_id INTEGER,
+        date TEXT NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (split_id) REFERENCES split_expenses (id) ON DELETE CASCADE,
+        FOREIGN KEY (paid_by_contact_id) REFERENCES contacts (id) ON DELETE SET NULL
+      )
+    ''');
+  }
+
+  Future<void> _createContactSettlementTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS contact_settlements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contact_id INTEGER NOT NULL,
+        net_amount REAL NOT NULL,
+        direction TEXT NOT NULL,
+        direct_cleared REAL NOT NULL DEFAULT 0,
+        split_cleared REAL NOT NULL DEFAULT 0,
+        offset_amount REAL NOT NULL DEFAULT 0,
+        is_partial INTEGER NOT NULL DEFAULT 0,
+        note TEXT,
+        date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS contact_settlement_effects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        settlement_id INTEGER NOT NULL,
+        effect_type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        direction TEXT NOT NULL,
+        transaction_id INTEGER,
+        split_id INTEGER,
+        split_participant_id INTEGER,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (settlement_id) REFERENCES contact_settlements (id) ON DELETE CASCADE,
+        FOREIGN KEY (transaction_id) REFERENCES transactions (id) ON DELETE SET NULL,
+        FOREIGN KEY (split_id) REFERENCES split_expenses (id) ON DELETE SET NULL,
+        FOREIGN KEY (split_participant_id) REFERENCES split_participants (id) ON DELETE SET NULL
+      )
+    ''');
+  }
+
+  Future<void> _migrateExistingSplitsToBills(Database db) async {
+    await db.delete('split_bills');
+
+    await db.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        title,
+        paid_by_user,
+        1,
+        NULL,
+        date,
+        description,
+        created_at,
+        updated_at
+      FROM split_expenses
+      WHERE paid_by_user > 0.009
+    ''');
+
+    await db.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        se.id,
+        se.title,
+        sp.expense_paid,
+        0,
+        sp.contact_id,
+        se.date,
+        se.description,
+        se.created_at,
+        se.updated_at
+      FROM split_expenses se
+      INNER JOIN split_participants sp ON se.id = sp.split_id
+      WHERE sp.expense_paid > 0.009
+    ''');
+
+    await db.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        se.id,
+        se.title,
+        se.total_amount,
+        1,
+        NULL,
+        se.date,
+        se.description,
+        se.created_at,
+        se.updated_at
+      FROM split_expenses se
+      WHERE NOT EXISTS (
+        SELECT 1 FROM split_bills sb WHERE sb.split_id = se.id
+      )
+    ''');
   }
 }

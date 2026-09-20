@@ -21,6 +21,7 @@ import '../../data/repositories/udhari_quantity_repository.dart';
 import '../widgets/app_loading_state.dart';
 import '../widgets/app_amount_field.dart';
 import '../widgets/app_date_field.dart';
+import '../widgets/app_list_avatar.dart';
 import '../widgets/app_segmented_control.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/person_picker_sheet.dart';
@@ -564,10 +565,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isLend = _currentTransactionType == AppConstants.typeLend;
     final isShared =
         _currentTransactionCategory == AppConstants.categorySharedSpend;
-    final color = AppTheme.getTransactionDirectionColor(
-      _currentTransactionType,
-    );
-    final icon = isLend ? Icons.call_received_rounded : Icons.call_made_rounded;
+    final color = AppTheme.getTransactionActionColor(_currentTransactionType);
+    final icon = isLend ? Icons.call_made_rounded : Icons.call_received_rounded;
     final amount = double.tryParse(_amountController.text.trim());
     final contactName = _contactDisplayName();
     final formattedAmount = _formatAmount(amount);
@@ -576,8 +575,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ? tr.personOwesCounterparty(contactName, tr.you, formattedAmount)
               : tr.youOwePerson(contactName, formattedAmount))
         : (isLend
-              ? '${tr.youWillGet} $formattedAmount ${tr.fromText} $contactName'
-              : '${tr.youWillGive} $formattedAmount ${tr.toText} $contactName');
+              ? '${tr.youGave} $formattedAmount ${tr.toText} $contactName'
+              : '${tr.youGot} $formattedAmount ${tr.fromText} $contactName');
     final details = _outcomePreviewDetails(contactName);
 
     return Container(
@@ -964,6 +963,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       label: tr.selectContactRequired,
       value: hasPerson ? _nameController.text.trim() : null,
       subtitle: subtitle,
+      avatar: _selectedContact?.avatar,
       isSelected: hasPerson,
       onTap: _showPersonPickerSheet,
     );
@@ -994,6 +994,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     required String? value,
     required VoidCallback onTap,
     String? subtitle,
+    String? avatar,
     bool isSelected = false,
   }) {
     final theme = Theme.of(context);
@@ -1023,7 +1024,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Row(
             children: [
-              Icon(icon, color: foregroundColor, size: 20),
+              hasValue
+                  ? AppListAvatar(
+                      label: displayValue,
+                      avatar: avatar,
+                      centerIcon: avatar == null || avatar.trim().isEmpty
+                          ? icon
+                          : null,
+                      size: 34,
+                    )
+                  : Icon(icon, color: foregroundColor, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

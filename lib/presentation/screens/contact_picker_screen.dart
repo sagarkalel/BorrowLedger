@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -492,9 +493,29 @@ class _ContactPickerScreenState extends State<ContactPickerScreen> {
   ) async {
     final existingContact =
         _existingContactsByPhone[_normalizePhone(selectedPhone)];
+    final contactRepo = context.read<ContactRepository>();
 
     if (isExisting && existingContact != null) {
-      Navigator.pop(context, existingContact);
+      var contactToReturn = existingContact;
+      final hasSavedAvatar = existingContact.avatar?.trim().isNotEmpty == true;
+      final photoBytes = contact.photo?.fullSize ?? contact.photo?.thumbnail;
+      if (!hasSavedAvatar && photoBytes != null) {
+        try {
+          final avatar = await ContactAvatarService.instance.saveAvatarBytes(
+            photoBytes,
+            nameHint: existingContact.name,
+          );
+          if (avatar != null) {
+            final updated = existingContact.copyWith(avatar: avatar);
+            await contactRepo.updateContact(updated);
+            contactToReturn = updated;
+          }
+        } catch (_) {
+          contactToReturn = existingContact;
+        }
+      }
+      if (!mounted) return;
+      Navigator.pop(context, contactToReturn);
       return;
     }
 

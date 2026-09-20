@@ -396,7 +396,7 @@ class _SplitsScreenState extends State<SplitsScreen>
               ),
             ),
             AppPillBadge(
-              label: isPositive ? tr.youWillGet : tr.youWillGive,
+              label: isPositive ? tr.toReceive : tr.toPay,
               icon: isPositive ? Icons.call_received : Icons.call_made,
               color: balanceColor,
               fontSize: 11,
@@ -721,8 +721,8 @@ class _SplitsScreenState extends State<SplitsScreen>
     final label = isSettled
         ? tr.settled
         : isPositive
-        ? tr.youWillGet
-        : tr.youWillGive;
+        ? tr.toReceive
+        : tr.toPay;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,

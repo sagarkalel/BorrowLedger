@@ -88,8 +88,7 @@ class ContactCubit extends Cubit<ContactState> {
     try {
       final contacts = await _loadContactsPage(0);
       final totalCount = await _getContactCount();
-      final hasMoreData =
-          contacts.length >= ContactPaginationConstants.defaultPageSize;
+      final hasMoreData = contacts.length < totalCount;
 
       log(
         'ContactCubit: Loaded ${contacts.length} contacts (total: $totalCount)',
@@ -143,8 +142,7 @@ class ContactCubit extends Cubit<ContactState> {
       }
 
       final allContacts = [...state.contacts, ...newContacts];
-      final hasMoreData =
-          newContacts.length >= ContactPaginationConstants.defaultPageSize;
+      final hasMoreData = allContacts.length < state.totalCount;
 
       log(
         'ContactCubit: Loaded ${newContacts.length} more contacts (total: ${allContacts.length})',
@@ -183,6 +181,7 @@ class ContactCubit extends Cubit<ContactState> {
         state.searchQuery!,
         limit: limit,
         offset: offset,
+        onlyWithTransactions: true,
       );
     } else {
       log('ContactCubit: Fetching all contacts with transactions');
@@ -196,7 +195,10 @@ class ContactCubit extends Cubit<ContactState> {
   /// Get total contact count
   Future<int> _getContactCount() async {
     try {
-      return await _repository.getContactCount(onlyWithTransactions: true);
+      return await _repository.getContactCount(
+        onlyWithTransactions: true,
+        searchQuery: state.searchQuery,
+      );
     } catch (e) {
       log('ContactCubit: Error getting contact count - $e');
       return 0;

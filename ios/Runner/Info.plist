@@ -28,10 +28,12 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>This app requires contacts access to function properly.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access so you can take contact profile photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need access to save your backup files to your photo library</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to save your backup files</string>
+	<string>We need photo library access so you can choose contact profile photos.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

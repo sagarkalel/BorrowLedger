@@ -42,6 +42,8 @@
   "you": "You",
   "youWillGet": "You'll Get",
   "youWillGive": "You'll Give",
+  "toReceive": "To receive",
+  "toPay": "To pay",
   "payable": "Payable",
   "receivable": "Receivable",
   "direction": "Direction",
@@ -441,6 +443,33 @@
   "splitByAmount": "Split by Amount",
   "splitMethod": "Split Method",
   "divideAmountEvenlyAmongAll": "Divide amount evenly among all",
+  "splitBills": "Bills in this split",
+  "splitBillsHelp": "Add one or more bills that belong to this split",
+  "addBill": "Add Bill",
+  "editBill": "Edit Bill",
+  "billName": "Bill Name",
+  "billNameRequired": "Bill Name *",
+  "billNameHint": "Hotel, dinner, fuel...",
+  "billAmount": "Bill Amount",
+  "billAmountRequired": "Bill Amount *",
+  "paidBy": "Paid by",
+  "paidByMe": "Paid by me",
+  "noBillsAdded": "No bills added",
+  "addAtLeastOneBill": "Add at least one bill or expense for this split",
+  "pleaseAddAtLeastOneBill": "Please add at least one bill",
+  "billsTotal": "Bills total",
+  "paidTotalExceedsBills": "Paid total exceeds bills total by {amount}",
+  "@paidTotalExceedsBills": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "billAmountStillUnassigned": "{amount} still needs to be assigned as paid",
+  "@billAmountStillUnassigned": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
   "yourShareWillBeRemaining": "Your share will be the remaining amount",
   
   "comment_status": "========== Status ==========",
@@ -461,6 +490,7 @@
   "totalSplits": "Total Splits",
   "youOwe": "You Owe",
   "oweYou": "Owe You",
+  "owesYou": "Owes You",
   "totalOwed": "Total Owed",
   "totalPaid": "Total Paid",
   "topCategory": "Top Category",
@@ -504,13 +534,90 @@
   "settlementAmount": "Settlement Amount",
   "enterSettlementAmount": "Enter settlement amount",
   "currentBalance": "Current Balance",
+  "settleWithContact": "Settle with {contactName}",
+  "@settleWithContact": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "settlementWithContact": "Settlement with {contactName}",
+  "@settlementWithContact": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "directBalance": "Direct balance",
+  "splitBalance": "Split balance",
+  "netSettlement": "Net settlement",
+  "netSettlementAmount": "Net settlement: {amount}",
+  "@netSettlementAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "offsettingBalances": "Balances matched",
+  "noCashPaymentNeeded": "No money paid",
+  "noCashNeededOffset": "No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.",
+  "clearOffsettingBalances": "Clear balances",
+  "contactPaysYou": "{contactName} pays you {amount}.",
+  "@contactPaysYou": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {}
+    }
+  },
+  "youPayContact": "You pay {contactName} {amount}.",
+  "@youPayContact": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {}
+    }
+  },
+  "contactSettlementKeepsHistory": "This will clear the contact balance. Your transaction history will stay visible.",
+  "remainingAfterSettlement": "Remaining after settlement: {amount}",
+  "@remainingAfterSettlement": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "directBalanceSettlement": "Direct balance settlement",
+  "directAndSplitBalanceOffset": "Matched against each other",
+  "internalBalanceAdjustment": "Cleared by matching balances",
+  "contactSettlementPayment": "Contact settlement",
+  "contactSettlementOffset": "Balances matched",
+  "clearedBreakdown": "Cleared",
+  "matchedAmount": "Matched: {amount}",
+  "@matchedAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "matchedBalanceExplanation": "This amount was cleared by matching what you owed against what they owed.",
+  "balancesClearedTogetherNote": "Note: Direct and split balances were cleared together, so only the net amount was paid.",
+  "balancesCancelledNoPaymentNote": "Note: Both balances cancelled each other, so no payment was needed.",
+  "balancesClearedTogetherReportNote": "Note: Direct and split balances were cleared together.",
+  "cashBorrowBalance": "Cash / borrow balance",
+  "settleCashBorrowBalance": "Settle cash/borrow balance",
+  "excludingSplitBalances": "{amount} excluding split balances",
+  "@excludingSplitBalances": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "splitBalanceAmount": "Split balance: {amount}",
+  "@splitBalanceAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "settleSplitsFromSplitDetails": "Settle splits from Split Details",
   "setToFullBalance": "Set to full balance",
   "settlePartial": "Settle Partial",
   "settleFull": "Settle Full",
-  "partialSettlementInfoPositive": "A \"You Got\" transaction will be created for the entered amount, reducing your balance.",
-  "partialSettlementInfoNegative": "A \"You Gave\" transaction will be created for the entered amount, reducing your balance.",
-  "fullSettlementInfoPositive": "A \"You Got\" transaction will be created to settle the full balance to zero.",
-  "fullSettlementInfoNegative": "A \"You Gave\" transaction will be created to settle the full balance to zero.",
+  "partialSettlementInfoPositive": "A settlement entry will be added for the amount you receive.",
+  "partialSettlementInfoNegative": "A settlement entry will be added for the amount you pay.",
+  "fullSettlementInfoPositive": "A settlement entry will be added for the full amount you receive.",
+  "fullSettlementInfoNegative": "A settlement entry will be added for the full amount you pay.",
   
   "comment_dialogs_delete": "========== Delete Dialogs ==========",
   "deleteExpenseTitle": "Delete Expense?",
@@ -547,7 +654,7 @@
   "allTransactionsLendBorrow": "All transactions (lend/borrow)",
   "allPersonalExpenses": "All personal expenses",
   "allSplitExpenses": "All split expenses",
-  "contactReferences": "Contact references",
+  "contactReferences": "Contact references and photos",
   "canShareBackupFile": "You can share the backup file or save it for later import",
   "preparingExport": "Preparing export...",
   "exportSuccessful": "Export Successful!",
@@ -595,7 +702,7 @@
   "howItWorks": "How It Works",
   "learnBackupRestore": "Learn about backup & restore",
   "howBackupWorks": "How Backup Works",
-  "createsJsonFile": "Creates a JSON file containing:",
+  "createsJsonFile": "Creates a backup file containing:",
   "fileSavedLocally": "The file is saved locally and can be shared.",
   "restoresDataFromBackup": "Restores data from backup:",
   "replacesAllCurrentData": "Replaces all current data",
@@ -607,7 +714,14 @@
   "storeInCloudStorage": "Store backups in cloud storage",
   "neverDeleteLastBackup": "Never delete your last backup",
   "shareBackupsSecurely": "Share backups securely",
-  "backupFilesInJson": "Backup files are in JSON format and can be viewed in any text editor.",
+  "backupFilesInJson": "Backup files include your records and saved contact photos.",
+  "changePhoto": "Change photo",
+  "takePhoto": "Take photo",
+  "chooseFromGallery": "Choose from gallery",
+  "removePhoto": "Remove photo",
+  "photoUpdated": "Photo updated",
+  "failedToUpdatePhoto": "Failed to update photo",
+  "photoCouldNotBeSaved": "Photo could not be saved. Contact will be added without photo.",
   
   "comment_about": "========== About ==========",
   "version": "Version",
@@ -839,6 +953,18 @@
       "ownerName": {}
     }
   },
+  "ownerToReceive": "{ownerName} to receive",
+  "@ownerToReceive": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
+  "ownerToPay": "{ownerName} to pay",
+  "@ownerToPay": {
+    "placeholders": {
+      "ownerName": {}
+    }
+  },
   "ownerGave": "{ownerName} gave",
   "@ownerGave": {
     "placeholders": {
@@ -861,6 +987,24 @@
   "gaveOnly": "Gave only",
   "gotOnly": "Got only",
   "searchLabel": "Search",
+  "sortTransactions": "Sort transactions",
+  "transactionDateNewest": "Transaction date: Newest first",
+  "transactionDateOldest": "Transaction date: Oldest first",
+  "addedDateNewest": "Added date: Newest first",
+  "addedDateOldest": "Added date: Oldest first",
+  "yourCalculatedShare": "Your share: {amount}",
+  "@yourCalculatedShare": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "yourCalculatedShareHelp": "{total} total - {assigned} assigned to others",
+  "@yourCalculatedShareHelp": {
+    "placeholders": {
+      "total": {},
+      "assigned": {}
+    }
+  },
   
   "comment_language": "========== Language ==========",
   "languageChangedTo": "Language changed to",

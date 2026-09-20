@@ -9,6 +9,7 @@ import 'app_pill_badge.dart';
 class ContactSummaryCard extends StatelessWidget {
   final String contactName;
   final String? phoneNumber;
+  final String? avatar;
   final int transactionCount;
   final double netBalance;
   final int cashCount;
@@ -22,6 +23,7 @@ class ContactSummaryCard extends StatelessWidget {
     super.key,
     required this.contactName,
     this.phoneNumber,
+    this.avatar,
     required this.transactionCount,
     required this.netBalance,
     this.cashCount = 0,
@@ -60,6 +62,7 @@ class ContactSummaryCard extends StatelessWidget {
               // Avatar with status indicator
               AppListAvatar(
                 label: contactName,
+                avatar: avatar,
                 indicatorIcon: isSettled
                     ? Icons.done_all_rounded
                     : isPositive
@@ -186,7 +189,7 @@ class ContactSummaryCard extends StatelessWidget {
         const SizedBox(width: 4),
         Flexible(
           child: Text(
-            '${tr.splits}: ${isPositive ? tr.youWillGet : tr.youWillGive} ${CurrencyFormatter.format(splitNet.abs())}',
+            '${tr.splits}: ${isPositive ? tr.toReceive : tr.toPay} ${CurrencyFormatter.format(splitNet.abs())}',
             style: TextStyle(
               fontSize: 10,
               height: 1.1,
@@ -251,8 +254,8 @@ class ContactSummaryCard extends StatelessWidget {
               label: isSettled
                   ? tr.settled
                   : isPositive
-                  ? tr.youWillGet
-                  : tr.youWillGive,
+                  ? tr.toReceive
+                  : tr.toPay,
               icon: isSettled
                   ? Icons.done_all_rounded
                   : isPositive

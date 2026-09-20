@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
+import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -23,12 +24,13 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
-import '../../data/models/split_model.dart';
+import '../../data/models/contact_activity_item.dart';
+import '../../data/models/contact_settlement_model.dart';
 import '../../data/models/transaction_model.dart';
-import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
 import '../widgets/app_loading_state.dart';
+import '../widgets/app_list_avatar.dart';
 import '../widgets/contact_summary_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
@@ -152,6 +154,25 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     }
   }
 
+  String _sortMenuValue(TransactionSortOption option) => 'sort:${option.name}';
+
+  TransactionSortOption? _sortOptionFromMenuValue(String value) {
+    final name = value.replaceFirst('sort:', '');
+    for (final option in TransactionSortOption.values) {
+      if (option.name == name) return option;
+    }
+    return null;
+  }
+
+  String _sortOptionLabel(TransactionSortOption option, AppLocalizations tr) {
+    return switch (option) {
+      TransactionSortOption.transactionDateDesc => tr.transactionDateNewest,
+      TransactionSortOption.transactionDateAsc => tr.transactionDateOldest,
+      TransactionSortOption.createdDateDesc => tr.addedDateNewest,
+      TransactionSortOption.createdDateAsc => tr.addedDateOldest,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -191,20 +212,50 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
             onSelected: (value) {
               if (value == 'share_ledger') {
                 _shareLedgerStatement();
+              } else if (value.startsWith('sort:')) {
+                final sortOption = _sortOptionFromMenuValue(value);
+                if (sortOption != null) {
+                  context.read<BorrowLendCubit>().setTransactionSortOption(
+                    sortOption,
+                  );
+                }
               }
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'share_ledger',
-                child: Row(
-                  children: [
-                    const Icon(Icons.ios_share_rounded, size: 20),
-                    const SizedBox(width: 12),
-                    Text(tr.shareLedgerPdf),
-                  ],
+            itemBuilder: (context) {
+              final state = context.read<BorrowLendCubit>().state;
+              return [
+                PopupMenuItem(
+                  value: 'share_ledger',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.ios_share_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(tr.shareLedgerPdf),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (_viewMode != BorrowLendViewMode.contacts) ...[
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    enabled: false,
+                    height: 32,
+                    child: Text(
+                      tr.sortTransactions,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  ...TransactionSortOption.values.map(
+                    (option) => CheckedPopupMenuItem<String>(
+                      value: _sortMenuValue(option),
+                      checked: state.transactionSortOption == option,
+                      child: Text(_sortOptionLabel(option, tr)),
+                    ),
+                  ),
+                ],
+              ];
+            },
           ),
         ],
       ),
@@ -284,14 +335,33 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         builder: (_) => AppLoadingDialog(message: tr.preparingStatement),
       );
 
-      final transactions = await _loadLedgerStatementTransactions(
-        transactionRepo,
-        state,
-      );
+      final category = _statementCategoryFilter(state);
+      final type = _viewMode == BorrowLendViewMode.contacts
+          ? null
+          : state.filterType;
+      final query = _viewMode == BorrowLendViewMode.contacts
+          ? null
+          : state.searchQuery?.trim();
+      final activities = await transactionRepo
+          .getLedgerActivityItemsByDateRange(
+            range.start,
+            range.end,
+            category: category,
+            type: type,
+            searchQuery: query,
+          );
+      final openingBalance = await transactionRepo
+          .getLedgerOpeningBalanceBefore(
+            range.start,
+            category: category,
+            type: type,
+            searchQuery: query,
+          );
       final file = await _createLedgerStatementPdf(
         range: range,
         ownerName: ownerName,
-        transactions: transactions,
+        activities: activities,
+        openingBalance: openingBalance,
         state: state,
       );
 
@@ -317,123 +387,6 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         showFailureSnackbar(context, '${tr.shareFailed} $e');
       }
     }
-  }
-
-  Future<List<TransactionModel>> _loadLedgerStatementTransactions(
-    TransactionRepository repo,
-    BorrowLendState state,
-  ) async {
-    final category = _statementCategoryFilter(state);
-    final type = _viewMode == BorrowLendViewMode.contacts
-        ? null
-        : state.filterType;
-    final query = _viewMode == BorrowLendViewMode.contacts
-        ? null
-        : state.searchQuery?.trim();
-
-    if (category == null || category == AppConstants.categorySplit) {
-      final realTransactions = category == AppConstants.categorySplit
-          ? await repo.getTransactionsByCategory(AppConstants.categorySplit)
-          : await repo.getAllTransactions();
-      final splitHistoryRows = await _loadLedgerSplitHistoryRows(
-        realTransactions,
-      );
-      final merged = [...realTransactions, ...splitHistoryRows]
-        ..sort((a, b) {
-          final dateCompare = b.date.compareTo(a.date);
-          if (dateCompare != 0) return dateCompare;
-          return (b.id ?? 0).compareTo(a.id ?? 0);
-        });
-
-      return merged.where((transaction) {
-        return _matchesLedgerStatementFilters(
-          transaction,
-          category: category,
-          type: type,
-          query: query,
-        );
-      }).toList();
-    }
-
-    if (query != null && query.isNotEmpty) {
-      return repo.searchTransactions(query, category: category, type: type);
-    }
-    if (type != null) {
-      return repo.getTransactionsByCategoryAndType(category, type);
-    }
-    return repo.getTransactionsByCategory(category);
-  }
-
-  Future<List<TransactionModel>> _loadLedgerSplitHistoryRows(
-    List<TransactionModel> realTransactions,
-  ) async {
-    final splitRepo = context.read<SplitRepository>();
-    final existingSplitIds = realTransactions
-        .where(
-          (transaction) =>
-              transaction.category == AppConstants.categorySplit &&
-              transaction.sourceType == AppConstants.sourceTypeSplit &&
-              transaction.sourceId != null,
-        )
-        .map((transaction) => transaction.sourceId!)
-        .toSet();
-    final splits = await splitRepo.getAllSplits(limit: 100000, offset: 0);
-    final rows = <TransactionModel>[];
-
-    for (final split in splits) {
-      final splitId = split.id;
-      if (splitId == null || existingSplitIds.contains(splitId)) continue;
-
-      final participants =
-          split.participants ?? const <SplitParticipantModel>[];
-      for (final participant in participants) {
-        final netAmount = participant.shareAmount - participant.expensePaid;
-        final displayAmount = netAmount.abs() >= 0.01
-            ? netAmount.abs()
-            : participant.shareAmount;
-
-        rows.add(
-          TransactionModel(
-            type: netAmount >= 0
-                ? AppConstants.typeLend
-                : AppConstants.typeBorrow,
-            category: AppConstants.categorySplit,
-            contactId: participant.contactId,
-            amount: displayAmount,
-            description: '$_splitHistoryDescriptionPrefix${split.title}',
-            date: split.date,
-            isSettlement: true,
-            sourceType: AppConstants.sourceTypeSplit,
-            sourceId: splitId,
-            contactName: participant.contactName,
-          ),
-        );
-      }
-    }
-
-    return rows;
-  }
-
-  bool _matchesLedgerStatementFilters(
-    TransactionModel transaction, {
-    required String? category,
-    required String? type,
-    required String? query,
-  }) {
-    if (category != null && transaction.category != category) return false;
-    if (type != null && transaction.type != type) return false;
-
-    final normalizedQuery = query?.trim().toLowerCase();
-    if (normalizedQuery == null || normalizedQuery.isEmpty) return true;
-
-    return (transaction.description ?? '').toLowerCase().contains(
-          normalizedQuery,
-        ) ||
-        (transaction.contactName ?? '').toLowerCase().contains(
-          normalizedQuery,
-        ) ||
-        (transaction.itemName ?? '').toLowerCase().contains(normalizedQuery) ||
-        transaction.category.toLowerCase().contains(normalizedQuery);
   }
 
   String? _statementCategoryFilter(BorrowLendState state) {
@@ -560,27 +513,18 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   Future<File> _createLedgerStatementPdf({
     required DateTimeRange range,
     required String ownerName,
-    required List<TransactionModel> transactions,
+    required List<ContactActivityItem> activities,
+    required double openingBalance,
     required BorrowLendState state,
   }) async {
     final tr = AppLocalizations.of(context)!;
-    final periodTransactions = transactions
-        .where(
-          (transaction) =>
-              !transaction.date.isBefore(range.start) &&
-              !transaction.date.isAfter(range.end),
-        )
-        .toList();
-    final openingTransactions = transactions
-        .where((transaction) => transaction.date.isBefore(range.start))
-        .toList();
-    final openingBalance = _ledgerNet(openingTransactions);
+    final periodActivities = activities;
     final periodLent = _ledgerSumByType(
-      periodTransactions,
+      periodActivities,
       AppConstants.typeLend,
     );
     final periodBorrowed = _ledgerSumByType(
-      periodTransactions,
+      periodActivities,
       AppConstants.typeBorrow,
     );
     final closingBalance = openingBalance + periodLent - periodBorrowed;
@@ -610,11 +554,11 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           ),
           pw.SizedBox(height: 18),
           pw.Text(
-            '${tr.transactions} (${periodTransactions.length})',
+            '${tr.transactions} (${periodActivities.length})',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
-          if (periodTransactions.isEmpty)
+          if (periodActivities.isEmpty)
             pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(14),
@@ -622,7 +566,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               child: pw.Text(tr.noTransactionsInDateRange),
             )
           else
-            _ledgerTransactionTable(periodTransactions, ownerName, tr),
+            _ledgerTransactionTable(periodActivities, ownerName, tr),
         ],
       ),
     );
@@ -732,7 +676,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   }
 
   pw.Widget _ledgerTransactionTable(
-    List<TransactionModel> transactions,
+    List<ContactActivityItem> activities,
     String ownerName,
     AppLocalizations tr,
   ) {
@@ -745,7 +689,24 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         tr.details,
         tr.amount,
       ],
-      data: transactions.map((transaction) {
+      data: activities.map((item) {
+        if (item.kind == ContactActivityKind.settlement) {
+          final settlement = item.settlement!;
+          return [
+            _formatDate(settlement.date),
+            settlement.contactName ?? '-',
+            tr.settledBadge,
+            tr.settlement,
+            _settlementStatementDetails(
+              settlement,
+              tr,
+              moneyFormatter: _ledgerMoney,
+            ),
+            _ledgerSettlementAmountText(settlement, tr),
+          ];
+        }
+
+        final transaction = item.transaction!;
         final isSplitHistory = _isSplitHistoryOnly(transaction);
         return [
           _formatDate(transaction.date),
@@ -756,7 +717,14 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               ? tr.ownerGave(ownerName)
               : tr.ownerGot(ownerName),
           _ledgerCategoryLabel(transaction.category, tr),
-          _ledgerTransactionDetails(transaction, ownerName, tr),
+          _pdfSafeText(
+            _ledgerTransactionDetails(
+              transaction,
+              ownerName,
+              tr,
+              moneyFormatter: _ledgerMoney,
+            ),
+          ),
           isSplitHistory
               ? tr.settled
               : _ledgerMoney(
@@ -812,23 +780,26 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     );
   }
 
-  double _ledgerNet(List<TransactionModel> transactions) {
-    return transactions.fold<double>(0, (sum, transaction) {
-      if (_isSplitHistoryOnly(transaction)) return sum;
-      return sum +
-          (transaction.type == AppConstants.typeLend
-              ? transaction.amount
-              : -transaction.amount);
-    });
-  }
+  double _ledgerSumByType(List<ContactActivityItem> activities, String type) {
+    return activities.fold<double>(0, (sum, item) {
+      if (item.kind == ContactActivityKind.settlement) {
+        final settlement = item.settlement!;
+        if (settlement.isNoCash) return sum;
+        if (type == AppConstants.typeBorrow && settlement.isReceive) {
+          return sum + settlement.netAmount;
+        }
+        if (type == AppConstants.typeLend && settlement.isPay) {
+          return sum + settlement.netAmount;
+        }
+        return sum;
+      }
 
-  double _ledgerSumByType(List<TransactionModel> transactions, String type) {
-    return transactions
-        .where(
-          (transaction) =>
-              !_isSplitHistoryOnly(transaction) && transaction.type == type,
-        )
-        .fold<double>(0, (sum, transaction) => sum + transaction.amount);
+      final transaction = item.transaction!;
+      if (_isSplitHistoryOnly(transaction) || transaction.type != type) {
+        return sum;
+      }
+      return sum + transaction.amount;
+    });
   }
 
   bool _isSplitHistoryOnly(TransactionModel transaction) {
@@ -893,8 +864,11 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   String _ledgerTransactionDetails(
     TransactionModel transaction,
     String ownerName,
-    AppLocalizations tr,
-  ) {
+    AppLocalizations tr, {
+    String Function(double amount)? moneyFormatter,
+  }) {
+    final formatMoney =
+        moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
     if (_isSplitHistoryOnly(transaction)) {
       final splitTitle = transaction.description
           ?.replaceFirst(_splitHistoryDescriptionPrefix, '')
@@ -914,8 +888,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
       return [
         if (transaction.description?.trim().isNotEmpty == true)
           transaction.description!.trim(),
-        total == null ? payer : '$payer ${CurrencyFormatter.format(total)}',
-        '$shareLabel ${CurrencyFormatter.format(transaction.amount)}',
+        total == null ? payer : '$payer ${formatMoney(total)}',
+        '$shareLabel ${formatMoney(transaction.amount)}',
       ].join(' | ');
     }
     final parts = [
@@ -931,6 +905,18 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   String _ledgerMoney(double amount) {
     return CurrencyFormatter.format(amount, symbol: 'Rs');
+  }
+
+  String _pdfSafeText(String value) => value.replaceAll('₹', 'Rs');
+
+  String _ledgerSettlementAmountText(
+    ContactSettlementModel settlement,
+    AppLocalizations tr,
+  ) {
+    if (settlement.isNoCash) return tr.settled;
+    return _ledgerMoney(
+      settlement.isReceive ? -settlement.netAmount : settlement.netAmount,
+    );
   }
 
   String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
@@ -967,8 +953,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           return AppLoadMoreFooter(
             isLoading: state.isLoadingMore,
             hasMoreData: state.hasMoreData,
-            hasItems: state.transactions.isNotEmpty,
-            itemCount: state.transactions.length,
+            hasItems: state.ledgerActivities.isNotEmpty,
+            itemCount: state.ledgerActivities.length,
           );
         }
       },
@@ -1116,8 +1102,8 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               label: isSettled
                   ? tr.settled
                   : isPositive
-                  ? tr.youWillGet
-                  : tr.youWillGive,
+                  ? tr.toReceive
+                  : tr.toPay,
               icon: isSettled
                   ? Icons.done_all_rounded
                   : isPositive
@@ -1578,6 +1564,7 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                 child: ContactSummaryCard(
                   contactName: contactSummary.contact.name,
                   phoneNumber: contactSummary.contact.phone,
+                  avatar: contactSummary.contact.avatar,
                   transactionCount: contactSummary.transactionCount,
                   netBalance: contactSummary.netBalance,
                   cashCount: contactSummary.cashCount,
@@ -1617,11 +1604,11 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
     return BlocBuilder<BorrowLendCubit, BorrowLendState>(
       builder: (context, state) {
-        if (state.isLoading && state.transactions.isEmpty) {
+        if (state.isLoading && state.ledgerActivities.isEmpty) {
           return _buildInitialLoadingSliver();
         }
 
-        if (state.transactions.isEmpty) {
+        if (state.ledgerActivities.isEmpty) {
           final String emptyTitle;
           final String emptyMessage;
 
@@ -1680,52 +1667,348 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           ),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
-              final transaction = state.transactions[index];
+              final item = state.ledgerActivities[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: TransactionListItem(
-                  transaction: transaction,
-                  onTap: () async {
-                    log(
-                      'MergedBorrowLendScreen: Opening transaction details for ID: ${transaction.id}',
-                    );
-                    if (transaction.sourceType ==
-                            AppConstants.sourceTypeSplit &&
-                        transaction.sourceId != null) {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              SplitDetailScreen(splitId: transaction.sourceId!),
-                        ),
-                      );
-                    } else {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TransactionDetailsScreen(
-                            transaction: transaction,
-                            onUpdate: () {
-                              log(
-                                'MergedBorrowLendScreen: Transaction updated callback',
-                              );
-                              _refreshAllData();
-                            },
-                          ),
-                        ),
-                      );
-                    }
-                    log(
-                      'MergedBorrowLendScreen: Returned from transaction details',
-                    );
-                    _refreshAllData();
-                  },
-                ),
+                child: _buildLedgerActivityItem(item),
               );
-            }, childCount: state.transactions.length),
+            }, childCount: state.ledgerActivities.length),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLedgerActivityItem(ContactActivityItem item) {
+    if (item.kind == ContactActivityKind.settlement) {
+      final settlement = item.settlement!;
+      return _LedgerSettlementListItem(
+        settlement: settlement,
+        onTap: () => _showSettlementDetails(settlement),
+      );
+    }
+
+    final transaction = item.transaction!;
+    return TransactionListItem(
+      transaction: transaction,
+      onTap: () async {
+        log(
+          'MergedBorrowLendScreen: Opening transaction details for ID: ${transaction.id}',
+        );
+        if (transaction.sourceType == AppConstants.sourceTypeSplit &&
+            transaction.sourceId != null) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  SplitDetailScreen(splitId: transaction.sourceId!),
+            ),
+          );
+        } else {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransactionDetailsScreen(
+                transaction: transaction,
+                onUpdate: () {
+                  log('MergedBorrowLendScreen: Transaction updated callback');
+                  _refreshAllData();
+                },
+              ),
+            ),
+          );
+        }
+        log('MergedBorrowLendScreen: Returned from transaction details');
+        _refreshAllData();
+      },
+    );
+  }
+
+  void _showSettlementDetails(ContactSettlementModel settlement) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr.settlementWithContact(settlement.contactName ?? tr.unknown),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            _settlementDetailRow(
+              tr.netSettlement,
+              _settlementNetText(settlement, tr),
+              colorScheme,
+            ),
+            _settlementDetailRow(
+              tr.directBalance,
+              CurrencyFormatter.format(settlement.directCleared),
+              colorScheme,
+            ),
+            _settlementDetailRow(
+              tr.splitBalance,
+              CurrencyFormatter.format(settlement.splitCleared),
+              colorScheme,
+            ),
+            if (settlement.offsetAmount > 0.01) ...[
+              const SizedBox(height: 8),
+              Text(
+                _settlementDetailNote(settlement, tr),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settlementDetailRow(
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+String _settlementNetText(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final formatMoney =
+      moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
+  final contactName = settlement.contactName ?? tr.unknown;
+  final amount = formatMoney(settlement.netAmount);
+  if (settlement.isNoCash) return tr.noCashPaymentNeeded;
+  return settlement.isReceive
+      ? tr.contactPaysYou(contactName, amount)
+      : tr.youPayContact(contactName, amount);
+}
+
+String _settlementBreakdownText(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final formatMoney =
+      moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
+  final parts = <String>[];
+  if (settlement.directCleared > 0.01) {
+    parts.add('${tr.directBalance} ${formatMoney(settlement.directCleared)}');
+  }
+  if (settlement.splitCleared > 0.01) {
+    parts.add('${tr.splitBalance} ${formatMoney(settlement.splitCleared)}');
+  }
+  if (parts.isEmpty) return '';
+  return '${tr.clearedBreakdown}: ${parts.join(' • ')}';
+}
+
+String _settlementStatementDetails(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final main = _settlementNetText(
+    settlement,
+    tr,
+    moneyFormatter: moneyFormatter,
+  );
+  final breakdown = _settlementBreakdownText(
+    settlement,
+    tr,
+    moneyFormatter: moneyFormatter,
+  );
+  final parts = [
+    main,
+    if (breakdown.isNotEmpty) breakdown,
+    if (settlement.offsetAmount > 0.01) tr.balancesClearedTogetherReportNote,
+  ];
+  return parts.join(' | ');
+}
+
+String _settlementDetailNote(
+  ContactSettlementModel settlement,
+  AppLocalizations tr,
+) {
+  return settlement.isNoCash
+      ? tr.balancesCancelledNoPaymentNote
+      : tr.balancesClearedTogetherNote;
+}
+
+class _LedgerSettlementListItem extends StatelessWidget {
+  final ContactSettlementModel settlement;
+  final VoidCallback onTap;
+
+  const _LedgerSettlementListItem({
+    required this.settlement,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final color = settlement.isNoCash
+        ? AppTheme.infoColor
+        : settlement.isReceive
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
+    final contactName = settlement.contactName ?? tr.unknown;
+    final breakdown = _settlementBreakdownText(settlement, tr);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(11, 9, 9, 9),
+          child: Row(
+            children: [
+              AppListAvatar(
+                label: contactName,
+                avatar: settlement.contactAvatar,
+                indicatorIcon: Icons.done_all_rounded,
+                indicatorColor: color,
+                size: 38,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tr.settlementWithContact(contactName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          settlement.isNoCash
+                              ? CurrencyFormatter.format(0)
+                              : CurrencyFormatter.format(settlement.netAmount),
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            height: 1.08,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        AppPillBadge(
+                          label: tr.settlement,
+                          icon: Icons.done_all_rounded,
+                          color: color,
+                          fontSize: 8.5,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 10,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          DateFormat(
+                            AppConstants.dateMonthFormat,
+                          ).format(settlement.date),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          settlement.isNoCash
+                              ? tr.noCashPaymentNeeded
+                              : settlement.isReceive
+                              ? tr.toReceive
+                              : tr.toPay,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                    if (breakdown.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        breakdown,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.15,
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

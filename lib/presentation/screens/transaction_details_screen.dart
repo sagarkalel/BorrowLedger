@@ -3,6 +3,7 @@ import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
 import 'package:borrow_ledger/presentation/widgets/delete_transaction_dialog.dart';
+import 'package:borrow_ledger/presentation/widgets/app_list_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -172,6 +173,7 @@ class TransactionDetailsScreen extends StatelessWidget {
               label: tr.contact,
               value: transaction.contactName ?? tr.unknown,
               isDark: isDark,
+              avatar: transaction.contactAvatar,
             ),
             const SizedBox(height: 8),
             if (transaction.isSharedSpend) ...[
@@ -408,6 +410,7 @@ class TransactionDetailsScreen extends StatelessWidget {
     required String value,
     required bool isDark,
     Color? valueColor,
+    String? avatar,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -425,14 +428,18 @@ class TransactionDetailsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: isDark ? 0.16 : 0.1),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Icon(icon, size: 18, color: colorScheme.primary),
-          ),
+          avatar != null && avatar.trim().isNotEmpty
+              ? AppListAvatar(label: value, avatar: avatar, size: 34)
+              : Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(
+                      alpha: isDark ? 0.16 : 0.1,
+                    ),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Icon(icon, size: 18, color: colorScheme.primary),
+                ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

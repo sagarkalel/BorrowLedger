@@ -1,9 +1,14 @@
 import 'dart:io';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
+import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
+import 'package:borrow_ledger/data/models/contact_activity_item.dart';
+import 'package:borrow_ledger/data/models/contact_model.dart';
+import 'package:borrow_ledger/data/models/contact_settlement_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
@@ -14,6 +19,7 @@ import 'package:borrow_ledger/presentation/widgets/floating_tab_header_delegate.
 import 'package:borrow_ledger/presentation/widgets/settle_txn_dialog_with_partial_payment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -23,8 +29,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/split_repository.dart';
+import '../../data/repositories/contact_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
+import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
@@ -43,6 +51,8 @@ class _StatementRangeOption {
     this.isCustom = false,
   });
 }
+
+enum _ContactAvatarAction { camera, gallery, remove }
 
 class ContactWiseTransactionsScreen extends StatefulWidget {
   final int? contactId;
@@ -74,12 +84,14 @@ class _ContactWiseTransactionsScreenState
   int _filteredTotalCount = 0;
   final ScrollController _scrollController = ScrollController();
   List<TransactionModel> _allTransactions = [];
-  List<TransactionModel> _transactions = [];
+  List<ContactActivityItem> _transactions = [];
   double _totalLent = 0;
   double _totalBorrowed = 0;
   double _netBalance = 0;
   double _normalNetBalance = 0;
   double _splitNetBalance = 0;
+  ContactModel? _contact;
+  TransactionSortOption _sortOption = TransactionSortOption.transactionDateDesc;
 
   // Category filtering
   String? _filterCategory; // null, 'cash', 'udhari', 'shared_spend', or 'split'
@@ -121,9 +133,13 @@ class _ContactWiseTransactionsScreenState
           : AppLoadingDelay.refresh();
       final splitRepo = context.read<SplitRepository>();
       final repo = context.read<TransactionRepository>();
+      final contactRepo = context.read<ContactRepository>();
       await splitRepo.syncAllSplitTransactions();
 
       if (widget.contactId != null) {
+        _contact = (await contactRepo.getContactById(
+          widget.contactId!,
+        ))?.contact;
         final stats = await repo.getContactActivityStats(widget.contactId!);
         _allTransactions = [];
         _totalActivityCount = stats['total_transactions'] as int? ?? 0;
@@ -244,28 +260,36 @@ class _ContactWiseTransactionsScreenState
     }
   }
 
-  Future<List<TransactionModel>> _loadTransactionsPage(int page) async {
+  Future<List<ContactActivityItem>> _loadTransactionsPage(int page) async {
     final repo = context.read<TransactionRepository>();
     final offset = page * _pageSize;
 
     if (widget.contactId != null) {
-      return repo.getContactActivity(
+      return repo.getContactActivityItems(
         widget.contactId!,
         limit: _pageSize,
         offset: offset,
         category: _filterCategory,
+        sortOption: _sortOption,
       );
     }
 
     if (_filterCategory != null) {
-      return repo.getTransactionsByCategory(
+      final transactions = await repo.getTransactionsByCategory(
         _filterCategory!,
         limit: _pageSize,
         offset: offset,
+        sortOption: _sortOption,
       );
+      return transactions.map(ContactActivityItem.transaction).toList();
     }
 
-    return repo.getAllTransactions(limit: _pageSize, offset: offset);
+    final transactions = await repo.getAllTransactions(
+      limit: _pageSize,
+      offset: offset,
+      sortOption: _sortOption,
+    );
+    return transactions.map(ContactActivityItem.transaction).toList();
   }
 
   Future<int> _getTransactionCount() {
@@ -303,6 +327,127 @@ class _ContactWiseTransactionsScreenState
     _loadTransactions();
   }
 
+  void _setSortOption(TransactionSortOption option) {
+    if (_sortOption == option) return;
+
+    setState(() {
+      _sortOption = option;
+      _transactions = [];
+      _filteredTotalCount = 0;
+      _hasMoreData = true;
+      _currentPage = 0;
+    });
+    _loadTransactions();
+  }
+
+  String _sortMenuValue(TransactionSortOption option) => 'sort:${option.name}';
+
+  TransactionSortOption? _sortOptionFromMenuValue(String value) {
+    final name = value.replaceFirst('sort:', '');
+    for (final option in TransactionSortOption.values) {
+      if (option.name == name) return option;
+    }
+    return null;
+  }
+
+  String _sortOptionLabel(TransactionSortOption option, AppLocalizations tr) {
+    return switch (option) {
+      TransactionSortOption.transactionDateDesc => tr.transactionDateNewest,
+      TransactionSortOption.transactionDateAsc => tr.transactionDateOldest,
+      TransactionSortOption.createdDateDesc => tr.addedDateNewest,
+      TransactionSortOption.createdDateAsc => tr.addedDateOldest,
+    };
+  }
+
+  String _signedMoney(double amount) {
+    final isPositive = amount >= 0;
+    return CurrencyFormatter.format(
+      amount.abs(),
+      showSign: true,
+    ).replaceFirst('+', isPositive ? '+' : '-');
+  }
+
+  Future<void> _showContactAvatarOptions() async {
+    if (widget.contactId == null) return;
+    final tr = AppLocalizations.of(context)!;
+    final contactRepo = context.read<ContactRepository>();
+    final action = await showModalBottomSheet<_ContactAvatarAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded),
+                title: Text(tr.takePhoto),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _ContactAvatarAction.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded),
+                title: Text(tr.chooseFromGallery),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _ContactAvatarAction.gallery),
+              ),
+              if (_contact?.avatar?.trim().isNotEmpty == true)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(tr.removePhoto),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, _ContactAvatarAction.remove),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (action == null) return;
+
+    try {
+      var contact = _contact;
+      contact ??= (await contactRepo.getContactById(
+        widget.contactId!,
+      ))?.contact;
+      if (contact == null) return;
+
+      final oldAvatar = contact.avatar;
+      String? avatar;
+      if (action == _ContactAvatarAction.remove) {
+        await ContactAvatarService.instance.deleteAvatar(oldAvatar);
+      } else {
+        final source = action == _ContactAvatarAction.camera
+            ? ImageSource.camera
+            : ImageSource.gallery;
+        final picked = await ImagePicker().pickImage(source: source);
+        if (picked == null) return;
+        avatar = await ContactAvatarService.instance.savePickedAvatar(
+          picked,
+          oldAvatar: oldAvatar,
+        );
+        if (avatar == null) {
+          if (mounted) showWarningSnackbar(context, tr.photoCouldNotBeSaved);
+          return;
+        }
+      }
+
+      final updated = contact.copyWith(
+        avatar: avatar,
+        clearAvatar: action == _ContactAvatarAction.remove,
+      );
+      await contactRepo.updateContact(updated);
+      if (!mounted) return;
+      setState(() => _contact = updated);
+      await _loadTransactions(showLoading: false);
+      if (mounted) showSuccessSnackbar(context, tr.photoUpdated);
+    } catch (e) {
+      if (mounted) {
+        showFailureSnackbar(context, '${tr.failedToUpdatePhoto}: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -313,26 +458,66 @@ class _ContactWiseTransactionsScreenState
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.contactName ?? tr.allContacts),
+        titleSpacing: 0,
+        title: widget.contactId == null
+            ? Text(widget.contactName ?? tr.allContacts)
+            : _buildContactAppBarTitle(tr),
         actions: [
-          if (widget.contactId != null && _totalActivityCount > 0)
+          if (_totalActivityCount > 0)
             PopupMenuButton<String>(
               tooltip: tr.moreOptions,
               icon: const Icon(Icons.more_vert_rounded),
               onSelected: (value) {
-                if (value == 'share_statement') {
+                if (value == 'edit_photo') {
+                  _showContactAvatarOptions();
+                } else if (value == 'share_statement') {
                   _shareContactStatement();
+                } else if (value.startsWith('sort:')) {
+                  final sortOption = _sortOptionFromMenuValue(value);
+                  if (sortOption != null) {
+                    _setSortOption(sortOption);
+                  }
                 }
               },
               itemBuilder: (context) => [
+                if (widget.contactId != null)
+                  PopupMenuItem(
+                    value: 'edit_photo',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.account_circle_rounded, size: 20),
+                        const SizedBox(width: 12),
+                        Text(tr.changePhoto),
+                      ],
+                    ),
+                  ),
+                if (widget.contactId != null)
+                  PopupMenuItem(
+                    value: 'share_statement',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.ios_share_rounded, size: 20),
+                        const SizedBox(width: 12),
+                        Text(tr.sharePdfStatement),
+                      ],
+                    ),
+                  ),
+                if (widget.contactId != null) const PopupMenuDivider(),
                 PopupMenuItem(
-                  value: 'share_statement',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.ios_share_rounded, size: 20),
-                      const SizedBox(width: 12),
-                      Text(tr.sharePdfStatement),
-                    ],
+                  enabled: false,
+                  height: 32,
+                  child: Text(
+                    tr.sortTransactions,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                ...TransactionSortOption.values.map(
+                  (option) => CheckedPopupMenuItem<String>(
+                    value: _sortMenuValue(option),
+                    checked: _sortOption == option,
+                    child: Text(_sortOptionLabel(option, tr)),
                   ),
                 ),
               ],
@@ -447,13 +632,24 @@ class _ContactWiseTransactionsScreenState
                                   );
                                 }
 
-                                final transaction = _transactions[index];
+                                final item = _transactions[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 7),
-                                  child: _CompactContactTransactionCard(
-                                    transaction: transaction,
-                                    onTap: () => _navigateToDetail(transaction),
-                                  ),
+                                  child:
+                                      item.kind ==
+                                          ContactActivityKind.settlement
+                                      ? _CompactContactSettlementCard(
+                                          settlement: item.settlement!,
+                                          onTap: () => _showSettlementDetails(
+                                            item.settlement!,
+                                          ),
+                                        )
+                                      : _CompactContactTransactionCard(
+                                          transaction: item.transaction!,
+                                          onTap: () => _navigateToDetail(
+                                            item.transaction!,
+                                          ),
+                                        ),
                                 );
                               }, childCount: _transactions.length + 1),
                             ),
@@ -633,6 +829,42 @@ class _ContactWiseTransactionsScreenState
     );
   }
 
+  Widget _buildContactAppBarTitle(AppLocalizations tr) {
+    final contactName = _contact?.name ?? widget.contactName ?? tr.unknown;
+    final phone = _contact?.phone ?? widget.contactPhone;
+
+    return Row(
+      children: [
+        AppListAvatar(label: contactName, avatar: _contact?.avatar, size: 34),
+        const SizedBox(width: 9),
+        Flexible(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                contactName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (phone?.trim().isNotEmpty == true)
+                Text(
+                  phone!.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11.5),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // Category breakdown card
   Widget _buildCategoryBreakdownCard(
     String label,
@@ -707,8 +939,12 @@ class _ContactWiseTransactionsScreenState
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSettled = _netBalance.abs() < 0.01;
-    final Color statusColor = isSettled
+    final hasDirectBalance = _normalNetBalance.abs() >= 0.01;
+    final hasSplitBalance = _splitNetBalance.abs() >= 0.01;
+    final hasOutstandingBalance = hasDirectBalance || hasSplitBalance;
+    final isNetZero = _netBalance.abs() < 0.01;
+    final isSettled = !hasOutstandingBalance;
+    final Color statusColor = isSettled || isNetZero
         ? colorScheme.secondary
         : isPositive
         ? AppTheme.moneyInColor
@@ -747,7 +983,7 @@ class _ContactWiseTransactionsScreenState
                         ),
                         const SizedBox(width: 6),
                         Icon(
-                          isSettled
+                          isSettled || isNetZero
                               ? Icons.check_circle_outline_rounded
                               : isPositive
                               ? Icons.trending_up_rounded
@@ -759,7 +995,7 @@ class _ContactWiseTransactionsScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isSettled
+                      isNetZero
                           ? CurrencyFormatter.format(0)
                           : CurrencyFormatter.format(
                               _netBalance.abs(),
@@ -791,7 +1027,7 @@ class _ContactWiseTransactionsScreenState
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isSettled
+                      isSettled || isNetZero
                           ? Icons.done_all_rounded
                           : isPositive
                           ? Icons.call_received
@@ -803,9 +1039,11 @@ class _ContactWiseTransactionsScreenState
                     Text(
                       isSettled
                           ? tr.settled
+                          : isNetZero
+                          ? tr.offsettingBalances
                           : isPositive
-                          ? tr.youWillGet
-                          : tr.youWillGive,
+                          ? tr.toReceive
+                          : tr.toPay,
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 11,
@@ -818,65 +1056,108 @@ class _ContactWiseTransactionsScreenState
             ],
           ),
 
-          if (widget.contactId != null && _normalNetBalance.abs() >= 0.01) ...[
+          if (widget.contactId != null &&
+              hasDirectBalance &&
+              hasSplitBalance) ...[
             const SizedBox(height: 12),
-            _buildSettleButton(_normalNetBalance > 0),
+            _buildBalanceBreakdown(isDark),
           ],
-          if (widget.contactId != null && _splitNetBalance.abs() >= 0.01) ...[
-            const SizedBox(height: 8),
-            _buildSplitSettlementNotice(),
+          if (widget.contactId != null && hasOutstandingBalance) ...[
+            const SizedBox(height: 12),
+            _buildSettleButton(),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildSplitSettlementNotice() {
+  Widget _buildBalanceBreakdown(bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _setCategoryFilter(AppConstants.categorySplit),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: isDark ? 0.07 : 0.04),
         borderRadius: BorderRadius.circular(10),
-        child: AppDialogNotice(
-          color: AppTheme.splitColor,
-          child: Row(
-            children: [
-              Icon(
-                Icons.call_split_rounded,
-                size: 18,
-                color: AppTheme.splitColor,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${tr.split} balance is settled from ${tr.splitDetails}.',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.filter_list_rounded,
-                size: 16,
-                color: AppTheme.splitColor,
-              ),
-            ],
-          ),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: isDark ? 0.1 : 0.07),
         ),
+      ),
+      child: Column(
+        children: [
+          _buildBalanceBreakdownRow(
+            tr.cashBorrowBalance,
+            _normalNetBalance,
+            _normalNetBalance >= 0
+                ? AppTheme.moneyInColor
+                : AppTheme.moneyOutColor,
+          ),
+          const SizedBox(height: 6),
+          _buildBalanceBreakdownRow(
+            tr.splits,
+            _splitNetBalance,
+            _splitNetBalance >= 0
+                ? AppTheme.moneyInColor
+                : AppTheme.moneyOutColor,
+          ),
+          const SizedBox(height: 8),
+          Divider(
+            color: colorScheme.onSurface.withValues(alpha: 0.08),
+            height: 1,
+          ),
+          const SizedBox(height: 8),
+          _buildBalanceBreakdownRow(
+            tr.netBalance,
+            _netBalance,
+            _netBalance >= 0 ? AppTheme.moneyInColor : AppTheme.moneyOutColor,
+            isStrong: true,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSettleButton(bool isPositive) {
+  Widget _buildBalanceBreakdownRow(
+    String label,
+    double amount,
+    Color color, {
+    bool isStrong = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: isStrong ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ),
+        ),
+        Text(
+          _signedMoney(amount),
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: isStrong ? FontWeight.w800 : FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettleButton() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final statusColor = isPositive
+    final isNetZero = _netBalance.abs() < 0.01;
+    final isPositive = _netBalance > 0;
+    final statusColor = isNetZero
+        ? colorScheme.secondary
+        : isPositive
         ? AppTheme.moneyInColor
         : AppTheme.moneyOutColor;
     final tr = AppLocalizations.of(context)!;
@@ -911,29 +1192,39 @@ class _ContactWiseTransactionsScreenState
                 ),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    tr.settleUp,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isNetZero ? tr.clearOffsettingBalances : tr.settleUp,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Text(
-                    tr.clearThisBalance,
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      isNetZero
+                          ? tr.noCashPaymentNeeded
+                          : tr.netSettlementAmount(
+                              CurrencyFormatter.format(_netBalance.abs()),
+                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Icon(Icons.arrow_forward_rounded, color: statusColor, size: 18),
             ],
           ),
@@ -1102,7 +1393,7 @@ class _ContactWiseTransactionsScreenState
     final contactName = widget.contactName ?? tr.allContacts;
     final contactPhone = widget.contactPhone;
     final repo = context.read<TransactionRepository>();
-    final periodTransactions = widget.contactId == null
+    final periodItems = widget.contactId == null
         ? _allTransactions
               .where((transaction) => _matchesStatementFilter(transaction))
               .where(
@@ -1110,8 +1401,9 @@ class _ContactWiseTransactionsScreenState
                     !transaction.date.isBefore(range.start) &&
                     !transaction.date.isAfter(range.end),
               )
+              .map(ContactActivityItem.transaction)
               .toList()
-        : await repo.getContactActivityByDateRange(
+        : await repo.getContactActivityItemsByDateRange(
             widget.contactId!,
             range.start,
             range.end,
@@ -1129,11 +1421,8 @@ class _ContactWiseTransactionsScreenState
             range.start,
             category: _filterCategory,
           );
-    final periodLent = _sumByType(periodTransactions, AppConstants.typeLend);
-    final periodBorrowed = _sumByType(
-      periodTransactions,
-      AppConstants.typeBorrow,
-    );
+    final periodLent = _sumByType(periodItems, AppConstants.typeLend);
+    final periodBorrowed = _sumByType(periodItems, AppConstants.typeBorrow);
     final closingBalance = openingBalance + periodLent - periodBorrowed;
     final statementFilter = _statementFilterLabel(tr);
     final generatedAt = DateTime.now();
@@ -1164,11 +1453,11 @@ class _ContactWiseTransactionsScreenState
           ),
           pw.SizedBox(height: 18),
           pw.Text(
-            '${tr.transactions} (${periodTransactions.length})',
+            '${tr.transactions} (${periodItems.length})',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
-          if (periodTransactions.isEmpty)
+          if (periodItems.isEmpty)
             pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(14),
@@ -1176,7 +1465,7 @@ class _ContactWiseTransactionsScreenState
               child: pw.Text(tr.noTransactionsInDateRange),
             )
           else
-            _statementTransactionTable(periodTransactions, ownerName, tr),
+            _statementTransactionTable(periodItems, ownerName, tr),
         ],
       ),
     );
@@ -1290,23 +1579,55 @@ class _ContactWiseTransactionsScreenState
   }
 
   pw.Widget _statementTransactionTable(
-    List<TransactionModel> transactions,
+    List<ContactActivityItem> items,
     String ownerName,
     AppLocalizations tr,
   ) {
     return pw.TableHelper.fromTextArray(
       headers: [tr.date, tr.type, tr.category, tr.details, tr.amount],
-      data: transactions.map((transaction) {
+      data: items.map((item) {
+        if (item.kind == ContactActivityKind.settlement) {
+          final settlement = item.settlement!;
+          return [
+            _formatDate(settlement.date),
+            tr.settledBadge,
+            tr.settlement,
+            _settlementStatementDetails(
+              settlement,
+              tr,
+              moneyFormatter: _statementMoney,
+            ),
+            settlement.isNoCash
+                ? tr.settled
+                : _statementMoney(
+                    settlement.isReceive
+                        ? -settlement.netAmount
+                        : settlement.netAmount,
+                  ),
+          ];
+        }
+
+        final transaction = item.transaction!;
         final isSplitHistory = _isSplitHistoryOnly(transaction);
+        final isSettlement = transaction.isSettlement;
         return [
           _formatDate(transaction.date),
           isSplitHistory
+              ? tr.settledBadge
+              : isSettlement
               ? tr.settledBadge
               : transaction.type == AppConstants.typeLend
               ? tr.ownerGave(ownerName)
               : tr.ownerGot(ownerName),
           _categoryLabel(transaction.category, tr),
-          _transactionDetails(transaction, ownerName, tr),
+          _pdfSafeText(
+            _transactionDetails(
+              transaction,
+              ownerName,
+              tr,
+              moneyFormatter: _statementMoney,
+            ),
+          ),
           isSplitHistory
               ? tr.settled
               : _statementMoney(
@@ -1374,13 +1695,26 @@ class _ContactWiseTransactionsScreenState
     });
   }
 
-  double _sumByType(List<TransactionModel> transactions, String type) {
-    return transactions
-        .where(
-          (transaction) =>
-              !_isSplitHistoryOnly(transaction) && transaction.type == type,
-        )
-        .fold<double>(0, (sum, transaction) => sum + transaction.amount);
+  double _sumByType(List<ContactActivityItem> items, String type) {
+    return items.fold<double>(0, (sum, item) {
+      if (item.kind == ContactActivityKind.settlement) {
+        final settlement = item.settlement!;
+        if (settlement.isNoCash) return sum;
+        if (type == AppConstants.typeBorrow && settlement.isReceive) {
+          return sum + settlement.netAmount;
+        }
+        if (type == AppConstants.typeLend && settlement.isPay) {
+          return sum + settlement.netAmount;
+        }
+        return sum;
+      }
+
+      final transaction = item.transaction!;
+      if (_isSplitHistoryOnly(transaction) || transaction.type != type) {
+        return sum;
+      }
+      return sum + transaction.amount;
+    });
   }
 
   String _statementFilterLabel(AppLocalizations tr) {
@@ -1406,15 +1740,22 @@ class _ContactWiseTransactionsScreenState
   String _transactionDetails(
     TransactionModel transaction,
     String ownerName,
-    AppLocalizations tr,
-  ) {
+    AppLocalizations tr, {
+    String Function(double amount)? moneyFormatter,
+  }) {
+    final formatMoney =
+        moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
     if (_isSplitHistoryOnly(transaction)) {
       final splitTitle = transaction.description
           ?.replaceFirst(_splitHistoryDescriptionPrefix, '')
           .trim();
       return splitTitle?.isNotEmpty == true ? splitTitle! : tr.split;
     }
-    if (transaction.isSettlement) return tr.settlement;
+    if (transaction.isSettlement) {
+      final subtitle = _settlementSubtitleFor(transaction, tr);
+      final title = _settlementTitleFor(transaction, tr);
+      return subtitle == null ? title : '$title | $subtitle';
+    }
     if (transaction.category == AppConstants.categorySharedSpend) {
       final contactName = transaction.contactName ?? tr.unknown;
       final payer = transaction.sharedPaidByUser == true
@@ -1427,8 +1768,8 @@ class _ContactWiseTransactionsScreenState
       return [
         if (transaction.description?.trim().isNotEmpty == true)
           transaction.description!.trim(),
-        total == null ? payer : '$payer ${CurrencyFormatter.format(total)}',
-        '$shareLabel ${CurrencyFormatter.format(transaction.amount)}',
+        total == null ? payer : '$payer ${formatMoney(total)}',
+        '$shareLabel ${formatMoney(transaction.amount)}',
       ].join(' | ');
     }
     final parts = [
@@ -1445,6 +1786,8 @@ class _ContactWiseTransactionsScreenState
   String _statementMoney(double amount) {
     return CurrencyFormatter.format(amount, symbol: 'Rs');
   }
+
+  String _pdfSafeText(String value) => value.replaceAll('₹', 'Rs');
 
   String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
 
@@ -1496,55 +1839,384 @@ class _ContactWiseTransactionsScreenState
   }
 
   void _showSettleDialog() {
-    final isPositive = _normalNetBalance > 0;
-    final settleType = isPositive
-        ? AppConstants.typeBorrow
-        : AppConstants.typeLend;
+    final isNetZero = _netBalance.abs() < 0.01;
+    final isPositive = isNetZero || _netBalance > 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tr = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
       builder: (context) => SettleDialog(
-        netBalance: _normalNetBalance,
+        netBalance: _netBalance,
         isPositive: isPositive,
         isDark: isDark,
+        balanceLabel: tr.netSettlement,
+        contactName: widget.contactName,
+        directBalance: _normalNetBalance,
+        splitBalance: _splitNetBalance,
+        isZeroSettlement: isNetZero,
         onFullSettle: () {
           Navigator.pop(context);
-          _settleBalance(settleType, _normalNetBalance.abs());
+          _settleContactBalance(settleFull: true, amount: _netBalance.abs());
         },
         onPartialSettle: (amount) {
           Navigator.pop(context);
-          _settleBalance(settleType, amount);
+          _settleContactBalance(settleFull: false, amount: amount);
         },
       ),
     );
   }
 
-  Future<void> _settleBalance(String settleType, double amount) async {
+  Future<void> _settleContactBalance({
+    required bool settleFull,
+    required double amount,
+  }) async {
     final tr = AppLocalizations.of(context)!;
     try {
-      final settleTransaction = TransactionModel(
-        type: settleType,
-        category: AppConstants.categoryCash,
+      await context.read<TransactionRepository>().settleContactBalance(
         contactId: widget.contactId!,
+        settleFull: settleFull,
         amount: amount,
-        description: tr.settlementTransaction,
-        isSettlement: true,
-        date: DateTime.now(),
-        contactName: widget.contactName,
-      );
-
-      await context.read<BorrowLendCubit>().createTransaction(
-        settleTransaction,
+        paymentDescription: tr.directBalanceSettlement,
+        offsetDescription: tr.directAndSplitBalanceOffset,
       );
 
       if (mounted) {
         showSuccessSnackbar(context, tr.balanceSettledSuccessfully);
+        context.read<BorrowLendCubit>().loadAllData();
         _loadTransactions();
       }
     } catch (e) {
       if (mounted) showFailureSnackbar(context, '${tr.failedToUpdate}: $e');
     }
+  }
+
+  void _showSettlementDetails(ContactSettlementModel settlement) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr.settlementWithContact(
+                settlement.contactName ?? widget.contactName ?? tr.unknown,
+              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            _settlementDetailRow(
+              tr.netSettlement,
+              _settlementNetText(settlement, tr),
+              colorScheme,
+            ),
+            _settlementDetailRow(
+              tr.directBalance,
+              CurrencyFormatter.format(settlement.directCleared),
+              colorScheme,
+            ),
+            _settlementDetailRow(
+              tr.splitBalance,
+              CurrencyFormatter.format(settlement.splitCleared),
+              colorScheme,
+            ),
+            if (settlement.offsetAmount > 0.01) ...[
+              const SizedBox(height: 8),
+              Text(
+                _settlementDetailNote(settlement, tr),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settlementDetailRow(
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+bool _isContactSettlementDirect(TransactionModel transaction) {
+  return transaction.sourceType == AppConstants.sourceTypeContactSettlement ||
+      transaction.sourceType == AppConstants.sourceTypeContactSettlementLegacy;
+}
+
+bool _isContactSettlementOffset(TransactionModel transaction) {
+  return transaction.sourceType ==
+          AppConstants.sourceTypeContactSettlementOffset ||
+      transaction.sourceType ==
+          AppConstants.sourceTypeContactSettlementOffsetLegacy;
+}
+
+String _settlementTitleFor(TransactionModel transaction, AppLocalizations tr) {
+  if (_isContactSettlementOffset(transaction)) {
+    return tr.directAndSplitBalanceOffset;
+  }
+  if (_isContactSettlementDirect(transaction)) {
+    return tr.directBalanceSettlement;
+  }
+  final description = transaction.description?.trim();
+  return description?.isNotEmpty == true
+      ? description!
+      : tr.settlementTransaction;
+}
+
+String? _settlementSubtitleFor(
+  TransactionModel transaction,
+  AppLocalizations tr,
+) {
+  if (_isContactSettlementOffset(transaction)) {
+    return tr.internalBalanceAdjustment;
+  }
+  if (_isContactSettlementDirect(transaction)) {
+    return tr.cashBorrowBalance;
+  }
+  return null;
+}
+
+String _settlementNetText(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final formatMoney =
+      moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
+  final contactName = settlement.contactName ?? tr.unknown;
+  final amount = formatMoney(settlement.netAmount);
+  if (settlement.isNoCash) return tr.noCashPaymentNeeded;
+  return settlement.isReceive
+      ? tr.contactPaysYou(contactName, amount)
+      : tr.youPayContact(contactName, amount);
+}
+
+String _settlementBreakdownText(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final formatMoney =
+      moneyFormatter ?? (double amount) => CurrencyFormatter.format(amount);
+  final parts = <String>[];
+  if (settlement.directCleared > 0.01) {
+    parts.add('${tr.directBalance} ${formatMoney(settlement.directCleared)}');
+  }
+  if (settlement.splitCleared > 0.01) {
+    parts.add('${tr.splitBalance} ${formatMoney(settlement.splitCleared)}');
+  }
+  if (parts.isEmpty) return '';
+  return '${tr.clearedBreakdown}: ${parts.join(' • ')}';
+}
+
+String _settlementStatementDetails(
+  ContactSettlementModel settlement,
+  AppLocalizations tr, {
+  String Function(double amount)? moneyFormatter,
+}) {
+  final main = _settlementNetText(
+    settlement,
+    tr,
+    moneyFormatter: moneyFormatter,
+  );
+  final breakdown = _settlementBreakdownText(
+    settlement,
+    tr,
+    moneyFormatter: moneyFormatter,
+  );
+  final parts = [
+    main,
+    if (breakdown.isNotEmpty) breakdown,
+    if (settlement.offsetAmount > 0.01) tr.balancesClearedTogetherReportNote,
+  ];
+  return parts.join(' | ');
+}
+
+String _settlementDetailNote(
+  ContactSettlementModel settlement,
+  AppLocalizations tr,
+) {
+  return settlement.isNoCash
+      ? tr.balancesCancelledNoPaymentNote
+      : tr.balancesClearedTogetherNote;
+}
+
+class _CompactContactSettlementCard extends StatelessWidget {
+  final ContactSettlementModel settlement;
+  final VoidCallback onTap;
+
+  const _CompactContactSettlementCard({
+    required this.settlement,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final color = settlement.isNoCash
+        ? AppTheme.infoColor
+        : settlement.isReceive
+        ? AppTheme.moneyInColor
+        : AppTheme.moneyOutColor;
+    final contactName = settlement.contactName ?? tr.unknown;
+    final breakdown = _settlementBreakdownText(settlement, tr);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(11, 9, 9, 9),
+          child: Row(
+            children: [
+              AppListAvatar(
+                label: contactName,
+                avatar: settlement.contactAvatar,
+                indicatorIcon: Icons.done_all_rounded,
+                indicatorColor: color,
+                size: 34,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tr.settlementWithContact(contactName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              height: 1.18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          settlement.isNoCash
+                              ? CurrencyFormatter.format(0)
+                              : CurrencyFormatter.format(settlement.netAmount),
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            height: 1.08,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        AppPillBadge(
+                          label: tr.settlement,
+                          icon: Icons.done_all_rounded,
+                          color: color,
+                          fontSize: 8.5,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 10,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          DateFormat(
+                            AppConstants.dateMonthFormat,
+                          ).format(settlement.date),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          settlement.isNoCash
+                              ? tr.noCashPaymentNeeded
+                              : settlement.isReceive
+                              ? tr.toReceive
+                              : tr.toPay,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                    if (breakdown.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        breakdown,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.15,
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1559,15 +2231,11 @@ class _CompactContactTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tr = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isLend = transaction.type == AppConstants.typeLend;
     final isSplit = transaction.category == AppConstants.categorySplit;
     final isShared = transaction.category == AppConstants.categorySharedSpend;
-    final directionColor = AppTheme.getTransactionDirectionColor(
-      transaction.type,
-    );
+    final amountColor = _amountColor();
     final categoryColor = AppTheme.getCategoryColor(
       transaction.category,
       isDark: theme.brightness == Brightness.dark,
@@ -1633,7 +2301,7 @@ class _CompactContactTransactionCard extends StatelessWidget {
                             fontSize: 15.5,
                             height: 1.08,
                             fontWeight: FontWeight.w800,
-                            color: directionColor,
+                            color: amountColor,
                           ),
                         ),
                       ],
@@ -1699,14 +2367,10 @@ class _CompactContactTransactionCard extends StatelessWidget {
                         ],
                         const Spacer(),
                         Text(
-                          transaction.isSettlement
-                              ? tr.settledBadge
-                              : isLend
-                              ? tr.youWillGet
-                              : tr.youWillGive,
+                          _directionLabel(context),
                           style: TextStyle(
                             fontSize: 10,
-                            color: directionColor,
+                            color: amountColor,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1741,6 +2405,28 @@ class _CompactContactTransactionCard extends StatelessWidget {
     );
   }
 
+  Color _amountColor() {
+    if (_isContactSettlementOffset(transaction)) {
+      return AppTheme.infoColor;
+    }
+    if (transaction.category == AppConstants.categorySplit) {
+      return AppTheme.getTransactionDirectionColor(transaction.type);
+    }
+    return AppTheme.getTransactionActionColor(transaction.type);
+  }
+
+  String _directionLabel(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    if (transaction.isSettlement) return tr.settledBadge;
+
+    final isLend = transaction.type == AppConstants.typeLend;
+    if (transaction.category == AppConstants.categorySplit) {
+      return isLend ? tr.owesYou : tr.youOwe;
+    }
+
+    return isLend ? tr.youGave : tr.youGot;
+  }
+
   String _title(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     if (transaction.category == AppConstants.categorySplit) {
@@ -1755,7 +2441,7 @@ class _CompactContactTransactionCard extends StatelessWidget {
       }
       return tr.sharedSpend;
     }
-    if (transaction.isSettlement) return tr.settlementTransaction;
+    if (transaction.isSettlement) return _settlementTitleFor(transaction, tr);
     if (transaction.category == AppConstants.categoryUdhari &&
         transaction.itemName?.trim().isNotEmpty == true) {
       return transaction.itemName!.trim();
@@ -1772,6 +2458,12 @@ class _CompactContactTransactionCard extends StatelessWidget {
     if (transaction.category == AppConstants.categorySplit ||
         transaction.category == AppConstants.categorySharedSpend ||
         transaction.isSettlement) {
+      if (transaction.isSettlement) {
+        return _settlementSubtitleFor(
+          transaction,
+          AppLocalizations.of(context)!,
+        );
+      }
       return transaction.category == AppConstants.categorySharedSpend
           ? _sharedSpendSubtitle(context)
           : null;

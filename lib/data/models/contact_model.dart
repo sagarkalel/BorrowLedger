@@ -80,6 +80,7 @@ class ContactModel {
     String? phone,
     String? email,
     String? avatar,
+    bool clearAvatar = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -88,7 +89,7 @@ class ContactModel {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       email: email ?? this.email,
-      avatar: avatar ?? this.avatar,
+      avatar: clearAvatar ? null : avatar ?? this.avatar,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -304,6 +304,18 @@ abstract class AppLocalizations {
   /// **'You\'ll Give'**
   String get youWillGive;
 
+  /// No description provided for @toReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'To receive'**
+  String get toReceive;
+
+  /// No description provided for @toPay.
+  ///
+  /// In en, this message translates to:
+  /// **'To pay'**
+  String get toPay;
+
   /// No description provided for @payable.
   ///
   /// In en, this message translates to:
@@ -2234,6 +2246,108 @@ abstract class AppLocalizations {
   /// **'Divide amount evenly among all'**
   String get divideAmountEvenlyAmongAll;
 
+  /// No description provided for @splitBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills in this split'**
+  String get splitBills;
+
+  /// No description provided for @splitBillsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one or more bills that belong to this split'**
+  String get splitBillsHelp;
+
+  /// No description provided for @addBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Bill'**
+  String get addBill;
+
+  /// No description provided for @editBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bill'**
+  String get editBill;
+
+  /// No description provided for @billName.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Name'**
+  String get billName;
+
+  /// No description provided for @billNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Name *'**
+  String get billNameRequired;
+
+  /// No description provided for @billNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotel, dinner, fuel...'**
+  String get billNameHint;
+
+  /// No description provided for @billAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Amount'**
+  String get billAmount;
+
+  /// No description provided for @billAmountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Amount *'**
+  String get billAmountRequired;
+
+  /// No description provided for @paidBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by'**
+  String get paidBy;
+
+  /// No description provided for @paidByMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by me'**
+  String get paidByMe;
+
+  /// No description provided for @noBillsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'No bills added'**
+  String get noBillsAdded;
+
+  /// No description provided for @addAtLeastOneBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one bill or expense for this split'**
+  String get addAtLeastOneBill;
+
+  /// No description provided for @pleaseAddAtLeastOneBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add at least one bill'**
+  String get pleaseAddAtLeastOneBill;
+
+  /// No description provided for @billsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills total'**
+  String get billsTotal;
+
+  /// No description provided for @paidTotalExceedsBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid total exceeds bills total by {amount}'**
+  String paidTotalExceedsBills(Object amount);
+
+  /// No description provided for @billAmountStillUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} still needs to be assigned as paid'**
+  String billAmountStillUnassigned(Object amount);
+
   /// No description provided for @yourShareWillBeRemaining.
   ///
   /// In en, this message translates to:
@@ -2341,6 +2455,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Owe You'**
   String get oweYou;
+
+  /// No description provided for @owesYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes You'**
+  String get owesYou;
 
   /// No description provided for @totalOwed.
   ///
@@ -2588,6 +2708,186 @@ abstract class AppLocalizations {
   /// **'Current Balance'**
   String get currentBalance;
 
+  /// No description provided for @settleWithContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle with {contactName}'**
+  String settleWithContact(Object contactName);
+
+  /// No description provided for @settlementWithContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement with {contactName}'**
+  String settlementWithContact(Object contactName);
+
+  /// No description provided for @directBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct balance'**
+  String get directBalance;
+
+  /// No description provided for @splitBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Split balance'**
+  String get splitBalance;
+
+  /// No description provided for @netSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Net settlement'**
+  String get netSettlement;
+
+  /// No description provided for @netSettlementAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Net settlement: {amount}'**
+  String netSettlementAmount(Object amount);
+
+  /// No description provided for @offsettingBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Balances matched'**
+  String get offsettingBalances;
+
+  /// No description provided for @noCashPaymentNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'No money paid'**
+  String get noCashPaymentNeeded;
+
+  /// No description provided for @noCashNeededOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.'**
+  String get noCashNeededOffset;
+
+  /// No description provided for @clearOffsettingBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear balances'**
+  String get clearOffsettingBalances;
+
+  /// No description provided for @contactPaysYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{contactName} pays you {amount}.'**
+  String contactPaysYou(Object contactName, Object amount);
+
+  /// No description provided for @youPayContact.
+  ///
+  /// In en, this message translates to:
+  /// **'You pay {contactName} {amount}.'**
+  String youPayContact(Object contactName, Object amount);
+
+  /// No description provided for @contactSettlementKeepsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'This will clear the contact balance. Your transaction history will stay visible.'**
+  String get contactSettlementKeepsHistory;
+
+  /// No description provided for @remainingAfterSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining after settlement: {amount}'**
+  String remainingAfterSettlement(Object amount);
+
+  /// No description provided for @directBalanceSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct balance settlement'**
+  String get directBalanceSettlement;
+
+  /// No description provided for @directAndSplitBalanceOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched against each other'**
+  String get directAndSplitBalanceOffset;
+
+  /// No description provided for @internalBalanceAdjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared by matching balances'**
+  String get internalBalanceAdjustment;
+
+  /// No description provided for @contactSettlementPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact settlement'**
+  String get contactSettlementPayment;
+
+  /// No description provided for @contactSettlementOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'Balances matched'**
+  String get contactSettlementOffset;
+
+  /// No description provided for @clearedBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared'**
+  String get clearedBreakdown;
+
+  /// No description provided for @matchedAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched: {amount}'**
+  String matchedAmount(Object amount);
+
+  /// No description provided for @matchedBalanceExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'This amount was cleared by matching what you owed against what they owed.'**
+  String get matchedBalanceExplanation;
+
+  /// No description provided for @balancesClearedTogetherNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Direct and split balances were cleared together, so only the net amount was paid.'**
+  String get balancesClearedTogetherNote;
+
+  /// No description provided for @balancesCancelledNoPaymentNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Both balances cancelled each other, so no payment was needed.'**
+  String get balancesCancelledNoPaymentNote;
+
+  /// No description provided for @balancesClearedTogetherReportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Direct and split balances were cleared together.'**
+  String get balancesClearedTogetherReportNote;
+
+  /// No description provided for @cashBorrowBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash / borrow balance'**
+  String get cashBorrowBalance;
+
+  /// No description provided for @settleCashBorrowBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle cash/borrow balance'**
+  String get settleCashBorrowBalance;
+
+  /// No description provided for @excludingSplitBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} excluding split balances'**
+  String excludingSplitBalances(Object amount);
+
+  /// No description provided for @splitBalanceAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Split balance: {amount}'**
+  String splitBalanceAmount(Object amount);
+
+  /// No description provided for @settleSplitsFromSplitDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle splits from Split Details'**
+  String get settleSplitsFromSplitDetails;
+
   /// No description provided for @setToFullBalance.
   ///
   /// In en, this message translates to:
@@ -2609,25 +2909,25 @@ abstract class AppLocalizations {
   /// No description provided for @partialSettlementInfoPositive.
   ///
   /// In en, this message translates to:
-  /// **'A \"You Got\" transaction will be created for the entered amount, reducing your balance.'**
+  /// **'A settlement entry will be added for the amount you receive.'**
   String get partialSettlementInfoPositive;
 
   /// No description provided for @partialSettlementInfoNegative.
   ///
   /// In en, this message translates to:
-  /// **'A \"You Gave\" transaction will be created for the entered amount, reducing your balance.'**
+  /// **'A settlement entry will be added for the amount you pay.'**
   String get partialSettlementInfoNegative;
 
   /// No description provided for @fullSettlementInfoPositive.
   ///
   /// In en, this message translates to:
-  /// **'A \"You Got\" transaction will be created to settle the full balance to zero.'**
+  /// **'A settlement entry will be added for the full amount you receive.'**
   String get fullSettlementInfoPositive;
 
   /// No description provided for @fullSettlementInfoNegative.
   ///
   /// In en, this message translates to:
-  /// **'A \"You Gave\" transaction will be created to settle the full balance to zero.'**
+  /// **'A settlement entry will be added for the full amount you pay.'**
   String get fullSettlementInfoNegative;
 
   /// No description provided for @comment_dialogs_delete.
@@ -2831,7 +3131,7 @@ abstract class AppLocalizations {
   /// No description provided for @contactReferences.
   ///
   /// In en, this message translates to:
-  /// **'Contact references'**
+  /// **'Contact references and photos'**
   String get contactReferences;
 
   /// No description provided for @canShareBackupFile.
@@ -3095,7 +3395,7 @@ abstract class AppLocalizations {
   /// No description provided for @createsJsonFile.
   ///
   /// In en, this message translates to:
-  /// **'Creates a JSON file containing:'**
+  /// **'Creates a backup file containing:'**
   String get createsJsonFile;
 
   /// No description provided for @fileSavedLocally.
@@ -3167,8 +3467,50 @@ abstract class AppLocalizations {
   /// No description provided for @backupFilesInJson.
   ///
   /// In en, this message translates to:
-  /// **'Backup files are in JSON format and can be viewed in any text editor.'**
+  /// **'Backup files include your records and saved contact photos.'**
   String get backupFilesInJson;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changePhoto;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get removePhoto;
+
+  /// No description provided for @photoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo updated'**
+  String get photoUpdated;
+
+  /// No description provided for @failedToUpdatePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update photo'**
+  String get failedToUpdatePhoto;
+
+  /// No description provided for @photoCouldNotBeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo could not be saved. Contact will be added without photo.'**
+  String get photoCouldNotBeSaved;
 
   /// No description provided for @comment_about.
   ///
@@ -4256,6 +4598,18 @@ abstract class AppLocalizations {
   /// **'{ownerName} gives'**
   String ownerGives(Object ownerName);
 
+  /// No description provided for @ownerToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} to receive'**
+  String ownerToReceive(Object ownerName);
+
+  /// No description provided for @ownerToPay.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} to pay'**
+  String ownerToPay(Object ownerName);
+
   /// No description provided for @ownerGave.
   ///
   /// In en, this message translates to:
@@ -4321,6 +4675,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get searchLabel;
+
+  /// No description provided for @sortTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort transactions'**
+  String get sortTransactions;
+
+  /// No description provided for @transactionDateNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction date: Newest first'**
+  String get transactionDateNewest;
+
+  /// No description provided for @transactionDateOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction date: Oldest first'**
+  String get transactionDateOldest;
+
+  /// No description provided for @addedDateNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Added date: Newest first'**
+  String get addedDateNewest;
+
+  /// No description provided for @addedDateOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Added date: Oldest first'**
+  String get addedDateOldest;
+
+  /// No description provided for @yourCalculatedShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Your share: {amount}'**
+  String yourCalculatedShare(Object amount);
+
+  /// No description provided for @yourCalculatedShareHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} total - {assigned} assigned to others'**
+  String yourCalculatedShareHelp(Object total, Object assigned);
 
   /// No description provided for @comment_language.
   ///

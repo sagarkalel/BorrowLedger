@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/splash_screen.dart';
@@ -22,6 +24,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
@@ -29,6 +32,13 @@ import '../../data/database/database_helper.dart';
 import '../../data/models/user_profile_model.dart';
 import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/theme_cubit.dart';
+
+class _ParsedBackup {
+  final Map<String, List<Map<String, dynamic>>> rows;
+  final Directory? extractedAvatarDirectory;
+
+  const _ParsedBackup({required this.rows, this.extractedAvatarDirectory});
+}
 
 class SettingsDrawer extends StatefulWidget {
   const SettingsDrawer({super.key});
@@ -46,12 +56,14 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     'expenses',
     'split_expenses',
     'split_participants',
+    'split_bills',
     'udhari_items',
     'udhari_quantities',
     'shared_spend_purposes',
   ];
 
   static const List<String> _backupDeleteOrder = [
+    'split_bills',
     'split_participants',
     'split_expenses',
     'expenses',
@@ -692,12 +704,166 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     return rowsByTable;
   }
 
+  Future<_ParsedBackup> _parseBackupFile(File file) async {
+    final extension = file.path.toLowerCase();
+    if (extension.endsWith(AppConstants.jsonExtension)) {
+      final jsonString = await file.readAsString();
+      return _ParsedBackup(rows: _parseBackupRows(jsonString));
+    }
+
+    if (!extension.endsWith(AppConstants.backupExtension) &&
+        !extension.endsWith('.zip')) {
+      throw const FormatException('Selected file is not a valid backup.');
+    }
+
+    final bytes = await file.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+    final dataEntry = archive.findFile('data.json');
+    if (dataEntry == null) {
+      throw const FormatException('Backup file is missing app data.');
+    }
+
+    final dataJson = utf8.decode(dataEntry.content);
+    final rows = _parseBackupRows(dataJson);
+    final tempRoot = await getTemporaryDirectory();
+    final tempAvatarDir = Directory(
+      '${tempRoot.path}/borrowledger_avatar_import_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    await tempAvatarDir.create(recursive: true);
+
+    var extractedCount = 0;
+    final avatarService = ContactAvatarService.instance;
+    for (final entry in archive.files) {
+      if (!entry.isFile || !entry.name.startsWith('avatars/')) continue;
+      final fileName = entry.name.substring('avatars/'.length);
+      if (!avatarService.isSafeArchiveAvatarName(fileName)) {
+        throw const FormatException('Backup contains an unsafe avatar file.');
+      }
+      final content = entry.content;
+      if (content.isEmpty ||
+          content.length > ContactAvatarService.maxImportAvatarBytes) {
+        continue;
+      }
+      final outFile = File('${tempAvatarDir.path}/$fileName');
+      await outFile.writeAsBytes(content, flush: true);
+      extractedCount++;
+    }
+
+    if (extractedCount == 0) {
+      await tempAvatarDir.delete(recursive: true);
+      return _ParsedBackup(rows: rows);
+    }
+    return _ParsedBackup(rows: rows, extractedAvatarDirectory: tempAvatarDir);
+  }
+
+  Future<void> _replaceAvatarDirectoryFromImport(
+    Directory? tempAvatarDir,
+  ) async {
+    final avatarService = ContactAvatarService.instance;
+    await avatarService.clearAllAvatars();
+    if (tempAvatarDir == null || !await tempAvatarDir.exists()) return;
+
+    final avatarDir = await avatarService.avatarDirectory();
+    await for (final entity in tempAvatarDir.list()) {
+      if (entity is! File) continue;
+      final fileName = entity.uri.pathSegments.last;
+      if (!avatarService.isSafeArchiveAvatarName(fileName)) continue;
+      await entity.copy('${avatarDir.path}/$fileName');
+    }
+    await tempAvatarDir.delete(recursive: true);
+  }
+
   String _backupErrorMessage(Object error) {
     if (error is FormatException) {
       return error.message;
     }
 
     return error.toString().replaceFirst('Exception: ', '');
+  }
+
+  Future<void> _rebuildSplitBillsFromLegacyBackup(
+    sqflite.Transaction txn,
+  ) async {
+    await txn.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        title,
+        paid_by_user,
+        1,
+        NULL,
+        date,
+        description,
+        created_at,
+        updated_at
+      FROM split_expenses
+      WHERE paid_by_user > 0.009
+    ''');
+
+    await txn.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        se.id,
+        se.title,
+        sp.expense_paid,
+        0,
+        sp.contact_id,
+        se.date,
+        se.description,
+        se.created_at,
+        se.updated_at
+      FROM split_expenses se
+      INNER JOIN split_participants sp ON se.id = sp.split_id
+      WHERE sp.expense_paid > 0.009
+    ''');
+
+    await txn.execute('''
+      INSERT INTO split_bills (
+        split_id,
+        title,
+        amount,
+        paid_by_user,
+        paid_by_contact_id,
+        date,
+        note,
+        created_at,
+        updated_at
+      )
+      SELECT
+        se.id,
+        se.title,
+        se.total_amount,
+        1,
+        NULL,
+        se.date,
+        se.description,
+        se.created_at,
+        se.updated_at
+      FROM split_expenses se
+      WHERE NOT EXISTS (
+        SELECT 1 FROM split_bills sb WHERE sb.split_id = se.id
+      )
+    ''');
   }
 
   void _dismissLoadingDialog() {
@@ -739,6 +905,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final participants = await dbHelper.query('split_participants');
       developer.log('✅ Participants fetched: ${participants.length}');
 
+      final splitBills = await dbHelper.query('split_bills');
+      developer.log('✅ Split bills fetched: ${splitBills.length}');
+
       final udhariItems = await dbHelper.query('udhari_items');
       developer.log('✅ Udhari items fetched: ${udhariItems.length}');
 
@@ -754,6 +923,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final exportData = {
         'app': tr.appName,
         'version': AppConstants.appVersion,
+        'backup_format': 2,
         'exported_at': DateTime.now().toIso8601String(),
         'data': {
           'contacts': contacts,
@@ -761,6 +931,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           'expenses': expenses,
           'split_expenses': splits,
           'split_participants': participants,
+          'split_bills': splitBills,
           'udhari_items': udhariItems,
           'udhari_quantities': udhariQuantities,
           'shared_spend_purposes': sharedSpendPurposes,
@@ -769,6 +940,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           'total_transactions': transactions.length,
           'total_expenses': expenses.length,
           'total_splits': splits.length,
+          'total_split_bills': splitBills.length,
           'total_udhari_items': udhariItems.length,
           'total_udhari_quantities': udhariQuantities.length,
           'total_shared_spend_purposes': sharedSpendPurposes.length,
@@ -778,6 +950,43 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('🔄 Converting to JSON...');
       final jsonString = const JsonEncoder.withIndent('  ').convert(exportData);
       developer.log('✅ JSON created, size: ${jsonString.length} chars');
+      final archive = Archive();
+      archive.addFile(ArchiveFile.string('data.json', jsonString));
+
+      final avatarService = ContactAvatarService.instance;
+      final avatarFiles = <String, File>{};
+      for (final contact in contacts) {
+        final avatar = contact['avatar'] as String?;
+        final avatarName = avatarService.avatarFileNameFromReference(avatar);
+        if (avatarName == null || avatarFiles.containsKey(avatarName)) {
+          continue;
+        }
+        final avatarFile = await avatarService.resolveAvatarFile(avatar);
+        if (avatarFile != null && await avatarFile.exists()) {
+          avatarFiles[avatarName] = avatarFile;
+        }
+      }
+
+      for (final entry in avatarFiles.entries) {
+        final bytes = await entry.value.readAsBytes();
+        archive.addFile(
+          ArchiveFile('avatars/${entry.key}', bytes.length, bytes),
+        );
+      }
+
+      final manifest = {
+        'format': 'borrowledger_backup',
+        'format_version': 2,
+        'app_version': AppConstants.appVersion,
+        'exported_at': exportData['exported_at'],
+        'avatar_count': avatarFiles.length,
+      };
+      archive.addFile(
+        ArchiveFile.string(
+          'manifest.json',
+          const JsonEncoder.withIndent('  ').convert(manifest),
+        ),
+      );
 
       // Request storage permission for Android
       if (Platform.isAndroid) {
@@ -804,7 +1013,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       // Save file
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final fileName =
-          '${AppConstants.exportFilePrefix}$timestamp${AppConstants.jsonExtension}';
+          '${AppConstants.exportFilePrefix}$timestamp${AppConstants.backupExtension}';
       developer.log('📝 File name: $fileName');
 
       // Get directory
@@ -831,7 +1040,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final file = File('${backupDir.path}/$fileName');
       developer.log('💾 Writing to file: ${file.path}');
 
-      await file.writeAsString(jsonString);
+      final encodedArchive = ZipEncoder().encode(archive);
+      await file.writeAsBytes(encodedArchive, flush: true);
       developer.log('✅ File written successfully');
 
       // Verify file exists
@@ -885,7 +1095,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       developer.log('📁 Opening file picker...');
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: ['blbackup', 'zip', 'json'],
       );
 
       if (result == null || result.files.single.path == null) {
@@ -906,12 +1116,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
       developer.log('📖 Reading file...');
       final file = File(result.files.single.path!);
-      final jsonString = await file.readAsString();
-      developer.log('✅ File read, size: ${jsonString.length} chars');
-
-      developer.log('🔄 Parsing JSON...');
-      final backupRows = _parseBackupRows(jsonString);
-      developer.log('✅ JSON parsed');
+      final parsedBackup = await _parseBackupFile(file);
+      final backupRows = parsedBackup.rows;
+      developer.log('✅ Backup parsed');
 
       developer.log('✅ Backup file validated');
       final dbHelper = DatabaseHelper();
@@ -928,6 +1135,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       );
       developer.log(
         '  - Participants: ${backupRows['split_participants']?.length ?? 0}',
+      );
+      developer.log(
+        '  - Split Bills: ${backupRows['split_bills']?.length ?? 0}',
       );
 
       await dbHelper.ensureSharedSpendPurposeTable();
@@ -947,7 +1157,19 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           }
           developer.log('✅ Imported ${rows.length} rows into $table');
         }
+
+        if ((backupRows['split_bills'] ?? const []).isEmpty &&
+            (backupRows['split_expenses'] ?? const []).isNotEmpty) {
+          developer.log('🧾 Rebuilding split bill rows for older backup...');
+          await _rebuildSplitBillsFromLegacyBackup(txn);
+          developer.log('✅ Split bill rows rebuilt');
+        }
       });
+      if (parsedBackup.extractedAvatarDirectory != null) {
+        await _replaceAvatarDirectoryFromImport(
+          parsedBackup.extractedAvatarDirectory,
+        );
+      }
 
       // Reload stats
       developer.log('🔄 Reloading statistics...');

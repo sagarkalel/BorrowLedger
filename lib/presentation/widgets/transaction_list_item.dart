@@ -31,12 +31,7 @@ class TransactionListItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final tr = AppLocalizations.of(context)!;
 
-    // Direction color (what will happen)
-    // lend = you gave -> you'll GET back (green)
-    // borrow = you got -> you'll GIVE back (orange)
-    final directionColor = AppTheme.getTransactionDirectionColor(
-      transaction.type,
-    );
+    final actionColor = AppTheme.getTransactionActionColor(transaction.type);
 
     // Category color (cash = teal, udhari = amber)
     final categoryColor = AppTheme.getCategoryColor(
@@ -66,6 +61,7 @@ class TransactionListItem extends StatelessWidget {
               // Avatar with category icon
               AppListAvatar(
                 label: contactName,
+                avatar: transaction.contactAvatar,
                 indicatorIcon: isSplit
                     ? Icons.call_split_rounded
                     : isShared
@@ -122,7 +118,7 @@ class TransactionListItem extends StatelessWidget {
               const SizedBox(width: 10),
 
               // Amount and direction
-              _buildAmountSection(context, directionColor, isLend),
+              _buildAmountSection(context, actionColor, isLend),
             ],
           ),
         ),
@@ -373,7 +369,7 @@ class TransactionListItem extends StatelessWidget {
 
   Widget _buildAmountSection(
     BuildContext context,
-    Color directionColor,
+    Color actionColor,
     bool isLend,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -389,7 +385,7 @@ class TransactionListItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16.5,
                 fontWeight: FontWeight.w800,
-                color: directionColor,
+                color: actionColor,
                 height: 1.1,
               ),
             ),
@@ -399,7 +395,7 @@ class TransactionListItem extends StatelessWidget {
                 ? _buildSettlementBadge(context)
                 :
                   // Direction badge (what will happen)
-                  _buildDirectionBadge(context, isLend, directionColor),
+                  _buildDirectionBadge(context, isLend, actionColor),
           ],
         ),
         const SizedBox(width: 4),
@@ -427,13 +423,13 @@ class TransactionListItem extends StatelessWidget {
   Widget _buildDirectionBadge(
     BuildContext context,
     bool isLend,
-    Color directionColor,
+    Color actionColor,
   ) {
     final tr = AppLocalizations.of(context)!;
     return AppPillBadge(
-      label: isLend ? tr.youWillGet : tr.youWillGive,
-      icon: isLend ? Icons.call_received : Icons.call_made,
-      color: directionColor,
+      label: isLend ? tr.youGave : tr.youGot,
+      icon: isLend ? Icons.call_made : Icons.call_received,
+      color: actionColor,
       fontSize: 8,
     );
   }

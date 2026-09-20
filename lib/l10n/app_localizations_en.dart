@@ -111,6 +111,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get youWillGive => 'You\'ll Give';
 
   @override
+  String get toReceive => 'To receive';
+
+  @override
+  String get toPay => 'To pay';
+
+  @override
   String get payable => 'Payable';
 
   @override
@@ -1133,6 +1139,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divideAmountEvenlyAmongAll => 'Divide amount evenly among all';
 
   @override
+  String get splitBills => 'Bills in this split';
+
+  @override
+  String get splitBillsHelp =>
+      'Add one or more bills that belong to this split';
+
+  @override
+  String get addBill => 'Add Bill';
+
+  @override
+  String get editBill => 'Edit Bill';
+
+  @override
+  String get billName => 'Bill Name';
+
+  @override
+  String get billNameRequired => 'Bill Name *';
+
+  @override
+  String get billNameHint => 'Hotel, dinner, fuel...';
+
+  @override
+  String get billAmount => 'Bill Amount';
+
+  @override
+  String get billAmountRequired => 'Bill Amount *';
+
+  @override
+  String get paidBy => 'Paid by';
+
+  @override
+  String get paidByMe => 'Paid by me';
+
+  @override
+  String get noBillsAdded => 'No bills added';
+
+  @override
+  String get addAtLeastOneBill =>
+      'Add at least one bill or expense for this split';
+
+  @override
+  String get pleaseAddAtLeastOneBill => 'Please add at least one bill';
+
+  @override
+  String get billsTotal => 'Bills total';
+
+  @override
+  String paidTotalExceedsBills(Object amount) {
+    return 'Paid total exceeds bills total by $amount';
+  }
+
+  @override
+  String billAmountStillUnassigned(Object amount) {
+    return '$amount still needs to be assigned as paid';
+  }
+
+  @override
   String get yourShareWillBeRemaining =>
       'Your share will be the remaining amount';
 
@@ -1186,6 +1249,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oweYou => 'Owe You';
+
+  @override
+  String get owesYou => 'Owes You';
 
   @override
   String get totalOwed => 'Total Owed';
@@ -1315,6 +1381,120 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currentBalance => 'Current Balance';
 
   @override
+  String settleWithContact(Object contactName) {
+    return 'Settle with $contactName';
+  }
+
+  @override
+  String settlementWithContact(Object contactName) {
+    return 'Settlement with $contactName';
+  }
+
+  @override
+  String get directBalance => 'Direct balance';
+
+  @override
+  String get splitBalance => 'Split balance';
+
+  @override
+  String get netSettlement => 'Net settlement';
+
+  @override
+  String netSettlementAmount(Object amount) {
+    return 'Net settlement: $amount';
+  }
+
+  @override
+  String get offsettingBalances => 'Balances matched';
+
+  @override
+  String get noCashPaymentNeeded => 'No money paid';
+
+  @override
+  String get noCashNeededOffset =>
+      'No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.';
+
+  @override
+  String get clearOffsettingBalances => 'Clear balances';
+
+  @override
+  String contactPaysYou(Object contactName, Object amount) {
+    return '$contactName pays you $amount.';
+  }
+
+  @override
+  String youPayContact(Object contactName, Object amount) {
+    return 'You pay $contactName $amount.';
+  }
+
+  @override
+  String get contactSettlementKeepsHistory =>
+      'This will clear the contact balance. Your transaction history will stay visible.';
+
+  @override
+  String remainingAfterSettlement(Object amount) {
+    return 'Remaining after settlement: $amount';
+  }
+
+  @override
+  String get directBalanceSettlement => 'Direct balance settlement';
+
+  @override
+  String get directAndSplitBalanceOffset => 'Matched against each other';
+
+  @override
+  String get internalBalanceAdjustment => 'Cleared by matching balances';
+
+  @override
+  String get contactSettlementPayment => 'Contact settlement';
+
+  @override
+  String get contactSettlementOffset => 'Balances matched';
+
+  @override
+  String get clearedBreakdown => 'Cleared';
+
+  @override
+  String matchedAmount(Object amount) {
+    return 'Matched: $amount';
+  }
+
+  @override
+  String get matchedBalanceExplanation =>
+      'This amount was cleared by matching what you owed against what they owed.';
+
+  @override
+  String get balancesClearedTogetherNote =>
+      'Note: Direct and split balances were cleared together, so only the net amount was paid.';
+
+  @override
+  String get balancesCancelledNoPaymentNote =>
+      'Note: Both balances cancelled each other, so no payment was needed.';
+
+  @override
+  String get balancesClearedTogetherReportNote =>
+      'Note: Direct and split balances were cleared together.';
+
+  @override
+  String get cashBorrowBalance => 'Cash / borrow balance';
+
+  @override
+  String get settleCashBorrowBalance => 'Settle cash/borrow balance';
+
+  @override
+  String excludingSplitBalances(Object amount) {
+    return '$amount excluding split balances';
+  }
+
+  @override
+  String splitBalanceAmount(Object amount) {
+    return 'Split balance: $amount';
+  }
+
+  @override
+  String get settleSplitsFromSplitDetails => 'Settle splits from Split Details';
+
+  @override
   String get setToFullBalance => 'Set to full balance';
 
   @override
@@ -1325,19 +1505,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get partialSettlementInfoPositive =>
-      'A \"You Got\" transaction will be created for the entered amount, reducing your balance.';
+      'A settlement entry will be added for the amount you receive.';
 
   @override
   String get partialSettlementInfoNegative =>
-      'A \"You Gave\" transaction will be created for the entered amount, reducing your balance.';
+      'A settlement entry will be added for the amount you pay.';
 
   @override
   String get fullSettlementInfoPositive =>
-      'A \"You Got\" transaction will be created to settle the full balance to zero.';
+      'A settlement entry will be added for the full amount you receive.';
 
   @override
   String get fullSettlementInfoNegative =>
-      'A \"You Gave\" transaction will be created to settle the full balance to zero.';
+      'A settlement entry will be added for the full amount you pay.';
 
   @override
   String get comment_dialogs_delete => '========== Delete Dialogs ==========';
@@ -1447,7 +1627,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allSplitExpenses => 'All split expenses';
 
   @override
-  String get contactReferences => 'Contact references';
+  String get contactReferences => 'Contact references and photos';
 
   @override
   String get canShareBackupFile =>
@@ -1583,7 +1763,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get howBackupWorks => 'How Backup Works';
 
   @override
-  String get createsJsonFile => 'Creates a JSON file containing:';
+  String get createsJsonFile => 'Creates a backup file containing:';
 
   @override
   String get fileSavedLocally => 'The file is saved locally and can be shared.';
@@ -1621,7 +1801,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupFilesInJson =>
-      'Backup files are in JSON format and can be viewed in any text editor.';
+      'Backup files include your records and saved contact photos.';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from gallery';
+
+  @override
+  String get removePhoto => 'Remove photo';
+
+  @override
+  String get photoUpdated => 'Photo updated';
+
+  @override
+  String get failedToUpdatePhoto => 'Failed to update photo';
+
+  @override
+  String get photoCouldNotBeSaved =>
+      'Photo could not be saved. Contact will be added without photo.';
 
   @override
   String get comment_about => '========== About ==========';
@@ -2190,6 +2392,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String ownerToReceive(Object ownerName) {
+    return '$ownerName to receive';
+  }
+
+  @override
+  String ownerToPay(Object ownerName) {
+    return '$ownerName to pay';
+  }
+
+  @override
   String ownerGave(Object ownerName) {
     return '$ownerName gave';
   }
@@ -2226,6 +2438,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchLabel => 'Search';
+
+  @override
+  String get sortTransactions => 'Sort transactions';
+
+  @override
+  String get transactionDateNewest => 'Transaction date: Newest first';
+
+  @override
+  String get transactionDateOldest => 'Transaction date: Oldest first';
+
+  @override
+  String get addedDateNewest => 'Added date: Newest first';
+
+  @override
+  String get addedDateOldest => 'Added date: Oldest first';
+
+  @override
+  String yourCalculatedShare(Object amount) {
+    return 'Your share: $amount';
+  }
+
+  @override
+  String yourCalculatedShareHelp(Object total, Object assigned) {
+    return '$total total - $assigned assigned to others';
+  }
 
   @override
   String get comment_language => '========== Language ==========';

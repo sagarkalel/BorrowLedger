@@ -46,12 +46,11 @@ class AddSplitScreen extends StatefulWidget {
 class _AddSplitScreenState extends State<AddSplitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _totalAmountController = TextEditingController();
-  final _paidByUserController = TextEditingController();
   final _descriptionController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   final List<ParticipantData> _participants = [];
+  final List<BillData> _bills = [];
   bool _splitEqually = true;
   String _settlementRouteMode = AppConstants.splitRouteOptimized;
   int? _settlementMediatorContactId;
@@ -63,8 +62,6 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     // If editing, populate fields
     if (widget.split != null) {
       _titleController.text = widget.split!.title;
-      _totalAmountController.text = widget.split!.totalAmount.toString();
-      _paidByUserController.text = widget.split!.paidByUser.toString();
       _descriptionController.text = widget.split!.description ?? '';
       _selectedDate = widget.split!.date;
       _settlementRouteMode = widget.split!.settlementRouteMode;
@@ -87,6 +84,8 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         }
       }
 
+      _initializeBillsFromSplit(widget.split!);
+
       if (_settlementRouteMode == AppConstants.splitRouteMediator &&
           _settlementMediatorContactId != null &&
           !_participants.any(
@@ -99,11 +98,87 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     }
   }
 
+  void _initializeBillsFromSplit(SplitExpenseModel split) {
+    final bills = split.bills ?? const <SplitBillModel>[];
+    if (bills.isNotEmpty) {
+      _bills.addAll(
+        bills.map((bill) {
+          ContactModel? paidByContact;
+          if (!bill.paidByUser && bill.paidByContactId != null) {
+            for (final participant in _participants) {
+              if (participant.contact.id == bill.paidByContactId) {
+                paidByContact = participant.contact;
+                break;
+              }
+            }
+            paidByContact ??= ContactModel(
+              id: bill.paidByContactId,
+              name: bill.paidByContactName ?? '-',
+            );
+          }
+
+          return BillData(
+            id: bill.id,
+            title: bill.title,
+            amount: bill.amount,
+            paidByUser: bill.paidByUser || paidByContact == null,
+            paidByContact: paidByContact,
+            date: bill.date,
+            note: bill.note,
+          );
+        }),
+      );
+      _syncParticipantPaymentsFromBills();
+      return;
+    }
+
+    if (split.paidByUser > SplitSettlementCalculator.tolerance) {
+      _bills.add(
+        BillData(
+          title: split.title,
+          amount: split.paidByUser,
+          paidByUser: true,
+          date: split.date,
+          note: split.description,
+        ),
+      );
+    }
+
+    for (final participant in _participants) {
+      if (participant.expensePaid <= SplitSettlementCalculator.tolerance) {
+        continue;
+      }
+      _bills.add(
+        BillData(
+          title: split.title,
+          amount: participant.expensePaid,
+          paidByUser: false,
+          paidByContact: participant.contact,
+          date: split.date,
+          note: split.description,
+        ),
+      );
+    }
+
+    if (_bills.isEmpty &&
+        split.totalAmount > SplitSettlementCalculator.tolerance) {
+      _bills.add(
+        BillData(
+          title: split.title,
+          amount: split.totalAmount,
+          paidByUser: true,
+          date: split.date,
+          note: split.description,
+        ),
+      );
+    }
+
+    _syncParticipantPaymentsFromBills();
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
-    _totalAmountController.dispose();
-    _paidByUserController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -202,68 +277,6 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: AppAmountField(
-                            controller: _totalAmountController,
-                            labelText: tr.totalAmountRequired,
-                            hintText: '0.00',
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return tr.required;
-                              }
-                              if (double.tryParse(value) == null) {
-                                return tr.invalid;
-                              }
-                              if (double.parse(value) <= 0) {
-                                return tr.mustBeGreaterThanZero;
-                              }
-                              return null;
-                            },
-                            onChanged: (value) {
-                              setState(() {
-                                if (_splitEqually) {
-                                  _calculateShares();
-                                }
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: AppAmountField(
-                            controller: _paidByUserController,
-                            labelText: tr.youPaidRequired,
-                            hintText: '0.00',
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return tr.required;
-                              }
-                              if (double.tryParse(value) == null) {
-                                return tr.invalid;
-                              }
-                              final amount = double.parse(value);
-                              if (amount < 0) {
-                                return tr.cannotBeNegative;
-                              }
-                              final total =
-                                  double.tryParse(
-                                    _totalAmountController.text,
-                                  ) ??
-                                  0;
-                              if (amount > total) {
-                                return tr.exceedsTotal;
-                              }
-                              return null;
-                            },
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     AppDateField(
                       labelText: tr.dateRequired,
                       valueText: DateFormat(
@@ -274,6 +287,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 9),
+
+              _buildBillsSection(context, tr),
               const SizedBox(height: 9),
 
               _buildComposerSection(
@@ -376,7 +392,11 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${tr.totalParticipantShares}: ${CurrencyFormatter.format(_calculateTotalShares())}',
+                                    tr.yourCalculatedShare(
+                                      CurrencyFormatter.format(
+                                        _calculateCurrentUserShare(),
+                                      ),
+                                    ),
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Theme.of(
@@ -387,7 +407,12 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    tr.yourShareWillBeRemaining,
+                                    tr.yourCalculatedShareHelp(
+                                      CurrencyFormatter.format(_totalAmount),
+                                      CurrencyFormatter.format(
+                                        _calculateTotalShares(),
+                                      ),
+                                    ),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: Theme.of(
@@ -478,6 +503,232 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         const SizedBox(height: 5),
         child,
       ],
+    );
+  }
+
+  Widget _buildBillsSection(BuildContext context, AppLocalizations tr) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return _buildComposerSection(
+      context,
+      icon: Icons.receipt_long_rounded,
+      title: tr.splitBills,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr.splitBillsHelp,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: () => _showBillSheet(),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text(tr.addBill),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: const Size(0, 32),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          if (_bills.isEmpty)
+            AppDialogNotice(
+              color: AppTheme.warningColor,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    size: 20,
+                    color: AppTheme.warningColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr.noBillsAdded,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tr.addAtLeastOneBill,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: _bills.length > 4 ? 260 : double.infinity,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: _bills.length > 4
+                    ? const BouncingScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
+                itemCount: _bills.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 5),
+                itemBuilder: (context, index) =>
+                    _buildBillTile(_bills[index], index),
+              ),
+            ),
+            const SizedBox(height: 7),
+            _buildBillTotalSummary(context, tr),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBillTile(BillData bill, int index) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final payerName = bill.paidByUser
+        ? tr.you
+        : (bill.paidByContact?.name ?? tr.unknown);
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _showBillSheet(bill: bill, index: index),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(9, 8, 6, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppTheme.splitColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(
+                  Icons.receipt_outlined,
+                  size: 16,
+                  color: AppTheme.splitColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bill.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '${tr.paidBy}: $payerName',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                CurrencyFormatter.format(bill.amount),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 18),
+                color: colorScheme.error,
+                style: IconButton.styleFrom(
+                  padding: const EdgeInsets.all(4),
+                  minimumSize: const Size(30, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _bills.removeAt(index);
+                    _syncParticipantPaymentsFromBills();
+                    if (_splitEqually) _calculateShares();
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBillTotalSummary(BuildContext context, AppLocalizations tr) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppDialogNotice(
+      color: AppTheme.splitColor,
+      child: Row(
+        children: [
+          Icon(Icons.summarize_outlined, size: 18, color: AppTheme.splitColor),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              tr.billsTotal,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Text(
+            CurrencyFormatter.format(_totalAmount),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -613,6 +864,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               children: [
                 AppListAvatar(
                   label: participant.contact.name,
+                  avatar: participant.contact.avatar,
                   indicatorIcon: Icons.group_rounded,
                   indicatorColor: colorScheme.secondary,
                   size: 34,
@@ -661,7 +913,15 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                         _settlementRouteMode = AppConstants.splitRouteOptimized;
                         _settlementMediatorContactId = null;
                       }
+                      for (final bill in _bills) {
+                        if (!bill.paidByUser &&
+                            bill.paidByContact?.id == participant.contact.id) {
+                          bill.paidByUser = true;
+                          bill.paidByContact = null;
+                        }
+                      }
                       _participants.removeAt(index);
+                      _syncParticipantPaymentsFromBills();
                       if (!_canUseSettlementRoute) {
                         _settlementRouteMode = AppConstants.splitRouteOptimized;
                         _settlementMediatorContactId = null;
@@ -715,21 +975,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _buildParticipantAmountField(
-                    key: ValueKey('paid-${participant.contact.id}'),
+                  child: _buildReadonlyAmountTile(
                     labelText: tr.paidDuringBill,
-                    initialValue: participant.expensePaid,
-                    validator: (value) {
-                      final amount = double.tryParse(value ?? '') ?? 0;
-                      if (amount < 0) return tr.invalid;
-                      return null;
-                    },
-                    onChanged: (amount) {
-                      setState(() {
-                        _participants[index].expensePaid = amount;
-                      });
-                    },
-                    isDark: isDark,
+                    value: participant.expensePaid,
                   ),
                 ),
               ],
@@ -1247,15 +1495,14 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
   }
 
   double _calculateEqualShare() {
-    if (_totalAmountController.text.isEmpty || _participants.isEmpty) {
+    if (_totalAmount <= 0 || _participants.isEmpty) {
       return 0;
     }
 
-    final totalAmount = double.tryParse(_totalAmountController.text) ?? 0;
     // Include user + participants
     final totalPeople = _participants.length + 1;
 
-    return totalAmount / totalPeople;
+    return _totalAmount / totalPeople;
   }
 
   void _calculateShares() {
@@ -1269,9 +1516,20 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
     return _participants.fold(0, (sum, p) => sum + p.shareAmount);
   }
 
-  double get _totalAmount => double.tryParse(_totalAmountController.text) ?? 0;
+  double _calculateCurrentUserShare() {
+    return _totalAmount - _calculateTotalShares();
+  }
 
-  double get _paidByUser => double.tryParse(_paidByUserController.text) ?? 0;
+  double get _totalAmount {
+    return _bills.fold<double>(0, (sum, bill) => sum + bill.amount);
+  }
+
+  double get _paidByUser {
+    return _bills.fold<double>(
+      0,
+      (sum, bill) => bill.paidByUser ? sum + bill.amount : sum,
+    );
+  }
 
   bool get _canUseSettlementRoute => _participants.length >= 2;
 
@@ -1280,6 +1538,44 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       0,
       (sum, participant) => sum + participant.expensePaid,
     );
+  }
+
+  void _syncParticipantPaymentsFromBills() {
+    for (final participant in _participants) {
+      participant.expensePaid = _bills.fold<double>(0, (sum, bill) {
+        if (bill.paidByUser) return sum;
+        if (bill.paidByContact?.id != participant.contact.id) return sum;
+        return sum + bill.amount;
+      });
+    }
+  }
+
+  Future<void> _showBillSheet({BillData? bill, int? index}) async {
+    final splitTitle = _titleController.text.trim();
+    final result = await showModalBottomSheet<BillData>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _SplitBillSheet(
+        bill: bill,
+        isEditing: index != null,
+        splitTitle: splitTitle,
+        participants: _participants,
+        selectedDate: _selectedDate,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    setState(() {
+      if (index == null) {
+        _bills.add(result);
+      } else {
+        _bills[index] = result;
+      }
+      _syncParticipantPaymentsFromBills();
+      if (_splitEqually) _calculateShares();
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -1473,6 +1769,11 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         return;
       }
 
+      if (_bills.isEmpty) {
+        showFailureSnackbar(context, tr.pleaseAddAtLeastOneBill);
+        return;
+      }
+
       final totalAmount = _totalAmount;
       final paidByUser = _paidByUser;
       final totalPaidByParticipants = _totalPaidByParticipants;
@@ -1481,7 +1782,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       if (totalPaidForExpense > totalAmount + 0.01) {
         showFailureSnackbar(
           context,
-          'Paid total exceeds total amount by ${CurrencyFormatter.format(totalPaidForExpense - totalAmount)}',
+          tr.paidTotalExceedsBills(
+            CurrencyFormatter.format(totalPaidForExpense - totalAmount),
+          ),
         );
         return;
       }
@@ -1489,7 +1792,9 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
       if ((totalPaidForExpense - totalAmount).abs() > 0.01) {
         showFailureSnackbar(
           context,
-          '${CurrencyFormatter.format(totalAmount - totalPaidForExpense)} still needs to be assigned as paid',
+          tr.billAmountStillUnassigned(
+            CurrencyFormatter.format(totalAmount - totalPaidForExpense),
+          ),
         );
         return;
       }
@@ -1540,17 +1845,275 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         );
       }).toList();
 
+      final bills = _bills.map((bill) {
+        return SplitBillModel(
+          id: bill.id,
+          splitId: widget.split?.id ?? 0,
+          title: bill.title,
+          amount: bill.amount,
+          paidByUser: bill.paidByUser,
+          paidByContactId: bill.paidByUser ? null : bill.paidByContact?.id,
+          date: _selectedDate,
+          note: bill.note,
+        );
+      }).toList();
+
       final splitCubit = context.read<SplitCubit>();
       if (widget.split == null) {
-        await splitCubit.createSplit(split, participants);
+        await splitCubit.createSplit(split, participants, bills);
       } else {
-        await splitCubit.updateSplit(split, participants);
+        await splitCubit.updateSplit(split, participants, bills);
       }
 
       if (mounted) {
         Navigator.pop(context, true);
       }
     }
+  }
+}
+
+class _SplitBillSheet extends StatefulWidget {
+  final BillData? bill;
+  final bool isEditing;
+  final String splitTitle;
+  final List<ParticipantData> participants;
+  final DateTime selectedDate;
+
+  const _SplitBillSheet({
+    required this.bill,
+    required this.isEditing,
+    required this.splitTitle,
+    required this.participants,
+    required this.selectedDate,
+  });
+
+  @override
+  State<_SplitBillSheet> createState() => _SplitBillSheetState();
+}
+
+class _SplitBillSheetState extends State<_SplitBillSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
+  late bool _paidByUser;
+  ContactModel? _paidByContact;
+
+  @override
+  void initState() {
+    super.initState();
+    final bill = widget.bill;
+    _titleController = TextEditingController(
+      text: bill?.title ?? widget.splitTitle,
+    );
+    _amountController = TextEditingController(
+      text: bill == null ? '' : bill.amount.toStringAsFixed(2),
+    );
+    _paidByUser = bill?.paidByUser ?? true;
+    _paidByContact = bill?.paidByContact;
+
+    final participantIds = widget.participants
+        .map((participant) => participant.contact.id)
+        .whereType<int>()
+        .toSet();
+    if (!_paidByUser &&
+        (_paidByContact?.id == null ||
+            !participantIds.contains(_paidByContact!.id))) {
+      _paidByUser = true;
+      _paidByContact = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 14,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 20,
+                  color: AppTheme.splitColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.isEditing ? tr.editBill : tr.addBill,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            CustomTextField(
+              controller: _titleController,
+              labelText: tr.billNameRequired,
+              hintText: tr.billNameHint,
+              prefixIcon: Icons.title_rounded,
+              isDense: true,
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return tr.required;
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            AppAmountField(
+              controller: _amountController,
+              labelText: tr.billAmountRequired,
+              hintText: '0.00',
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return tr.required;
+                final amount = double.tryParse(value);
+                if (amount == null) return tr.invalid;
+                if (amount <= 0) return tr.mustBeGreaterThanZero;
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              tr.paidBy,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: [
+                _buildPayerChip(
+                  label: tr.you,
+                  selected: _paidByUser,
+                  onTap: () {
+                    setState(() {
+                      _paidByUser = true;
+                      _paidByContact = null;
+                    });
+                  },
+                ),
+                ...widget.participants.map((participant) {
+                  final contact = participant.contact;
+                  final selected =
+                      !_paidByUser &&
+                      _paidByContact?.id != null &&
+                      _paidByContact?.id == contact.id;
+                  return _buildPayerChip(
+                    label: contact.name,
+                    avatar: contact.avatar,
+                    selected: selected,
+                    onTap: () {
+                      setState(() {
+                        _paidByUser = false;
+                        _paidByContact = contact;
+                      });
+                    },
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(tr.cancel),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      if (!_formKey.currentState!.validate()) return;
+                      Navigator.pop(
+                        context,
+                        BillData(
+                          id: widget.bill?.id,
+                          title: _titleController.text.trim(),
+                          amount: double.tryParse(_amountController.text) ?? 0,
+                          paidByUser: _paidByUser,
+                          paidByContact: _paidByContact,
+                          date: widget.selectedDate,
+                          note: widget.bill?.note,
+                        ),
+                      );
+                    },
+                    child: Text(widget.isEditing ? tr.save : tr.add),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPayerChip({
+    required String label,
+    String? avatar,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ActionChip(
+      avatar: avatar != null && avatar.trim().isNotEmpty
+          ? AppListAvatar(label: label, avatar: avatar, size: 24)
+          : Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.person_outline_rounded,
+              size: 16,
+              color: selected ? Colors.white : AppTheme.splitColor,
+            ),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      onPressed: onTap,
+      backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.45,
+      ),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : colorScheme.onSurface,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+      side: BorderSide(
+        color: selected
+            ? AppTheme.splitColor
+            : colorScheme.outlineVariant.withValues(alpha: 0.7),
+      ),
+      color: WidgetStateProperty.resolveWith<Color?>(
+        (states) => selected ? AppTheme.splitColor : null,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
   }
 }
 
@@ -1566,5 +2129,25 @@ class ParticipantData {
     required this.shareAmount,
     this.expensePaid = 0,
     this.paidAmount = 0,
+  });
+}
+
+class BillData {
+  final int? id;
+  String title;
+  double amount;
+  bool paidByUser;
+  ContactModel? paidByContact;
+  DateTime date;
+  String? note;
+
+  BillData({
+    this.id,
+    required this.title,
+    required this.amount,
+    required this.paidByUser,
+    this.paidByContact,
+    required this.date,
+    this.note,
   });
 }

@@ -1,18 +1,23 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/contact_model.dart';
 import '../widgets/custom_text_field.dart';
+
+enum _AvatarAction { camera, gallery, remove }
 
 class ContactEditScreen extends StatefulWidget {
   final String name;
   final String phone;
   final String? email;
   final Uint8List? photo;
+  final String? avatar;
 
   const ContactEditScreen({
     super.key,
@@ -20,6 +25,7 @@ class ContactEditScreen extends StatefulWidget {
     required this.phone,
     this.email,
     this.photo,
+    this.avatar,
   });
 
   @override
@@ -32,6 +38,8 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
   Uint8List? _photo;
+  String? _avatar;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -40,6 +48,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
     _phoneController = TextEditingController(text: widget.phone);
     _emailController = TextEditingController(text: widget.email ?? '');
     _photo = widget.photo;
+    _avatar = widget.avatar;
   }
 
   @override
@@ -70,44 +79,50 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
               Center(
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 42,
-                      backgroundImage: _photo != null
-                          ? MemoryImage(_photo!)
-                          : null,
-                      backgroundColor: colorScheme.primary.withValues(
-                        alpha: isDark ? 0.18 : 0.1,
+                    GestureDetector(
+                      onTap: _showAvatarOptions,
+                      child: CircleAvatar(
+                        radius: 42,
+                        backgroundImage: _photo != null
+                            ? MemoryImage(_photo!)
+                            : null,
+                        backgroundColor: colorScheme.primary.withValues(
+                          alpha: isDark ? 0.18 : 0.1,
+                        ),
+                        child: _photo == null
+                            ? Text(
+                                _nameController.text.isNotEmpty
+                                    ? _nameController.text[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w800,
+                                  color: colorScheme.primary,
+                                ),
+                              )
+                            : null,
                       ),
-                      child: _photo == null
-                          ? Text(
-                              _nameController.text.isNotEmpty
-                                  ? _nameController.text[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                color: colorScheme.primary,
-                              ),
-                            )
-                          : null,
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.scaffoldBackgroundColor,
-                            width: 2,
+                      child: GestureDetector(
+                        onTap: _showAvatarOptions,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: theme.scaffoldBackgroundColor,
+                              width: 2,
+                            ),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.edit_rounded,
-                          color: Colors.white,
-                          size: 14,
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -228,7 +243,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _saveContact,
+                      onPressed: _isSaving ? null : _saveContact,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -254,12 +269,94 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
     );
   }
 
-  void _saveContact() {
+  Future<void> _showAvatarOptions() async {
+    final tr = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<_AvatarAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded),
+                title: Text(tr.takePhoto),
+                onTap: () => Navigator.pop(sheetContext, _AvatarAction.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded),
+                title: Text(tr.chooseFromGallery),
+                onTap: () => Navigator.pop(sheetContext, _AvatarAction.gallery),
+              ),
+              if (_photo != null || _avatar?.isNotEmpty == true)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(tr.removePhoto),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, _AvatarAction.remove),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (action == null) return;
+    if (action == _AvatarAction.remove) {
+      setState(() {
+        _photo = null;
+        _avatar = null;
+      });
+      return;
+    }
+
+    try {
+      final imageSource = action == _AvatarAction.camera
+          ? ImageSource.camera
+          : ImageSource.gallery;
+      final picked = await ImagePicker().pickImage(source: imageSource);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _photo = bytes;
+        _avatar = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        showFailureSnackbar(context, '${tr.failedToUpdatePhoto}: $e');
+      }
+    }
+  }
+
+  Future<void> _saveContact() async {
     if (_formKey.currentState!.validate()) {
-      // Convert photo to base64 if exists
-      String? avatarData;
+      final tr = AppLocalizations.of(context)!;
+      setState(() => _isSaving = true);
+
+      String? avatarData = _avatar;
       if (_photo != null) {
-        avatarData = base64Encode(_photo!);
+        try {
+          avatarData = await ContactAvatarService.instance.saveAvatarBytes(
+            _photo!,
+            oldAvatar: widget.avatar,
+            nameHint: _nameController.text.trim(),
+          );
+          if (avatarData == null) {
+            if (mounted) {
+              showWarningSnackbar(context, tr.photoCouldNotBeSaved);
+              setState(() => _isSaving = false);
+            }
+            return;
+          }
+        } catch (e) {
+          if (mounted) {
+            showWarningSnackbar(context, tr.photoCouldNotBeSaved);
+            setState(() => _isSaving = false);
+          }
+          return;
+        }
       }
 
       final contact = ContactModel(
@@ -271,7 +368,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
         avatar: avatarData,
       );
 
-      Navigator.pop(context, contact);
+      if (mounted) Navigator.pop(context, contact);
     }
   }
 }

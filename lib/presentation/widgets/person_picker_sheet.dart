@@ -1,10 +1,13 @@
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/data/models/contact_model.dart';
+import 'package:borrow_ledger/data/repositories/contact_repository.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/contact_picker_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app_dialog_components.dart';
+import 'app_list_avatar.dart';
 import 'custom_text_field.dart';
 import 'empty_state_widget.dart';
 import 'app_loading_state.dart';
@@ -356,13 +359,20 @@ class _PersonPickerSheetState extends State<PersonPickerSheet> {
       confirmNameMismatch: false,
     );
     if (!mounted) return;
+    final contactToReturn = _mergeAvatarIfMissing(
+      existingContact,
+      selectedContact,
+    );
+    if (existingContact != null &&
+        contactToReturn.id != null &&
+        contactToReturn.avatar != existingContact.avatar) {
+      await context.read<ContactRepository>().updateContact(contactToReturn);
+      if (!mounted) return;
+    }
 
     Navigator.pop(
       context,
-      PersonPickerResult(
-        contact: existingContact ?? selectedContact,
-        isManual: existingContact == null && selectedContact.id == null,
-      ),
+      PersonPickerResult(contact: contactToReturn, isManual: false),
     );
   }
 
@@ -438,6 +448,19 @@ class _PersonPickerSheetState extends State<PersonPickerSheet> {
 
     final shouldUseExisting = await _confirmUseExistingContact(existingContact);
     return shouldUseExisting ? existingContact : null;
+  }
+
+  ContactModel _mergeAvatarIfMissing(
+    ContactModel? existingContact,
+    ContactModel selectedContact,
+  ) {
+    if (existingContact == null) return selectedContact;
+    final hasExistingAvatar = existingContact.avatar?.trim().isNotEmpty == true;
+    final selectedAvatar = selectedContact.avatar?.trim();
+    if (hasExistingAvatar || selectedAvatar == null || selectedAvatar.isEmpty) {
+      return existingContact;
+    }
+    return existingContact.copyWith(avatar: selectedAvatar);
   }
 
   Future<bool> _confirmUseExistingContact(ContactModel existingContact) async {
@@ -579,17 +602,10 @@ class _PersonSheetContactTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                child: Text(
-                  contact.name.isEmpty ? '?' : contact.name[0].toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.primary,
-                  ),
-                ),
+              AppListAvatar(
+                label: contact.name,
+                avatar: contact.avatar,
+                size: 32,
               ),
               const SizedBox(width: 9),
               Expanded(

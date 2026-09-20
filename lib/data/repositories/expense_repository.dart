@@ -54,13 +54,22 @@ class ExpenseRepository {
   // Search expenses
   Future<List<ExpenseModel>> searchExpenses(
     String query, {
+    String? category,
     int? limit,
     int? offset,
   }) async {
+    final whereParts = <String>['(description LIKE ? OR category LIKE ?)'];
+    final args = <dynamic>['%${query.trim()}%', '%${query.trim()}%'];
+
+    if (category != null && category.trim().isNotEmpty) {
+      whereParts.add('category = ?');
+      args.add(category);
+    }
+
     final List<Map<String, dynamic>> maps = await _dbHelper.query(
       'expenses',
-      where: 'description LIKE ? OR category LIKE ?',
-      whereArgs: ['%${query.trim()}%', '%${query.trim()}%'],
+      where: whereParts.join(' AND '),
+      whereArgs: args,
       orderBy: _activityOrder,
       limit: limit,
       offset: offset,

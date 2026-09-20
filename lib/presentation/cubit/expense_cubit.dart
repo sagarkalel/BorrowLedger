@@ -100,8 +100,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
 
       final expenses = await _loadExpensesPage(0);
       final totalCount = await _getExpenseCount();
-      final hasMoreData =
-          expenses.length >= ExpensePaginationConstants.defaultPageSize;
+      final hasMoreData = expenses.length < totalCount;
       final summary = await _repository.getCategorySummary();
 
       await loadingDelay;
@@ -148,8 +147,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       }
 
       final allExpenses = [...state.expenses, ...newExpenses];
-      final hasMoreData =
-          newExpenses.length >= ExpensePaginationConstants.defaultPageSize;
+      final hasMoreData = allExpenses.length < state.totalCount;
 
       emit(
         state.copyWith(
@@ -177,6 +175,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     if (state.searchQuery != null && state.searchQuery!.isNotEmpty) {
       return await _repository.searchExpenses(
         state.searchQuery!,
+        category: state.filterCategory,
         limit: limit,
         offset: offset,
       );

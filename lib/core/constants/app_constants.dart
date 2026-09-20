@@ -6,7 +6,7 @@ class AppConstants {
 
   // Database
   static const String dbName = 'borrow_ledger.db';
-  static const int dbVersion = 12; // UPDATED: Added contact activity indexes
+  static const int dbVersion = 15; // UPDATED: Added contact settlement events
 
   // Storage Keys
   static const String themeKey = 'theme_mode';
@@ -29,6 +29,12 @@ class AppConstants {
   // Transaction Sources
   static const String sourceTypeSplit = 'split';
   static const String sourceTypeSharedSpend = 'shared_spend';
+  static const String sourceTypeContactSettlement = 'contact_settlement_direct';
+  static const String sourceTypeContactSettlementOffset =
+      'contact_settlement_offset';
+  static const String sourceTypeContactSettlementLegacy = 'contact_settlement';
+  static const String sourceTypeContactSettlementOffsetLegacy =
+      'contact_settlement_setoff';
 
   // Transaction Status
   static const String statusPending = 'pending';
@@ -72,4 +78,5 @@ class AppConstants {
   static const String exportFilePrefix = 'borrowledger_backup_';
   static const String csvExtension = '.csv';
   static const String jsonExtension = '.json';
+  static const String backupExtension = '.blbackup';
 }

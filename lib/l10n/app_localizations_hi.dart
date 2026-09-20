@@ -27,7 +27,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get edit => 'एडिट करें';
 
   @override
-  String get delete => 'डिलीट';
+  String get delete => 'हटाएं';
 
   @override
   String get cancel => 'रद्द करें';
@@ -57,7 +57,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get gotIt => 'समझ गया';
 
   @override
-  String get yes => 'हां';
+  String get yes => 'हाँ';
 
   @override
   String get no => 'नहीं';
@@ -69,7 +69,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get back => 'वापस';
 
   @override
-  String get next => 'अगला';
+  String get next => 'आगे';
 
   @override
   String get search => 'खोजें';
@@ -84,10 +84,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get share => 'शेयर करें';
 
   @override
-  String get export => 'एक्सपोर्ट करें';
+  String get export => 'एक्सपोर्ट';
 
   @override
-  String get import => 'इम्पोर्ट करें';
+  String get import => 'इम्पोर्ट';
 
   @override
   String get language => 'भाषा';
@@ -96,7 +96,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get suggestions => 'सुझाव';
 
   @override
-  String get tapToUse => 'उपयोग के लिए टैप करें';
+  String get tapToUse => 'इस्तेमाल के लिए टैप करें';
 
   @override
   String get unknown => 'अज्ञात';
@@ -108,13 +108,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youWillGet => 'आपको मिलेगा';
 
   @override
-  String get youWillGive => 'आपको देना है';
+  String get youWillGive => 'आप देंगे';
 
   @override
-  String get payable => 'देय';
+  String get toReceive => 'लेना है';
 
   @override
-  String get receivable => 'लेने वाला';
+  String get toPay => 'देना है';
+
+  @override
+  String get payable => 'देना बाकी';
+
+  @override
+  String get receivable => 'लेना बाकी';
 
   @override
   String get direction => 'दिशा';
@@ -123,10 +129,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youPaid => 'आपने दिया';
 
   @override
-  String get required => 'आवश्यक';
+  String get required => 'ज़रूरी';
 
   @override
-  String get invalid => 'अमान्य';
+  String get invalid => 'गलत';
 
   @override
   String get added => 'जोड़ा गया';
@@ -138,7 +144,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get na => 'लागू नहीं';
 
   @override
-  String get collectionProgress => 'पैसे एकत्र करने की प्रगति';
+  String get collectionProgress => 'वसूली की प्रगति';
 
   @override
   String get contactFallback => 'संपर्क';
@@ -156,19 +162,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get people => 'लोग';
 
   @override
-  String get borrowLend => 'उधार/लेनदेन';
+  String get borrowLend => 'लेना-देना';
 
   @override
-  String get splits => 'बांटना';
+  String get splits => 'स्प्लिट';
 
   @override
-  String get expenses => 'खर्चे';
+  String get expenses => 'खर्च';
 
   @override
   String get settings => 'सेटिंग्स';
 
   @override
-  String get moneyTracker => 'पैसा ट्रैकर';
+  String get moneyTracker => 'मनी ट्रैकर';
 
   @override
   String get comment_transactions => '========== Transactions ==========';
@@ -189,10 +195,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get deleteTransaction => 'लेन-देन हटाएं';
 
   @override
-  String get transactionDetails => 'लेन-देन विवरण';
+  String get transactionDetails => 'लेन-देन का विवरण';
 
   @override
-  String get transactionDeleted => 'लेन-देन हटाया गया';
+  String get transactionDeleted => 'लेन-देन हटा दिया गया';
 
   @override
   String get allTransactions => 'सभी लेन-देन';
@@ -213,7 +219,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get transactionDate => 'लेन-देन की तारीख';
 
   @override
-  String get transactionHistory => 'लेन-देन इतिहास';
+  String get transactionHistory => 'लेन-देन का इतिहास';
 
   @override
   String get comment_transaction_types =>
@@ -232,10 +238,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youGotMoney => 'आपको पैसे मिले';
 
   @override
-  String get youGaveOnUdhari => 'आपने उधारी दी';
+  String get youGaveOnUdhari => 'आपने उधार दिया';
 
   @override
-  String get youTookOnUdhari => 'आपने उधारी ली';
+  String get youTookOnUdhari => 'आपने उधार लिया';
 
   @override
   String get youTook => 'आपने लिया';
@@ -247,10 +253,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get borrow => 'लिया';
 
   @override
-  String get lending => 'दे रहे हैं';
+  String get lending => 'उधार दे रहे हैं';
 
   @override
-  String get borrowing => 'ले रहे हैं';
+  String get borrowing => 'उधार ले रहे हैं';
 
   @override
   String get youGaveMoneyDesc => 'आपने पैसे दिए';
@@ -259,10 +265,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youGotMoneyDesc => 'आपको पैसे मिले';
 
   @override
-  String get youGaveOnUdhariDesc => 'आपने उधारी दी';
+  String get youGaveOnUdhariDesc => 'आपने उधार दिया';
 
   @override
-  String get youTookOnUdhariDesc => 'आपने उधारी ली';
+  String get youTookOnUdhariDesc => 'आपने उधार लिया';
 
   @override
   String get theyOweYou => 'उन्हें आपको देना है';
@@ -271,16 +277,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youOweThem => 'आपको उन्हें देना है';
 
   @override
-  String get theyNeedToPayForItems => 'उन्हें सामान/सेवा का भुगतान करना है';
+  String get theyNeedToPayForItems => 'उन्हें सामान/सेवा के पैसे देने हैं';
 
   @override
-  String get youNeedToPayForItems => 'आपको सामान/सेवा का भुगतान करना है';
+  String get youNeedToPayForItems => 'आपको सामान/सेवा के पैसे देने हैं';
 
   @override
-  String get whoNeedsToPayYou => 'किसे आपको देना है';
+  String get whoNeedsToPayYou => 'किसे आपको पैसे देने हैं';
 
   @override
-  String get moneyTransaction => 'पैसे का लेन-देन';
+  String get moneyTransaction => 'पैसों का लेन-देन';
 
   @override
   String get moneyTransactionDescription => 'सीधे पैसे दिए या लिए';
@@ -290,10 +296,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'एक व्यक्ति के साथ सीधे पैसे दिए या लिए';
 
   @override
-  String get udhariItemCredit => 'उधारी / आइटम क्रेडिट';
+  String get udhariItemCredit => 'उधारी / सामान उधार';
 
   @override
-  String get udhariItemCreditDescription => 'आइटम या सेवा उधार पर खरीदी/बेची';
+  String get udhariItemCreditDescription => 'सामान या सेवा उधार पर खरीदी/बेची';
 
   @override
   String get sharedSpend => 'साझा खर्च';
@@ -303,45 +309,45 @@ class AppLocalizationsHi extends AppLocalizations {
       'आप दोनों में से किसी एक ने साथ के खर्च का भुगतान किया';
 
   @override
-  String get whoPaid => 'किसने भुगतान किया?';
+  String get whoPaid => 'किसने दिया?';
 
   @override
-  String get udhariDirection => 'उधारी दिशा';
+  String get udhariDirection => 'उधारी की दिशा';
 
   @override
-  String get moneyDirection => 'पैसे की दिशा';
+  String get moneyDirection => 'पैसों की दिशा';
 
   @override
-  String get iPaid => 'मैंने भुगतान किया';
+  String get iPaid => 'मैंने दिया';
 
   @override
-  String get iGaveItem => 'मैंने आइटम दिया';
+  String get iGaveItem => 'मैंने सामान दिया';
 
   @override
   String get iGave => 'मैंने दिया';
 
   @override
-  String get iTookItem => 'मैंने आइटम लिया';
+  String get iTookItem => 'मैंने सामान लिया';
 
   @override
   String get iGot => 'मुझे मिला';
 
   @override
-  String get youPaidLabel => 'आपने भुगतान किया';
+  String get youPaidLabel => 'आपने दिया';
 
   @override
   String personPaid(Object personName) {
-    return '$personName ने भुगतान किया';
+    return '$personName ने दिया';
   }
 
   @override
   String personPays(Object personName) {
-    return '$personName भुगतान करेगा';
+    return '$personName देंगे';
   }
 
   @override
   String paysPerson(Object personName) {
-    return '$personName को भुगतान';
+    return '$personName को देना';
   }
 
   @override
@@ -360,10 +366,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get udhariItemsServices => '📦 उधारी (सामान/सेवा)';
 
   @override
-  String get directCashLent => 'सीधे किसी को कैश दिया';
+  String get directCashLent => 'किसी को सीधे कैश उधार दिया';
 
   @override
-  String get directCashBorrowed => 'किसी से सीधे कैश लिया';
+  String get directCashBorrowed => 'किसी से सीधे कैश उधार लिया';
 
   @override
   String get soldItemsOnCredit => 'उधारी पर सामान/सेवा बेची';
@@ -402,10 +408,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get totalAmountRequired => 'कुल राशि *';
 
   @override
-  String get paidByUser => 'यूज़र द्वारा दिया गया';
+  String get paidByUser => 'यूज़र ने दिया';
 
   @override
-  String get paidByYou => 'आपके द्वारा दिया गया';
+  String get paidByYou => 'आपने दिया';
 
   @override
   String get youPaidRequired => 'आपने दिया *';
@@ -414,28 +420,28 @@ class AppLocalizationsHi extends AppLocalizations {
   String get shareAmount => 'हिस्से की राशि';
 
   @override
-  String get amountMustBeGreaterThanZero => 'राशि 0 से अधिक होनी चाहिए';
+  String get amountMustBeGreaterThanZero => 'राशि 0 से ज़्यादा होनी चाहिए';
 
   @override
-  String get mustBeGreaterThanZero => '0 से अधिक होना चाहिए';
+  String get mustBeGreaterThanZero => '0 से ज़्यादा होना चाहिए';
 
   @override
-  String get pleaseEnterAmount => 'कृपया राशि दर्ज करें';
+  String get pleaseEnterAmount => 'कृपया राशि डालें';
 
   @override
-  String get pleaseEnterValidAmount => 'कृपया सही राशि दर्ज करें';
+  String get pleaseEnterValidAmount => 'कृपया सही राशि डालें';
 
   @override
-  String get enterAmount => 'राशि दर्ज करें';
+  String get enterAmount => 'राशि डालें';
 
   @override
-  String get cannotBeNegative => 'नकारात्मक नहीं हो सकता';
+  String get cannotBeNegative => 'नेगेटिव नहीं हो सकता';
 
   @override
-  String get exceedsTotal => 'कुल से अधिक है';
+  String get exceedsTotal => 'कुल से ज़्यादा है';
 
   @override
-  String get amountCanNotExceed => 'राशि से अधिक नहीं हो सकती';
+  String get amountCanNotExceed => 'राशि इससे ज़्यादा नहीं हो सकती';
 
   @override
   String get netBalance => 'नेट बैलेंस';
@@ -444,13 +450,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get totalPending => 'कुल बाकी';
 
   @override
-  String get purposeRequired => 'उद्देश्य *';
+  String get purposeRequired => 'मकसद *';
 
   @override
   String get purposeHint => 'डिनर, पेट्रोल, शॉपिंग...';
 
   @override
-  String get pleaseEnterPurpose => 'कृपया उद्देश्य दर्ज करें';
+  String get pleaseEnterPurpose => 'कृपया मकसद डालें';
 
   @override
   String get totalBill => 'कुल बिल';
@@ -462,7 +468,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get totalBillAmountOptional => 'कुल बिल राशि (वैकल्पिक)';
 
   @override
-  String get enterFullBillAmount => 'पूरा बिल अमाउंट दर्ज करें';
+  String get enterFullBillAmount => 'पूरे बिल की राशि डालें';
 
   @override
   String get contactShareBecomesHalf => 'संपर्क का हिस्सा कुल का आधा हो जाएगा';
@@ -486,15 +492,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String amountPersonShouldPay(Object personName) {
-    return '$personName को देना चाहिए इतनी राशि';
+    return '$personName को जितनी राशि देनी है';
   }
 
   @override
-  String get amountYouShouldPay => 'आपको देनी चाहिए इतनी राशि';
+  String get amountYouShouldPay => 'आपको जितनी राशि देनी है';
 
   @override
   String get shareCannotExceedTotalBill =>
-      'हिस्सा कुल बिल से ज्यादा नहीं हो सकता';
+      'हिस्सा कुल बिल से ज़्यादा नहीं हो सकता';
 
   @override
   String get comment_contacts => '========== Contacts ==========';
@@ -527,24 +533,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selectContactRequired => 'संपर्क चुनें *';
 
   @override
-  String get pickFromContacts => 'संपर्कों से चुनें';
+  String get pickFromContacts => 'संपर्कों में से चुनें';
 
   @override
   String get createNewContact => 'नया संपर्क बनाएं';
 
   @override
   String get reviewAndEditContactDetails =>
-      'जोड़ने से पहले संपर्क विवरण देखें और एडिट करें';
+      'जोड़ने से पहले संपर्क का विवरण देखें और ज़रूरत हो तो एडिट करें';
 
   @override
-  String get contactDetails => 'संपर्क विवरण';
+  String get contactDetails => 'संपर्क का विवरण';
 
   @override
-  String get pleaseSelectContact => 'कृपया एक संपर्क चुनें';
+  String get pleaseSelectContact => 'कृपया कोई संपर्क चुनें';
 
   @override
   String get pleaseSelectContactFromPhone =>
-      'कृपया अपने फ़ोन से एक संपर्क चुनें';
+      'कृपया अपने फ़ोन से कोई संपर्क चुनें';
 
   @override
   String get noContactsFound => 'कोई संपर्क नहीं मिला';
@@ -553,62 +559,62 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noContactsYet => 'अभी तक कोई संपर्क नहीं';
 
   @override
-  String get noContactsAvailableInPhone =>
-      'आपके फ़ोन में कोई संपर्क उपलब्ध नहीं है';
+  String get noContactsAvailableInPhone => 'आपके फ़ोन में कोई संपर्क नहीं है';
 
   @override
   String get searchContacts => 'संपर्क खोजें...';
 
   @override
-  String get searchContactsByNameOrPhone => 'नाम या फ़ोन से संपर्क खोजें...';
+  String get searchContactsByNameOrPhone =>
+      'नाम या फ़ोन नंबर से संपर्क खोजें...';
 
   @override
   String get searchTransactionsByNameOrPhone =>
-      'नाम या फ़ोन से लेन-देन खोजें...';
+      'नाम या फ़ोन नंबर से लेन-देन खोजें...';
 
   @override
   String get allContacts => 'सभी संपर्क';
 
   @override
-  String get noMatchingContacts => 'कोई मेल खाने वाला संपर्क नहीं';
+  String get noMatchingContacts => 'कोई मिलता-जुलता संपर्क नहीं';
 
   @override
-  String get noSettledContacts => 'कोई सेटल संपर्क नहीं';
+  String get noSettledContacts => 'कोई चुकता संपर्क नहीं';
 
   @override
   String get noPendingContacts => 'कोई बाकी संपर्क नहीं';
 
   @override
   String get noContactsWithZeroBalance =>
-      'शून्य बैलेंस वाला कोई संपर्क नहीं मिला';
+      'ज़ीरो बैलेंस वाला कोई संपर्क नहीं मिला';
 
   @override
   String get noContactsWithPendingBalance =>
       'बाकी बैलेंस वाला कोई संपर्क नहीं मिला';
 
   @override
-  String get contactMustHavePhoneNumber => 'संपर्क का फ़ोन नंबर होना चाहिए';
+  String get contactMustHavePhoneNumber => 'संपर्क का फ़ोन नंबर होना ज़रूरी है';
 
   @override
-  String get thisContactIsAlreadyAdded => 'यह संपर्क पहले से जोड़ा हुआ है';
+  String get thisContactIsAlreadyAdded => 'यह संपर्क पहले से जुड़ा हुआ है';
 
   @override
-  String get phoneAlreadySavedTitle => 'फोन पहले से सेव है';
+  String get phoneAlreadySavedTitle => 'फ़ोन नंबर पहले से सेव है';
 
   @override
   String phoneAlreadySavedMessage(Object contactName) {
-    return 'यह नंबर $contactName के नाम से पहले से सेव है। इस स्प्लिट के लिए वही संपर्क इस्तेमाल करें?';
+    return 'यह नंबर पहले से $contactName के नाम से सेव है। इस स्प्लिट के लिए वही संपर्क इस्तेमाल करें?';
   }
 
   @override
-  String get useExistingContact => 'मौजूदा इस्तेमाल करें';
+  String get useExistingContact => 'पुराना संपर्क इस्तेमाल करें';
 
   @override
   String get contactsAlreadyAddedMarked =>
-      'पहले से जोड़े गए संपर्क चेकमार्क से चिह्नित हैं';
+      'पहले से जोड़े गए संपर्कों पर सही (✓) का निशान है';
 
   @override
-  String get contactsPermissionRequired => 'संपर्क अनुमति आवश्यक है';
+  String get contactsPermissionRequired => 'संपर्क की अनुमति ज़रूरी है';
 
   @override
   String get checkingExistingContacts => 'मौजूदा संपर्क जांचे जा रहे हैं...';
@@ -626,7 +632,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get phoneNumber => 'फ़ोन नंबर';
 
   @override
-  String get phoneNumbersSmall => 'मोबाइल नंबर';
+  String get phoneNumbersSmall => 'फ़ोन नंबर';
 
   @override
   String get phoneNumberOptional => 'फ़ोन नंबर (वैकल्पिक)';
@@ -638,37 +644,37 @@ class AppLocalizationsHi extends AppLocalizations {
   String get emailOptional => 'ईमेल (वैकल्पिक)';
 
   @override
-  String get enterContactName => 'संपर्क का नाम दर्ज करें';
+  String get enterContactName => 'संपर्क का नाम डालें';
 
   @override
-  String get enterName => 'नाम दर्ज करें';
+  String get enterName => 'नाम डालें';
 
   @override
-  String get enterPhoneNumber => 'फ़ोन नंबर दर्ज करें';
+  String get enterPhoneNumber => 'फ़ोन नंबर डालें';
 
   @override
-  String get enterEmailAddress => 'ईमेल पता दर्ज करें';
+  String get enterEmailAddress => 'ईमेल पता डालें';
 
   @override
-  String get pleaseEnterName => 'कृपया नाम दर्ज करें';
+  String get pleaseEnterName => 'कृपया नाम डालें';
 
   @override
-  String get pleaseEnterContactName => 'कृपया संपर्क का नाम दर्ज करें';
+  String get pleaseEnterContactName => 'कृपया संपर्क का नाम डालें';
 
   @override
-  String get pleaseEnterPhoneNumber => 'कृपया फ़ोन नंबर दर्ज करें';
+  String get pleaseEnterPhoneNumber => 'कृपया फ़ोन नंबर डालें';
 
   @override
-  String get pleaseEnterValidEmail => 'कृपया सही ईमेल दर्ज करें';
+  String get pleaseEnterValidEmail => 'कृपया सही ईमेल डालें';
 
   @override
-  String get phoneContacts => 'फ़ोन संपर्क';
+  String get phoneContacts => 'फ़ोन के संपर्क';
 
   @override
-  String get manualEntry => 'मैनुअल एंट्री';
+  String get manualEntry => 'मैन्युअल एंट्री';
 
   @override
-  String get startTrackingYourMoneyWith => 'अपना पैसा ट्रैक करना शुरू करें';
+  String get startTrackingYourMoneyWith => 'अपने पैसों का हिसाब रखना शुरू करें';
 
   @override
   String get comment_dates => '========== Dates ==========';
@@ -689,7 +695,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get updatedAt => 'अपडेट किया गया';
 
   @override
-  String get expectedDate => 'अपेक्षित तारीख';
+  String get expectedDate => 'संभावित तारीख';
 
   @override
   String get expectedReturn => 'वापसी की उम्मीद';
@@ -701,7 +707,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selectDate => 'तारीख चुनें';
 
   @override
-  String get selectExpectedDate => 'अपेक्षित तारीख चुनें';
+  String get selectExpectedDate => 'संभावित तारीख चुनें';
 
   @override
   String get selectExpectedReturnDate => 'वापसी की तारीख चुनें';
@@ -728,10 +734,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get whatDidYouSpendOn => 'आपने किस पर खर्च किया?';
 
   @override
-  String get whatWasThisExpenseFor => 'यह खर्चा किस लिए था?';
+  String get whatWasThisExpenseFor => 'यह खर्च किस लिए था?';
 
   @override
-  String get addNotesOptional => 'नोट्स जोड़ें (वैकल्पिक)';
+  String get addNotesOptional => 'नोट जोड़ें (वैकल्पिक)';
 
   @override
   String get addNoteAboutTransaction => 'इस लेन-देन के बारे में नोट जोड़ें';
@@ -740,44 +746,44 @@ class AppLocalizationsHi extends AppLocalizations {
   String get addDetailsAboutItems => 'सामान या सेवा के बारे में जानकारी जोड़ें';
 
   @override
-  String get enterDescription => 'विवरण दर्ज करें';
+  String get enterDescription => 'विवरण डालें';
 
   @override
   String get comment_expenses => '========== Expenses ==========';
 
   @override
-  String get expense => 'खर्चा';
+  String get expense => 'खर्च';
 
   @override
-  String get addExpense => 'खर्चा जोड़ें';
+  String get addExpense => 'खर्च जोड़ें';
 
   @override
-  String get editExpense => 'खर्चा एडिट करें';
+  String get editExpense => 'खर्च एडिट करें';
 
   @override
-  String get deleteExpense => 'खर्चा हटाएं';
+  String get deleteExpense => 'खर्च हटाएं';
 
   @override
-  String get saveExpense => 'खर्चा सेव करें';
+  String get saveExpense => 'खर्च सेव करें';
 
   @override
-  String get updateExpense => 'खर्चा अपडेट करें';
+  String get updateExpense => 'खर्च अपडेट करें';
 
   @override
-  String get personalExpense => 'व्यक्तिगत खर्चा';
+  String get personalExpense => 'निजी खर्च';
 
   @override
-  String get trackYourSpending => 'अपने खर्चों को ट्रैक करें';
+  String get trackYourSpending => 'अपने खर्च ट्रैक करें';
 
   @override
-  String get expenseDeleted => 'खर्चा हटाया गया';
+  String get expenseDeleted => 'खर्च हटा दिया गया';
 
   @override
-  String get noExpensesYet => 'अभी तक कोई खर्चा नहीं';
+  String get noExpensesYet => 'अभी तक कोई खर्च नहीं';
 
   @override
   String get startTrackingExpenses =>
-      'अपने पैसों को बेहतर तरीके से प्रबंधित करने के लिए व्यक्तिगत खर्चों को ट्रैक करना शुरू करें';
+      'पैसों को बेहतर संभालने के लिए अपने निजी खर्च ट्रैक करना शुरू करें';
 
   @override
   String get comment_expense_categories =>
@@ -787,10 +793,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get category => 'कैटेगरी';
 
   @override
-  String get foodDining => 'खाना और भोजन';
+  String get foodDining => 'खाना-पीना';
 
   @override
-  String get transportation => 'परिवहन';
+  String get transportation => 'ट्रांसपोर्ट';
 
   @override
   String get shopping => 'शॉपिंग';
@@ -799,10 +805,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get entertainment => 'मनोरंजन';
 
   @override
-  String get billsUtilities => 'बिल और उपयोगिताएं';
+  String get billsUtilities => 'बिल और यूटिलिटी';
 
   @override
-  String get healthcare => 'स्वास्थ्य सेवा';
+  String get healthcare => 'स्वास्थ्य';
 
   @override
   String get education => 'शिक्षा';
@@ -818,138 +824,138 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get chooseRightCategory =>
-      'अपने खर्चों को बेहतर तरीके से ट्रैक करने के लिए सही कॅटेगरी चुनें!';
+      'अपने खर्च बेहतर ट्रैक करने के लिए सही कैटेगरी चुनें!';
 
   @override
   String get comment_splits => '========== Splits ==========';
 
   @override
-  String get split => 'बांटना';
+  String get split => 'स्प्लिट';
 
   @override
-  String get splitExpense => 'खर्चा बांटें';
+  String get splitExpense => 'खर्च बांटें';
 
   @override
-  String get splitExpenses => 'खर्चे बांटें';
+  String get splitExpenses => 'स्प्लिट खर्च';
 
   @override
-  String get addSplit => 'बांटना जोड़ें';
+  String get addSplit => 'स्प्लिट जोड़ें';
 
   @override
-  String get editSplit => 'बांटना एडिट करें';
+  String get editSplit => 'स्प्लिट एडिट करें';
 
   @override
-  String get editSplitExpense => 'बांटा गया खर्चा एडिट करें';
+  String get editSplitExpense => 'स्प्लिट खर्च एडिट करें';
 
   @override
-  String get deleteSplit => 'बांटना हटाएं';
+  String get deleteSplit => 'स्प्लिट हटाएं';
 
   @override
-  String get deleteSplitExpense => 'बांटा गया खर्चा हटाएं';
+  String get deleteSplitExpense => 'स्प्लिट खर्च हटाएं';
 
   @override
-  String get splitDetails => 'बांटने का विवरण';
+  String get splitDetails => 'स्प्लिट का विवरण';
 
   @override
-  String get splitDeleted => 'बांटना हटाया गया';
+  String get splitDeleted => 'स्प्लिट हटा दिया गया';
 
   @override
-  String get splitExpenseDeleted => 'बांटा गया खर्चा हटाया गया';
+  String get splitExpenseDeleted => 'स्प्लिट खर्च हटा दिया गया';
 
   @override
-  String get splitMarkedAsSettled => 'बांटा गया सेटल किया गया';
+  String get splitMarkedAsSettled => 'स्प्लिट चुकता मार्क किया गया';
 
   @override
-  String get splitNotFound => 'बांटना नहीं मिला';
+  String get splitNotFound => 'स्प्लिट नहीं मिला';
 
   @override
-  String get noSplitsYet => 'अभी तक कोई बांटना नहीं';
+  String get noSplitsYet => 'अभी तक कोई स्प्लिट नहीं';
 
   @override
-  String get noSplitExpensesYet => 'अभी तक कोई बांटा गया खर्चा नहीं';
+  String get noSplitExpensesYet => 'अभी तक कोई स्प्लिट खर्च नहीं';
 
   @override
-  String get noMoreSplits => 'अब और बांटना नहीं';
+  String get noMoreSplits => 'और स्प्लिट नहीं हैं';
 
   @override
-  String get noSplitsFound => 'कोई बांटना नहीं मिला';
+  String get noSplitsFound => 'कोई स्प्लिट नहीं मिला';
 
   @override
   String get startSplittingExpenses =>
-      'दोस्तों और परिवार के साथ खर्चे बांटना शुरू करें';
+      'दोस्तों और परिवार के साथ खर्च बांटना शुरू करें';
 
   @override
   String get startSplittingExpensesWithFriends =>
-      'दोस्तों के साथ खर्चे बांटना शुरू करें';
+      'दोस्तों के साथ खर्च बांटना शुरू करें';
 
   @override
-  String get shareCostsWithFriends => 'दोस्तों के साथ खर्चे बांटें';
+  String get shareCostsWithFriends => 'दोस्तों के साथ खर्च बांटें';
 
   @override
-  String get addParticipants => 'भागीदार जोड़ें';
+  String get addParticipants => 'सदस्य जोड़ें';
 
   @override
-  String get participants => 'भागीदार';
+  String get participants => 'सदस्य';
 
   @override
-  String get selectParticipants => 'भागीदार चुनें';
+  String get selectParticipants => 'सदस्य चुनें';
 
   @override
-  String get participantsMustBeSelected => 'कृपया कम से कम एक भागीदार चुनें';
+  String get participantsMustBeSelected => 'कृपया कम से कम एक सदस्य चुनें';
 
   @override
-  String get noParticipantsAdded => 'अभी तक कोई भागीदार नहीं जोड़ा गया';
+  String get noParticipantsAdded => 'अभी तक कोई सदस्य नहीं जोड़ा गया';
 
   @override
   String get addAtLeastOnePerson => 'बांटने के लिए कम से कम एक व्यक्ति जोड़ें';
 
   @override
-  String get totalParticipantShares => 'कुल हिस्सेदारों का हिस्सा';
+  String get totalParticipantShares => 'सभी सदस्यों के हिस्सों का कुल';
 
   @override
-  String get recentSplits => 'हाल के बांटे गए';
+  String get recentSplits => 'हाल के स्प्लिट';
 
   @override
-  String get searchSplits => 'बांटे गए खोजें...';
+  String get searchSplits => 'स्प्लिट खोजें...';
 
   @override
-  String get createSplit => 'बांटना बनाएं';
+  String get createSplit => 'स्प्लिट बनाएं';
 
   @override
-  String get updateSplit => 'बांटना अपडेट करें';
+  String get updateSplit => 'स्प्लिट अपडेट करें';
 
   @override
-  String get settleAnyway => 'फिर भी सेटल करें';
+  String get settleAnyway => 'फिर भी चुकता करें';
 
   @override
-  String get settleSplit => 'बांटा गया सेटल करें';
+  String get settleSplit => 'स्प्लिट चुकता करें';
 
   @override
-  String get reviewAndSettleSplit => 'देखें और स्प्लिट सेटल करें';
+  String get reviewAndSettleSplit => 'स्प्लिट देखें और चुकता करें';
 
   @override
-  String get notPaidYet => 'अभी तक भुगतान नहीं किया';
+  String get notPaidYet => 'अभी तक भुगतान नहीं हुआ';
 
   @override
-  String get pendingSettlements => 'बकाया सेटलमेंट';
+  String get pendingSettlements => 'बाकी हिसाब';
 
   @override
-  String get partiallySettled => 'आंशिक रूप से सेटल';
+  String get partiallySettled => 'आंशिक रूप से चुकता';
 
   @override
-  String get settledOrNoAction => 'सेटल / कोई कार्रवाई नहीं';
+  String get settledOrNoAction => 'चुकता / कुछ करना नहीं';
 
   @override
   String get reviewPendingSettlements =>
-      'इस स्प्लिट को बंद करने से पहले बकाया सेटलमेंट देखें।';
+      'इस स्प्लिट को बंद करने से पहले बाकी हिसाब देख लें।';
 
   @override
   String pendingSettlementsWillBeMarkedComplete(Object count) {
-    return '$count बकाया सेटलमेंट पूरे के रूप में चिन्हित होंगे।';
+    return '$count बाकी हिसाब पूरे मार्क कर दिए जाएंगे।';
   }
 
   @override
-  String get settlementsToClose => 'बंद किए जाने वाले सेटलमेंट';
+  String get settlementsToClose => 'बंद किए जाने वाले हिसाब';
 
   @override
   String get settlementRoute => 'हिसाब का रास्ता';
@@ -958,30 +964,29 @@ class AppLocalizationsHi extends AppLocalizations {
   String get optimizedRoute => 'ऑप्टिमाइज़्ड';
 
   @override
-  String get settleViaPerson => 'किसी व्यक्ति के जरिए';
+  String get settleViaPerson => 'किसी व्यक्ति के ज़रिए';
 
   @override
   String get routeThroughTrustedPerson =>
-      'भुगतान किसी भरोसेमंद व्यक्ति के जरिए कराएं।';
+      'भुगतान किसी भरोसेमंद व्यक्ति के ज़रिए करवाएं।';
 
   @override
   String get selectRoutePerson => 'रास्ते के लिए व्यक्ति चुनें';
 
   @override
   String get routePlanOnly =>
-      'यह सिर्फ सुझाया गया भुगतान रास्ता बदलता है। असल में भुगतान होने के बाद ही paid मार्क करें।';
+      'इससे सिर्फ़ सुझाया गया भुगतान का रास्ता बदलता है। लोगों को तभी \'चुकाया\' मार्क करें, जब उन्होंने असल में भुगतान कर दिया हो।';
 
   @override
-  String get settlementRouteCompleted =>
-      'सेटलमेंट इसी रास्ते से पूरा किया गया था।';
+  String get settlementRouteCompleted => 'हिसाब इसी रास्ते से पूरा किया गया।';
 
   @override
   String get settlingWillCloseThesePayments =>
-      'यह इन भुगतानों को बंद करेगा और बने हुए स्प्लिट लेजर एंट्री हटा देगा।';
+      'इससे ये भुगतान बंद हो जाएंगे और बनी हुई स्प्लिट लेजर एंट्री हट जाएंगी।';
 
   @override
   String get allSettlementsAlreadyComplete =>
-      'सभी सेटलमेंट पहले से पूरे हैं। इस स्प्लिट को सेटल चिन्हित करें?';
+      'सारे हिसाब पहले से पूरे हैं। क्या इस स्प्लिट को चुकता मार्क करें?';
 
   @override
   String get yourShare => 'आपका हिस्सा';
@@ -993,34 +998,34 @@ class AppLocalizationsHi extends AppLocalizations {
   String get addMore => 'और जोड़ें';
 
   @override
-  String get markReceived => 'प्राप्त हुआ चिन्हित करें';
+  String get markReceived => 'मिला हुआ मार्क करें';
 
   @override
-  String get markAsReceived => 'प्राप्त हुआ चिन्हित करें';
+  String get markAsReceived => 'मिला हुआ मार्क करें';
 
   @override
-  String get markPaid => 'भुगतान चिन्हित करें';
+  String get markPaid => 'दिया हुआ मार्क करें';
 
   @override
-  String get markAsPaid => 'भुगतान के रूप में चिन्हित करें';
+  String get markAsPaid => 'दिया हुआ मार्क करें';
 
   @override
-  String get alreadyPaid => 'पहले ही भुगतान हो चुका';
+  String get alreadyPaid => 'पहले ही चुका दिया';
 
   @override
-  String get amountPaid => 'भुगतान की रकम';
+  String get amountPaid => 'दी गई राशि';
 
   @override
-  String get paidDuringBill => 'बिल के समय भुगतान किया';
+  String get paidDuringBill => 'बिल के समय दिया';
 
   @override
   String get remaining => 'बाकी';
 
   @override
-  String get fullAmount => 'पूरी रकम';
+  String get fullAmount => 'पूरी राशि';
 
   @override
-  String get amountReceived => 'मिली हुई रकम';
+  String get amountReceived => 'मिली हुई राशि';
 
   @override
   String get markPartial => 'आंशिक';
@@ -1029,11 +1034,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get markFull => 'पूरा';
 
   @override
-  String get pendingPayments => 'बकाया भुगतान';
+  String get pendingPayments => 'बाकी भुगतान';
 
   @override
   String settledAmountLeft(Object settledAmount, Object leftAmount) {
-    return '$settledAmount सेटल • $leftAmount बाकी';
+    return '$settledAmount चुकता • $leftAmount बाकी';
   }
 
   @override
@@ -1042,46 +1047,46 @@ class AppLocalizationsHi extends AppLocalizations {
     Object counterpartyName,
     Object amount,
   ) {
-    return '$personName, $counterpartyName को $amount देने हैं';
+    return '$personName को $counterpartyName के $amount देने हैं';
   }
 
   @override
   String owesCounterparty(Object counterpartyName, Object amount) {
-    return '$counterpartyName को $amount देने हैं';
+    return '$counterpartyName के $amount देने हैं';
   }
 
   @override
   String youOwePerson(Object personName, Object amount) {
-    return 'आपको $personName को $amount देने हैं';
+    return 'आपको $personName के $amount देने हैं';
   }
 
   @override
   String get fullRemainingAmountWillBeMarkedAsReceived =>
-      'बाकी पूरी रकम प्राप्त के रूप में चिन्हित की जाएगी।';
+      'बाकी पूरी राशि \'मिली हुई\' मार्क की जाएगी।';
 
   @override
   String get onlyEnteredAmountWillBeMarkedAsReceived =>
-      'सिर्फ दर्ज की गई रकम ही प्राप्त के रूप में चिन्हित की जाएगी।';
+      'सिर्फ़ डाली गई राशि \'मिली हुई\' मार्क की जाएगी।';
 
   @override
   String get fullRemainingAmountWillBeMarkedAsPaid =>
-      'बाकी पूरी रकम भुगतान के रूप में चिन्हित की जाएगी।';
+      'बाकी पूरी राशि \'दी हुई\' मार्क की जाएगी।';
 
   @override
   String get onlyEnteredAmountWillBeMarkedAsPaid =>
-      'सिर्फ दर्ज की गई रकम ही भुगतान के रूप में चिन्हित की जाएगी।';
+      'सिर्फ़ डाली गई राशि \'दी हुई\' मार्क की जाएगी।';
 
   @override
   String get deleteSplitConfirmMessage =>
-      'क्या आप वाकई इस बांटे गए खर्चे को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।';
+      'क्या आप सच में यह स्प्लिट खर्च हटाना चाहते हैं? इसे वापस नहीं किया जा सकता।';
 
   @override
   String get doYouWantToMarkSettled =>
-      'क्या आप अभी भी इसे सेटल के रूप में चिह्नित करना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।';
+      'क्या फिर भी इसे चुकता मार्क करना है? इसे वापस नहीं किया जा सकता।';
 
   @override
   String get allParticipantHasPaidTheirShareMarkAsSetteled =>
-      'सभी प्रतिभागियों ने अपना हिस्सा चुका दिया है। इस विभाजन को सेटल्ड के रूप में चिन्हित करें?\n\nयह कार्रवाई वापस नहीं की जा सकती।';
+      'सभी सदस्यों ने अपना हिस्सा दे दिया है। क्या इस स्प्लिट को चुकता मार्क करें?\n\nइसे वापस नहीं किया जा सकता।';
 
   @override
   String get amountYouPaidCannotExceedTotalAmount =>
@@ -1097,16 +1102,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get titleRequired => 'शीर्षक *';
 
   @override
-  String get splitTitle => 'बांटने का शीर्षक';
+  String get splitTitle => 'स्प्लिट का शीर्षक';
 
   @override
-  String get enterSplitTitle => 'बांटने का शीर्षक दर्ज करें';
+  String get enterSplitTitle => 'स्प्लिट का शीर्षक डालें';
 
   @override
-  String get egDinnerAtRestaurant => 'जैसे, रेस्तरां में डिनर';
+  String get egDinnerAtRestaurant => 'जैसे, रेस्टोरेंट में डिनर';
 
   @override
-  String get pleaseEnterTitle => 'कृपया शीर्षक दर्ज करें';
+  String get pleaseEnterTitle => 'कृपया शीर्षक डालें';
 
   @override
   String get totalCost => 'कुल लागत';
@@ -1115,10 +1120,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get howMuchDidYouPay => 'आपने कितना दिया?';
 
   @override
-  String get enterTotalAmount => 'कुल राशि दर्ज करें';
+  String get enterTotalAmount => 'कुल राशि डालें';
 
   @override
-  String get enterYourShare => 'अपना हिस्सा दर्ज करें';
+  String get enterYourShare => 'अपना हिस्सा डालें';
 
   @override
   String get splitEqually => 'बराबर बांटें';
@@ -1130,7 +1135,63 @@ class AppLocalizationsHi extends AppLocalizations {
   String get splitMethod => 'बांटने का तरीका';
 
   @override
-  String get divideAmountEvenlyAmongAll => 'सभी के बीच राशि समान रूप से बांटें';
+  String get divideAmountEvenlyAmongAll => 'राशि सभी में बराबर बांटें';
+
+  @override
+  String get splitBills => 'इस स्प्लिट के बिल';
+
+  @override
+  String get splitBillsHelp => 'इस स्प्लिट में शामिल एक या ज़्यादा बिल जोड़ें';
+
+  @override
+  String get addBill => 'बिल जोड़ें';
+
+  @override
+  String get editBill => 'बिल एडिट करें';
+
+  @override
+  String get billName => 'बिल का नाम';
+
+  @override
+  String get billNameRequired => 'बिल का नाम *';
+
+  @override
+  String get billNameHint => 'होटल, डिनर, पेट्रोल...';
+
+  @override
+  String get billAmount => 'बिल की राशि';
+
+  @override
+  String get billAmountRequired => 'बिल की राशि *';
+
+  @override
+  String get paidBy => 'किसने दिया';
+
+  @override
+  String get paidByMe => 'मैंने दिया';
+
+  @override
+  String get noBillsAdded => 'कोई बिल नहीं जोड़ा गया';
+
+  @override
+  String get addAtLeastOneBill =>
+      'इस स्प्लिट के लिए कम से कम एक बिल या खर्च जोड़ें';
+
+  @override
+  String get pleaseAddAtLeastOneBill => 'कृपया कम से कम एक बिल जोड़ें';
+
+  @override
+  String get billsTotal => 'बिलों का कुल';
+
+  @override
+  String paidTotalExceedsBills(Object amount) {
+    return 'दी गई कुल राशि बिलों के कुल से $amount ज़्यादा है';
+  }
+
+  @override
+  String billAmountStillUnassigned(Object amount) {
+    return '$amount किसने दिया, यह अभी तय करना बाकी है';
+  }
 
   @override
   String get yourShareWillBeRemaining => 'आपका हिस्सा बची हुई राशि होगी';
@@ -1145,22 +1206,22 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pending => 'बाकी';
 
   @override
-  String get paid => 'दिए';
+  String get paid => 'चुकाया';
 
   @override
   String get partial => 'आंशिक';
 
   @override
-  String get settled => 'सेटल किया गया';
+  String get settled => 'चुकता';
 
   @override
-  String get overdue => 'देय तिथि बीत गई';
+  String get overdue => 'तारीख बीत चुकी';
 
   @override
-  String get paymentOverdue => 'यह भुगतान देय तिथि बीत चुकी है';
+  String get paymentOverdue => 'इस भुगतान की तय तारीख बीत चुकी है';
 
   @override
-  String get synced => 'सिंक किया गया';
+  String get synced => 'सिंक हो गया';
 
   @override
   String get comment_statistics => '========== Statistics ==========';
@@ -1169,16 +1230,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get statistics => 'आंकड़े';
 
   @override
-  String get yourDataOverview => 'आपके डेटा का अवलोकन';
+  String get yourDataOverview => 'आपके डेटा की झलक';
 
   @override
   String get totalTransactions => 'कुल लेन-देन';
 
   @override
-  String get totalExpenses => 'कुल खर्चे';
+  String get totalExpenses => 'कुल खर्च';
 
   @override
-  String get totalSplits => 'कुल बांटे गए';
+  String get totalSplits => 'कुल स्प्लिट';
 
   @override
   String get youOwe => 'आपको देना है';
@@ -1187,26 +1248,29 @@ class AppLocalizationsHi extends AppLocalizations {
   String get oweYou => 'आपको मिलना है';
 
   @override
+  String get owesYou => 'आपको मिलना है';
+
+  @override
   String get totalOwed => 'कुल बाकी';
 
   @override
-  String get totalPaid => 'कुल दिया गया';
+  String get totalPaid => 'कुल चुकाया';
 
   @override
-  String get topCategory => 'सबसे ऊपर की कैटेगरी';
+  String get topCategory => 'सबसे ज़्यादा खर्च वाली कैटेगरी';
 
   @override
   String get categories => 'कैटेगरी';
 
   @override
-  String get overview => 'ओवरव्यू';
+  String get overview => 'एक नज़र में';
 
   @override
   String get allExpenses => 'सभी खर्च';
 
   @override
   String get addYourFirstExpenseToSeeInsights =>
-      'इनसाइट्स,\nचार्ट और खर्च का विश्लेषण देखने के लिए\nअपना पहला खर्च जोड़ें';
+      'खर्च की जानकारी,\nचार्ट और विश्लेषण देखने के लिए\nअपना पहला खर्च जोड़ें';
 
   @override
   String get spendingByCategory => 'कैटेगरी के अनुसार खर्च';
@@ -1221,7 +1285,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get searchExpenses => 'खर्च खोजें';
 
   @override
-  String get noMatchingExpenses => 'कोई मेल खाने वाला खर्च नहीं';
+  String get noMatchingExpenses => 'कोई मिलता-जुलता खर्च नहीं';
 
   @override
   String get addFirstExpenseToStartTracking =>
@@ -1249,17 +1313,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quantityOptional => 'मात्रा (वैकल्पिक)';
 
   @override
-  String get enterItemName => 'सामान का नाम दर्ज करें';
+  String get enterItemName => 'सामान का नाम डालें';
 
   @override
-  String get enterQuantity => 'मात्रा दर्ज करें';
+  String get enterQuantity => 'मात्रा डालें';
 
   @override
-  String get pleaseEnterItemOrServiceName =>
-      'कृपया सामान या सेवा का नाम दर्ज करें';
+  String get pleaseEnterItemOrServiceName => 'कृपया सामान या सेवा का नाम डालें';
 
   @override
-  String get egMilkMedicalGroceries => 'जैसे, दूध, मेडिकल उपचार, किराना';
+  String get egMilkMedicalGroceries => 'जैसे, दूध, दवाई-इलाज, किराना';
 
   @override
   String get egQuantityExamples => 'जैसे, 2 लीटर, 1 सेशन, 5 किलो';
@@ -1277,25 +1340,25 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settlement => 'हिसाब';
 
   @override
-  String get settleUp => 'हिसाब बराबर करें';
+  String get settleUp => 'हिसाब चुकता करें';
 
   @override
-  String get markAsSettled => 'सेटल के रूप में चिह्नित करें';
+  String get markAsSettled => 'चुकता मार्क करें';
 
   @override
   String get settleAmount => 'हिसाब की राशि';
 
   @override
-  String get settleBalance => 'बैलेंस सेटल करें';
+  String get settleBalance => 'बैलेंस चुकता करें';
 
   @override
-  String get settlementTransaction => 'हिसाब सेटल करने का लेन-देन';
+  String get settlementTransaction => 'हिसाब चुकता करने का लेन-देन';
 
   @override
-  String get balanceSettledSuccessfully => 'बाकी सफलतापूर्वक सेटल हो गया';
+  String get balanceSettledSuccessfully => 'बाकी राशि चुकता हो गई';
 
   @override
-  String get clearThisBalance => 'इस बाकी को क्लियर करें';
+  String get clearThisBalance => 'इस बैलेंस को क्लियर करें';
 
   @override
   String get fullSettlement => 'पूरा हिसाब';
@@ -1307,82 +1370,197 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settlementAmount => 'हिसाब की राशि';
 
   @override
-  String get enterSettlementAmount => 'हिसाब की राशि दर्ज करें';
+  String get enterSettlementAmount => 'हिसाब की राशि डालें';
 
   @override
-  String get currentBalance => 'वर्तमान बैलेंस';
+  String get currentBalance => 'मौजूदा बैलेंस';
 
   @override
-  String get setToFullBalance => 'पूरे बैलेंस पर सेट करें';
+  String settleWithContact(Object contactName) {
+    return '$contactName के साथ हिसाब चुकता करें';
+  }
 
   @override
-  String get settlePartial => 'आंशिक सेटल करें';
+  String settlementWithContact(Object contactName) {
+    return '$contactName के साथ हिसाब';
+  }
 
   @override
-  String get settleFull => 'पूरा सेटल करें';
+  String get directBalance => 'सीधा बैलेंस';
+
+  @override
+  String get splitBalance => 'स्प्लिट बैलेंस';
+
+  @override
+  String get netSettlement => 'नेट हिसाब';
+
+  @override
+  String netSettlementAmount(Object amount) {
+    return 'नेट हिसाब: $amount';
+  }
+
+  @override
+  String get offsettingBalances => 'बैलेंस आपस में मिल गए';
+
+  @override
+  String get noCashPaymentNeeded => 'कोई पैसा नहीं दिया गया';
+
+  @override
+  String get noCashNeededOffset =>
+      'कोई पैसा देने की ज़रूरत नहीं है। आपका सीधा और स्प्लिट बैलेंस क्लियर हो जाएगा और लेन-देन का इतिहास दिखता रहेगा।';
+
+  @override
+  String get clearOffsettingBalances => 'बैलेंस क्लियर करें';
+
+  @override
+  String contactPaysYou(Object contactName, Object amount) {
+    return '$contactName आपको $amount देंगे।';
+  }
+
+  @override
+  String youPayContact(Object contactName, Object amount) {
+    return 'आप $contactName को $amount देंगे।';
+  }
+
+  @override
+  String get contactSettlementKeepsHistory =>
+      'इससे संपर्क का बाकी बैलेंस क्लियर हो जाएगा। आपका लेन-देन का इतिहास दिखता रहेगा।';
+
+  @override
+  String remainingAfterSettlement(Object amount) {
+    return 'हिसाब के बाद बाकी: $amount';
+  }
+
+  @override
+  String get directBalanceSettlement => 'सीधा बैलेंस क्लियर';
+
+  @override
+  String get directAndSplitBalanceOffset => 'आपस में मिलाकर क्लियर';
+
+  @override
+  String get internalBalanceAdjustment =>
+      'बैलेंस आपस में मिलाकर क्लियर किया गया';
+
+  @override
+  String get contactSettlementPayment => 'संपर्क के साथ हिसाब';
+
+  @override
+  String get contactSettlementOffset => 'बैलेंस आपस में मिलाकर क्लियर';
+
+  @override
+  String get clearedBreakdown => 'क्लियर की गई राशि';
+
+  @override
+  String matchedAmount(Object amount) {
+    return 'मिलाई गई राशि: $amount';
+  }
+
+  @override
+  String get matchedBalanceExplanation =>
+      'यह राशि आपके देने और सामने वाले के देने वाले बैलेंस को आपस में मिलाकर क्लियर की गई है।';
+
+  @override
+  String get balancesClearedTogetherNote =>
+      'नोट: सीधा और स्प्लिट बैलेंस साथ में क्लियर हुए, इसलिए सिर्फ़ नेट राशि दी गई।';
+
+  @override
+  String get balancesCancelledNoPaymentNote =>
+      'नोट: दोनों बैलेंस एक-दूसरे से क्लियर हो गए, इसलिए कोई भुगतान नहीं करना पड़ा।';
+
+  @override
+  String get balancesClearedTogetherReportNote =>
+      'नोट: सीधा और स्प्लिट बैलेंस साथ में क्लियर हुए।';
+
+  @override
+  String get cashBorrowBalance => 'कैश / उधार बैलेंस';
+
+  @override
+  String get settleCashBorrowBalance => 'कैश/उधार बैलेंस चुकता करें';
+
+  @override
+  String excludingSplitBalances(Object amount) {
+    return 'स्प्लिट बैलेंस $amount छोड़कर';
+  }
+
+  @override
+  String splitBalanceAmount(Object amount) {
+    return 'स्प्लिट बैलेंस: $amount';
+  }
+
+  @override
+  String get settleSplitsFromSplitDetails =>
+      'स्प्लिट का हिसाब स्प्लिट के विवरण से चुकता करें';
+
+  @override
+  String get setToFullBalance => 'पूरा बैलेंस डालें';
+
+  @override
+  String get settlePartial => 'आंशिक चुकता करें';
+
+  @override
+  String get settleFull => 'पूरा चुकता करें';
 
   @override
   String get partialSettlementInfoPositive =>
-      'दर्ज की गई राशि के लिए एक \"आपको मिला\" लेन-देन बनाया जाएगा, जो आपके बैलेंस को कम करेगा।';
+      'आपको जो राशि मिलनी है, उसकी हिसाब एंट्री जोड़ी जाएगी।';
 
   @override
   String get partialSettlementInfoNegative =>
-      'दर्ज की गई राशि के लिए एक \"आपने दिया\" लेन-देन बनाया जाएगा, जो आपके बैलेंस को कम करेगा।';
+      'आपको जो राशि देनी है, उसकी हिसाब एंट्री जोड़ी जाएगी।';
 
   @override
   String get fullSettlementInfoPositive =>
-      'पूरे बैलेंस को शून्य पर सेटल करने के लिए एक \"आपको मिला\" लेन-देन बनाया जाएगा।';
+      'आपको जो पूरी राशि मिलनी है, उसकी हिसाब एंट्री जोड़ी जाएगी।';
 
   @override
   String get fullSettlementInfoNegative =>
-      'पूरे बैलेंस को शून्य पर सेटल करने के लिए एक \"आपने दिया\" लेन-देन बनाया जाएगा।';
+      'आपको जो पूरी राशि देनी है, उसकी हिसाब एंट्री जोड़ी जाएगी।';
 
   @override
   String get comment_dialogs_delete => '========== Delete Dialogs ==========';
 
   @override
-  String get deleteExpenseTitle => 'खर्चा हटाएं?';
+  String get deleteExpenseTitle => 'खर्च हटाएं?';
 
   @override
-  String get deleteExpenseMessage =>
-      'क्या आप वाकई इस खर्चे को हटाना चाहते हैं?';
+  String get deleteExpenseMessage => 'क्या आप सच में यह खर्च हटाना चाहते हैं?';
 
   @override
   String get deleteTransactionTitle => 'लेन-देन हटाएं?';
 
   @override
   String get deleteTransactionMessage =>
-      'क्या आप वाकई इस लेन-देन को हटाना चाहते हैं?';
+      'क्या आप सच में यह लेन-देन हटाना चाहते हैं?';
 
   @override
-  String get deleteSplitTitle => 'बांटना हटाएं?';
+  String get deleteSplitTitle => 'स्प्लिट हटाएं?';
 
   @override
   String get deleteSplitMessage =>
-      'क्या आप वाकई इस बांटे गए खर्चे को हटाना चाहते हैं?';
+      'क्या आप सच में यह स्प्लिट खर्च हटाना चाहते हैं?';
 
   @override
-  String get actionCannotBeUndone => 'यह क्रिया पूर्ववत नहीं की जा सकती';
+  String get actionCannotBeUndone => 'इसे वापस नहीं किया जा सकता';
 
   @override
-  String get permanentlyDelete => 'स्थायी रूप से हटाएं:';
+  String get permanentlyDelete => 'हमेशा के लिए हटाएं:';
 
   @override
   String get thisActionCannotBeUndone =>
-      'यह क्रिया पूर्ववत नहीं की जा सकती। खर्च आपके रिकॉर्ड से स्थायी रूप से हटा दिया जाएगा।';
+      'इसे वापस नहीं किया जा सकता। यह खर्च आपके रिकॉर्ड से हमेशा के लिए हट जाएगा।';
 
   @override
   String get comment_dialogs_clear_data =>
       '========== Clear Data Dialog ==========';
 
   @override
-  String get clearAllData => 'सभी डेटा साफ करें';
+  String get clearAllData => 'सारा डेटा मिटाएं';
 
   @override
-  String get clearAllDataTitle => 'सभी डेटा साफ करें?';
+  String get clearAllDataTitle => 'सारा डेटा मिटाएं?';
 
   @override
-  String get clearAllDataMessage => 'यह सब कुछ स्थायी रूप से हटा देगा';
+  String get clearAllDataMessage => 'इससे सब कुछ हमेशा के लिए हट जाएगा';
 
   @override
   String get deleteEverything => 'सब कुछ हटाएं';
@@ -1391,33 +1569,32 @@ class AppLocalizationsHi extends AppLocalizations {
   String get deletingData => 'डेटा हटाया जा रहा है...';
 
   @override
-  String get allDataCleared => 'सभी डेटा साफ कर दिया गया है';
+  String get allDataCleared => 'सारा डेटा मिटा दिया गया है';
 
   @override
-  String get currentDataWillBeDeleted =>
-      'वर्तमान डेटा स्थायी रूप से हटा दिया जाएगा:';
+  String get currentDataWillBeDeleted => 'मौजूदा डेटा हमेशा के लिए हट जाएगा:';
 
   @override
-  String get allDataHasBeenCleared => 'सभी डेटा साफ कर दिया गया है';
+  String get allDataHasBeenCleared => 'सारा डेटा मिटा दिया गया है';
 
   @override
-  String get thisWillPermanentlyDelete => 'यह स्थायी रूप से हटाएगा:';
+  String get thisWillPermanentlyDelete => 'यह हमेशा के लिए हटा देगा:';
 
   @override
   String get allTransactionsItem => 'सभी लेन-देन';
 
   @override
-  String get allExpensesItem => 'सभी खर्चे';
+  String get allExpensesItem => 'सभी खर्च';
 
   @override
-  String get allSplitExpensesItem => 'सभी बांटे गए खर्चे';
+  String get allSplitExpensesItem => 'सभी स्प्लिट खर्च';
 
   @override
-  String get allContactReferencesItem => 'सभी संपर्क संदर्भ';
+  String get allContactReferencesItem => 'सभी संपर्कों की जानकारी';
 
   @override
   String get considerExportingDataFirst =>
-      'पहले अपने डेटा को एक्सपोर्ट करने पर विचार करें। यह क्रिया पूर्ववत नहीं की जा सकती!';
+      'पहले अपना डेटा एक्सपोर्ट कर लें। इसे वापस नहीं किया जा सकता!';
 
   @override
   String get comment_dialogs_export => '========== Export Dialog ==========';
@@ -1429,38 +1606,38 @@ class AppLocalizationsHi extends AppLocalizations {
   String get exportDataTitle => 'डेटा एक्सपोर्ट करें';
 
   @override
-  String get exportDataMessage => 'अपने सभी डेटा वाली बैकअप फाइल बनाएं';
+  String get exportDataMessage => 'अपने सारे डेटा वाली बैकअप फ़ाइल बनाएं';
 
   @override
-  String get whatWillBeExported => 'क्या एक्सपोर्ट किया जाएगा:';
+  String get whatWillBeExported => 'क्या-क्या एक्सपोर्ट होगा:';
 
   @override
   String get allTransactionsLendBorrow => 'सभी लेन-देन (दिया/लिया)';
 
   @override
-  String get allPersonalExpenses => 'सभी व्यक्तिगत खर्चे';
+  String get allPersonalExpenses => 'सभी निजी खर्च';
 
   @override
-  String get allSplitExpenses => 'सभी बांटे गए खर्चे';
+  String get allSplitExpenses => 'सभी स्प्लिट खर्च';
 
   @override
-  String get contactReferences => 'संपर्क संदर्भ';
+  String get contactReferences => 'संपर्कों की जानकारी और फोटो';
 
   @override
   String get canShareBackupFile =>
-      'आप बैकअप फाइल शेयर कर सकते हैं या बाद में इम्पोर्ट के लिए सेव कर सकते हैं';
+      'आप बैकअप फ़ाइल शेयर कर सकते हैं या बाद में इम्पोर्ट करने के लिए सेव कर सकते हैं';
 
   @override
-  String get preparingExport => 'एक्सपोर्ट तैयार किया जा रहा है...';
+  String get preparingExport => 'एक्सपोर्ट तैयार हो रहा है...';
 
   @override
-  String get exportSuccessful => 'एक्सपोर्ट सफल!';
+  String get exportSuccessful => 'एक्सपोर्ट हो गया!';
 
   @override
-  String get savedInBackupsFolder => 'बैकअप फोल्डर में सेव किया गया';
+  String get savedInBackupsFolder => 'बैकअप फ़ोल्डर में सेव हुआ';
 
   @override
-  String get exportFailed => 'एक्सपोर्ट विफल';
+  String get exportFailed => 'एक्सपोर्ट नहीं हो सका';
 
   @override
   String get comment_dialogs_import => '========== Import Dialog ==========';
@@ -1472,49 +1649,50 @@ class AppLocalizationsHi extends AppLocalizations {
   String get importDataTitle => 'डेटा इम्पोर्ट करें';
 
   @override
-  String get importDataMessage => 'बैकअप फाइल से डेटा पुनर्स्थापित करें';
+  String get importDataMessage => 'बैकअप फ़ाइल से डेटा वापस लाएं';
 
   @override
   String get thisWillReplaceAllData =>
-      '⚠️ चेतावनी: यह आपके सभी वर्तमान डेटा को बदल देगा!';
+      '⚠️ चेतावनी: इससे आपका मौजूदा सारा डेटा बदल जाएगा!';
 
   @override
   String get makeSureHaveBackup =>
-      'आगे बढ़ने से पहले सुनिश्चित करें कि आपके पास बैकअप है!';
+      'आगे बढ़ने से पहले पक्का कर लें कि आपके पास बैकअप है!';
 
   @override
   String get importingData => 'डेटा इम्पोर्ट हो रहा है...';
 
   @override
-  String get importSuccessful => 'इम्पोर्ट सफल!';
+  String get importSuccessful => 'इम्पोर्ट हो गया!';
 
   @override
-  String get successfullyImported => 'सफलतापूर्वक इम्पोर्ट किया गया:';
+  String get successfullyImported => 'सफलतापूर्वक इम्पोर्ट हुआ:';
 
   @override
-  String get restartRecommended => 'बेहतर अनुभव के लिए रीस्टार्ट सुझाया गया';
+  String get restartRecommended =>
+      'बेहतर अनुभव के लिए ऐप रीस्टार्ट करना ठीक रहेगा';
 
   @override
-  String get restartRecommendedMessage => 'रीस्टार्ट सुझाया गया';
+  String get restartRecommendedMessage => 'रीस्टार्ट करना ठीक रहेगा';
 
   @override
-  String get importFailed => 'इम्पोर्ट विफल';
+  String get importFailed => 'इम्पोर्ट नहीं हो सका';
 
   @override
-  String get thisWillReplaceAllDataWarning => 'यह सभी डेटा को बदल देगा!';
+  String get thisWillReplaceAllDataWarning => 'इससे सारा डेटा बदल जाएगा!';
 
   @override
   String get currentDataWillBePermanentlyDeleted =>
-      'वर्तमान डेटा स्थायी रूप से हटा दिया जाएगा:';
+      'मौजूदा डेटा हमेशा के लिए हट जाएगा:';
 
   @override
   String get allTransactionsDeleted => 'सभी लेन-देन';
 
   @override
-  String get allExpensesDeleted => 'सभी खर्चे';
+  String get allExpensesDeleted => 'सभी खर्च';
 
   @override
-  String get allSplitsDeleted => 'सभी बांटे गए';
+  String get allSplitsDeleted => 'सभी स्प्लिट';
 
   @override
   String get comment_settings => '========== Settings ==========';
@@ -1529,7 +1707,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get information => 'जानकारी';
 
   @override
-  String get dangerZone => 'खतरे का क्षेत्र';
+  String get dangerZone => 'डेंजर ज़ोन';
 
   @override
   String get comment_theme => '========== Theme ==========';
@@ -1547,13 +1725,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get systemDefault => 'सिस्टम डिफ़ॉल्ट';
 
   @override
-  String get brightAndClean => 'उज्ज्वल और साफ';
+  String get brightAndClean => 'चमकदार और साफ़';
 
   @override
-  String get easyOnEyes => 'आंखों के लिए आसान';
+  String get easyOnEyes => 'आंखों को आराम देने वाला';
 
   @override
-  String get followDeviceSettings => 'डिवाइस सेटिंग्स का पालन करें';
+  String get followDeviceSettings => 'फ़ोन की सेटिंग के अनुसार';
 
   @override
   String get comment_backup => '========== Backup & Restore ==========';
@@ -1562,13 +1740,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get backup => 'बैकअप';
 
   @override
-  String get restore => 'रीस्टोर करें';
+  String get restore => 'रीस्टोर';
 
   @override
-  String get createBackup => 'सभी डेटा का बैकअप बनाएं';
+  String get createBackup => 'सारे डेटा का बैकअप बनाएं';
 
   @override
-  String get restoreFromBackup => 'बैकअप फाइल से रीस्टोर करें';
+  String get restoreFromBackup => 'बैकअप फ़ाइल से रीस्टोर करें';
 
   @override
   String get howItWorks => 'यह कैसे काम करता है';
@@ -1580,88 +1758,110 @@ class AppLocalizationsHi extends AppLocalizations {
   String get howBackupWorks => 'बैकअप कैसे काम करता है';
 
   @override
-  String get createsJsonFile => 'एक JSON फाइल बनाता है जिसमें शामिल है:';
+  String get createsJsonFile => 'एक बैकअप फ़ाइल बनाता है, जिसमें ये शामिल हैं:';
 
   @override
   String get fileSavedLocally =>
-      'फाइल स्थानीय रूप से सेव की गई है और शेयर की जा सकती है।';
+      'फ़ाइल आपके फ़ोन में सेव हुई है और शेयर की जा सकती है।';
 
   @override
-  String get restoresDataFromBackup => 'बैकअप से डेटा पुनर्स्थापित करता है:';
+  String get restoresDataFromBackup => 'बैकअप से डेटा वापस लाता है:';
 
   @override
-  String get replacesAllCurrentData => 'सभी वर्तमान डेटा को बदलता है';
+  String get replacesAllCurrentData => 'मौजूदा सारा डेटा बदल देता है';
 
   @override
   String get importsAllRecords => 'सभी रिकॉर्ड इम्पोर्ट करता है';
 
   @override
-  String get maintainsRelationships => 'संबंध बनाए रखता है';
+  String get maintainsRelationships => 'रिकॉर्ड के आपसी संबंध बनाए रखता है';
 
   @override
   String get alwaysExportBeforeImporting =>
       '⚠️ इम्पोर्ट करने से पहले हमेशा एक्सपोर्ट करें!';
 
   @override
-  String get bestPractices => 'सर्वोत्तम प्रथाएं';
+  String get bestPractices => 'बेहतर तरीके';
 
   @override
   String get exportRegularly =>
-      'नियमित रूप से एक्सपोर्ट करें (साप्ताहिक/मासिक)';
+      'नियमित रूप से एक्सपोर्ट करें (हफ़्ते/महीने में)';
 
   @override
-  String get storeInCloudStorage => 'बैकअप क्लाउड स्टोरेज में स्टोर करें';
+  String get storeInCloudStorage => 'बैकअप क्लाउड स्टोरेज में रखें';
 
   @override
   String get neverDeleteLastBackup => 'अपना आखिरी बैकअप कभी न हटाएं';
 
   @override
-  String get shareBackupsSecurely => 'बैकअप सुरक्षित रूप से शेयर करें';
+  String get shareBackupsSecurely => 'बैकअप सुरक्षित तरीके से शेयर करें';
 
   @override
   String get backupFilesInJson =>
-      'बैकअप फाइलें JSON फॉर्मेट में हैं और किसी भी टेक्स्ट एडिटर में देखी जा सकती हैं।';
+      'बैकअप फ़ाइलों में आपके रिकॉर्ड और सेव किए गए कॉन्टैक्ट फोटो शामिल होते हैं।';
+
+  @override
+  String get changePhoto => 'फोटो बदलें';
+
+  @override
+  String get takePhoto => 'फोटो लें';
+
+  @override
+  String get chooseFromGallery => 'गैलरी से चुनें';
+
+  @override
+  String get removePhoto => 'फोटो हटाएं';
+
+  @override
+  String get photoUpdated => 'फोटो अपडेट हो गया';
+
+  @override
+  String get failedToUpdatePhoto => 'फोटो अपडेट नहीं हो सका';
+
+  @override
+  String get photoCouldNotBeSaved =>
+      'फोटो सेव नहीं हो सका। संपर्क बिना फोटो के जोड़ा जाएगा।';
 
   @override
   String get comment_about => '========== About ==========';
 
   @override
-  String get version => 'संस्करण';
+  String get version => 'वर्ज़न';
 
   @override
   String get termsOfService => 'सेवा की शर्तें';
 
   @override
-  String get privacyPolicy => 'गोपनीयता नीति';
+  String get privacyPolicy => 'प्राइवेसी पॉलिसी';
 
   @override
   String get viewTermsAndConditions => 'नियम और शर्तें देखें';
 
   @override
-  String get yourDataStaysOnDevice => 'आपका डेटा डिवाइस पर रहता है';
+  String get yourDataStaysOnDevice => 'आपका डेटा आपके फ़ोन में ही रहता है';
 
   @override
   String get termsOfServiceContent =>
-      'यह एक व्यक्तिगत वित्त प्रबंधन ऐप है। इसका उपयोग जिम्मेदारी से और अपने जोखिम पर करें। सभी वित्तीय निर्णय आपकी जिम्मेदारी हैं।';
+      'यह निजी पैसों का हिसाब रखने वाला ऐप है। इसे ज़िम्मेदारी से और अपने जोखिम पर इस्तेमाल करें। सभी आर्थिक फ़ैसलों की ज़िम्मेदारी आपकी है।';
 
   @override
   String get privacyPolicyContent =>
-      'आपका सभी डेटा आपके डिवाइस पर स्थानीय रूप से संग्रहीत है। हम कोई व्यक्तिगत जानकारी एकत्र, संचारित या साझा नहीं करते हैं। आपकी गोपनीयता हमारी प्राथमिकता है।';
+      'आपका सारा डेटा सिर्फ़ आपके फ़ोन में सेव रहता है। हम आपकी कोई भी निजी जानकारी न इकट्ठा करते हैं, न भेजते हैं, न किसी से शेयर करते हैं। आपकी प्राइवेसी हमारे लिए सबसे ज़रूरी है।';
 
   @override
-  String get developedBy => 'विकसित: सागर कलेल';
+  String get developedBy => 'डेवलपर: सागर काळेल';
 
   @override
   String get comment_permissions => '========== Permissions ==========';
 
   @override
-  String get storagePermissionDenied => 'स्टोरेज अनुमति अस्वीकृत';
+  String get storagePermissionDenied => 'स्टोरेज की अनुमति नहीं दी गई';
 
   @override
-  String get contactsPermissionDenied => 'संपर्क अनुमति अस्वीकृत';
+  String get contactsPermissionDenied => 'संपर्क की अनुमति नहीं दी गई';
 
   @override
-  String get permissionRequired => 'अनुमति आवश्यक है';
+  String get permissionRequired => 'अनुमति ज़रूरी है';
 
   @override
   String get grantPermission => 'अनुमति दें';
@@ -1674,17 +1874,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get startTrackingBorrowLend =>
-      'संगठित रहने के लिए अपने उधार और लेनदेन को ट्रैक करना शुरू करें';
+      'व्यवस्थित रहने के लिए अपना उधार का लेना-देना ट्रैक करना शुरू करें';
 
   @override
   String get startTrackingYourMoney =>
-      'अपना पहला लेन-देन जोड़कर अपने पैसों को ट्रैक करना शुरू करें';
+      'अपना पहला लेन-देन जोड़कर पैसों का हिसाब रखना शुरू करें';
 
   @override
   String get noContactTransactions => 'कोई लेन-देन नहीं मिला';
 
   @override
-  String get noMatchingTransactions => 'कोई मेल खाने वाला लेन-देन नहीं';
+  String get noMatchingTransactions => 'कोई मिलता-जुलता लेन-देन नहीं';
 
   @override
   String get noCashTransactions => 'कोई कैश लेन-देन नहीं';
@@ -1693,11 +1893,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noUdhariTransactions => 'कोई उधारी लेन-देन नहीं';
 
   @override
-  String get noMatchingCashTransactions => 'कोई मेल खाने वाला कैश लेन-देन नहीं';
+  String get noMatchingCashTransactions => 'कोई मिलता-जुलता कैश लेन-देन नहीं';
 
   @override
   String get noMatchingUdhariTransactions =>
-      'कोई मेल खाने वाला उधारी लेन-देन नहीं';
+      'कोई मिलता-जुलता उधारी लेन-देन नहीं';
 
   @override
   String get addFirstTransaction => 'शुरू करने के लिए अपना पहला लेन-देन जोड़ें';
@@ -1709,25 +1909,25 @@ class AppLocalizationsHi extends AppLocalizations {
   String get addYourFirstUdhariTransaction => 'अपना पहला उधारी लेन-देन जोड़ें';
 
   @override
-  String get addFirstExpense => 'शुरू करने के लिए अपना पहला खर्चा जोड़ें';
+  String get addFirstExpense => 'शुरू करने के लिए अपना पहला खर्च जोड़ें';
 
   @override
-  String get addFirstSplit => 'शुरू करने के लिए अपना पहला बांटना जोड़ें';
+  String get addFirstSplit => 'शुरू करने के लिए अपना पहला स्प्लिट जोड़ें';
 
   @override
-  String get tryAdjustingFilters => 'अपने फिल्टर समायोजित करने का प्रयास करें';
+  String get tryAdjustingFilters => 'फ़िल्टर बदलकर देखें';
 
   @override
-  String get tryDifferentSearchTerm => 'एक अलग खोज शब्द का प्रयास करें';
+  String get tryDifferentSearchTerm => 'कोई दूसरा शब्द खोजकर देखें';
 
   @override
-  String get clearFilters => 'फिल्टर हटाएं';
+  String get clearFilters => 'फ़िल्टर हटाएं';
 
   @override
   String get comment_view_modes => '========== View Modes ==========';
 
   @override
-  String get viewMode => 'दृश्य मोड';
+  String get viewMode => 'देखने का तरीका';
 
   @override
   String get contactsView => 'संपर्क';
@@ -1745,39 +1945,39 @@ class AppLocalizationsHi extends AppLocalizations {
   String get comment_validation => '========== Validation Messages ==========';
 
   @override
-  String get fieldRequired => 'यह फ़ील्ड आवश्यक है';
+  String get fieldRequired => 'यह फ़ील्ड ज़रूरी है';
 
   @override
-  String get invalidEmail => 'अमान्य ईमेल पता';
+  String get invalidEmail => 'गलत ईमेल पता';
 
   @override
-  String get invalidPhone => 'अमान्य फ़ोन नंबर';
+  String get invalidPhone => 'गलत फ़ोन नंबर';
 
   @override
-  String get invalidAmount => 'अमान्य राशि';
+  String get invalidAmount => 'गलत राशि';
 
   @override
   String get amountTooLow => 'राशि बहुत कम है';
 
   @override
-  String get amountTooHigh => 'राशि बहुत अधिक है';
+  String get amountTooHigh => 'राशि बहुत ज़्यादा है';
 
   @override
   String get pleaseSelectDate => 'कृपया तारीख चुनें';
 
   @override
-  String get pleaseSelectCategory => 'कृपया कॅटेगरी चुनें';
+  String get pleaseSelectCategory => 'कृपया कैटेगरी चुनें';
 
   @override
-  String get pleaseAddAtLeastOneParticipant =>
-      'कृपया कम से कम एक भागीदार जोड़ें';
+  String get pleaseAddAtLeastOneParticipant => 'कृपया कम से कम एक सदस्य जोड़ें';
 
   @override
   String get amountPaidCannotExceedTotal =>
-      'आपने जो दिया वह कुल राशि से अधिक नहीं हो सकता';
+      'आपने जो राशि दी है, वह कुल राशि से ज़्यादा नहीं हो सकती';
 
   @override
-  String get totalSharesExceedTotal => 'कुल हिस्से कुल राशि से अधिक हैं';
+  String get totalSharesExceedTotal =>
+      'सभी हिस्सों का जोड़ कुल राशि से ज़्यादा है';
 
   @override
   String get comment_actions => '========== Actions ==========';
@@ -1804,7 +2004,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get comment_tips => '========== Tips & Hints ==========';
 
   @override
-  String get tip => 'सुझाव';
+  String get tip => 'टिप';
 
   @override
   String get hint => 'संकेत';
@@ -1822,13 +2022,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selectContactFirst => 'कृपया पहले संपर्क चुनें';
 
   @override
-  String get fillAllRequiredFields => 'कृपया सभी आवश्यक फ़ील्ड भरें';
+  String get fillAllRequiredFields => 'कृपया सभी ज़रूरी जानकारी भरें';
 
   @override
-  String get dataWillBeLost => 'आपका डेटा खो जाएगा';
+  String get dataWillBeLost => 'आपका डेटा मिट जाएगा';
 
   @override
-  String get cannotBeUndone => 'यह पूर्ववत नहीं किया जा सकता';
+  String get cannotBeUndone => 'इसे वापस नहीं किया जा सकता';
 
   @override
   String get comment_currencies => '========== Currency ==========';
@@ -1858,10 +2058,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get yesterday => 'कल';
 
   @override
-  String get thisWeek => 'इस सप्ताह';
+  String get thisWeek => 'इस हफ़्ते';
 
   @override
-  String get lastWeek => 'पिछला सप्ताह';
+  String get lastWeek => 'पिछला हफ़्ता';
 
   @override
   String get thisMonth => 'इस महीने';
@@ -1870,10 +2070,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get lastMonth => 'पिछला महीना';
 
   @override
-  String get thisYear => 'इस वर्ष';
+  String get thisYear => 'इस साल';
 
   @override
-  String get allTime => 'सभी समय';
+  String get allTime => 'पूरा समय';
 
   @override
   String get custom => 'कस्टम';
@@ -1882,68 +2082,68 @@ class AppLocalizationsHi extends AppLocalizations {
   String get comment_actions_menu => '========== Transaction Menu ==========';
 
   @override
-  String get selectTransactionType => 'लेन-देन प्रकार चुनें';
+  String get selectTransactionType => 'लेन-देन का प्रकार चुनें';
 
   @override
   String get whatWouldYouLikeToDo => 'आप क्या करना चाहेंगे?';
 
   @override
-  String get chooseTransactionType => 'लेन-देन प्रकार चुनें';
+  String get chooseTransactionType => 'लेन-देन का प्रकार चुनें';
 
   @override
   String get comment_error_messages => '========== Error Messages ==========';
 
   @override
-  String get error => 'त्रुटि';
+  String get error => 'गड़बड़ी';
 
   @override
-  String get somethingWentWrong => 'कुछ गलत हो गया';
+  String get somethingWentWrong => 'कुछ गड़बड़ हो गई';
 
   @override
-  String get tryAgain => 'फिर प्रयास करें';
+  String get tryAgain => 'दोबारा कोशिश करें';
 
   @override
-  String get failedToLoad => 'लोड करने में विफल';
+  String get failedToLoad => 'लोड नहीं हो सका';
 
   @override
-  String get failedToSave => 'सेव करने में विफल';
+  String get failedToSave => 'सेव नहीं हो सका';
 
   @override
-  String get failedToDelete => 'हटाने में विफल';
+  String get failedToDelete => 'हटाया नहीं जा सका';
 
   @override
-  String get failedToUpdate => 'अपडेट करने में विफल';
+  String get failedToUpdate => 'अपडेट नहीं हो सका';
 
   @override
-  String get noInternetConnection => 'कोई इंटरनेट कनेक्शन नहीं';
+  String get noInternetConnection => 'इंटरनेट कनेक्शन नहीं है';
 
   @override
-  String get timeoutError => 'अनुरोध समय समाप्त';
+  String get timeoutError => 'अनुरोध का समय खत्म हो गया';
 
   @override
-  String get shareFailed => 'शेयर विफल';
+  String get shareFailed => 'शेयर नहीं हो सका';
 
   @override
   String get comment_success_messages =>
       '========== Success Messages ==========';
 
   @override
-  String get success => 'सफलता';
+  String get success => 'सफल';
 
   @override
-  String get savedSuccessfully => 'सफलतापूर्वक सेव किया गया';
+  String get savedSuccessfully => 'सफलतापूर्वक सेव हो गया';
 
   @override
-  String get deletedSuccessfully => 'सफलतापूर्वक हटाया गया';
+  String get deletedSuccessfully => 'सफलतापूर्वक हटा दिया गया';
 
   @override
-  String get updatedSuccessfully => 'सफलतापूर्वक अपडेट किया गया';
+  String get updatedSuccessfully => 'सफलतापूर्वक अपडेट हो गया';
 
   @override
-  String get exportedSuccessfully => 'सफलतापूर्वक एक्सपोर्ट किया गया';
+  String get exportedSuccessfully => 'सफलतापूर्वक एक्सपोर्ट हो गया';
 
   @override
-  String get importedSuccessfully => 'सफलतापूर्वक इम्पोर्ट किया गया';
+  String get importedSuccessfully => 'सफलतापूर्वक इम्पोर्ट हो गया';
 
   @override
   String get comment_badges => '========== Badges ==========';
@@ -1961,16 +2161,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get udhariBadge => 'उधारी';
 
   @override
-  String get settledBadge => 'सेटल';
+  String get settledBadge => 'चुकता';
 
   @override
   String get pendingBadge => 'बाकी';
 
   @override
-  String get paidBadge => 'दिए';
+  String get paidBadge => 'चुकाया';
 
   @override
-  String get noActionBadge => 'कोई कार्रवाई नहीं';
+  String get noActionBadge => 'कुछ करना नहीं';
 
   @override
   String get comment_misc => '========== Miscellaneous ==========';
@@ -1988,37 +2188,37 @@ class AppLocalizationsHi extends AppLocalizations {
   String get searching => 'खोज रहे हैं...';
 
   @override
-  String get noResults => 'कोई परिणाम नहीं मिला';
+  String get noResults => 'कोई नतीजा नहीं मिला';
 
   @override
-  String get tryDifferentSearch => 'एक अलग खोज का प्रयास करें';
+  String get tryDifferentSearch => 'कुछ और खोजकर देखें';
 
   @override
-  String get refresh => 'रीफ्रेश करें';
+  String get refresh => 'रीफ़्रेश करें';
 
   @override
-  String get reload => 'रीलोड करें';
+  String get reload => 'दोबारा लोड करें';
 
   @override
-  String get more => 'अधिक';
+  String get more => 'ज़्यादा';
 
   @override
   String get less => 'कम';
 
   @override
-  String get showMore => 'अधिक दिखाएं';
+  String get showMore => 'ज़्यादा दिखाएं';
 
   @override
   String get showLess => 'कम दिखाएं';
 
   @override
-  String get allCaughtUp => 'सब पूरा';
+  String get allCaughtUp => 'सब अप-टू-डेट है';
 
   @override
-  String get noMoreData => 'और डेटा नहीं';
+  String get noMoreData => 'और डेटा नहीं है';
 
   @override
-  String get noMoreRecords => 'और रिकॉर्ड नहीं';
+  String get noMoreRecords => 'और रिकॉर्ड नहीं हैं';
 
   @override
   String get viewAll => 'सभी देखें';
@@ -2027,10 +2227,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get seeAll => 'सभी देखें';
 
   @override
-  String get collapse => 'संकुचित करें';
+  String get collapse => 'छोटा करें';
 
   @override
-  String get expand => 'विस्तृत करें';
+  String get expand => 'बड़ा करें';
 
   @override
   String get details => 'विवरण';
@@ -2042,7 +2242,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get total => 'कुल';
 
   @override
-  String get subtotal => 'उपयोग';
+  String get subtotal => 'सबटोटल';
 
   @override
   String get ofText => 'का';
@@ -2072,7 +2272,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get trans => 'लेन-देन';
 
   @override
-  String get exp => 'खर्चे';
+  String get exp => 'खर्च';
 
   @override
   String get all => 'सभी';
@@ -2084,30 +2284,30 @@ class AppLocalizationsHi extends AppLocalizations {
   String get peopleSmall => 'लोग';
 
   @override
-  String get yourProfile => 'आपकी प्रोफाइल';
+  String get yourProfile => 'आपकी प्रोफ़ाइल';
 
   @override
   String get setYourName => 'अपना नाम सेट करें';
 
   @override
   String get nameUsedInSharedSplits =>
-      'शेयर किए गए बांटों और रिपोर्ट में उपयोग होगा';
+      'शेयर किए गए स्प्लिट और रिपोर्ट में इस्तेमाल होगा';
 
   @override
   String get helpFriendsRecognizeYou =>
-      'दोस्तों को समझने में मदद करें कि किसने भुगतान किया या किसे देना है';
+      'दोस्तों को पहचानने में मदद करें कि किसने दिया या किसे देना है';
 
   @override
   String get yourNameRequired => 'आपका नाम *';
 
   @override
-  String get pleaseEnterYourName => 'कृपया अपना नाम दर्ज करें';
+  String get pleaseEnterYourName => 'कृपया अपना नाम डालें';
 
   @override
-  String get profileSaved => 'प्रोफाइल सेव हो गई';
+  String get profileSaved => 'प्रोफ़ाइल सेव हो गई';
 
   @override
-  String get moreOptions => 'अधिक विकल्प';
+  String get moreOptions => 'और विकल्प';
 
   @override
   String get sharePdfStatement => 'PDF स्टेटमेंट शेयर करें';
@@ -2134,7 +2334,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get last1Year => 'पिछला 1 साल';
 
   @override
-  String get customRange => 'कस्टम रेंज';
+  String get customRange => 'कस्टम अवधि';
 
   @override
   String get borrowLedgerStatement => 'HisaabMate स्टेटमेंट';
@@ -2147,7 +2347,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String splitInvoiceFrom(Object ownerName, Object splitTitle) {
-    return '$ownerName की तरफ से स्प्लिट इनवॉइस: $splitTitle';
+    return '$ownerName की तरफ़ से स्प्लिट इनवॉइस: $splitTitle';
   }
 
   @override
@@ -2159,14 +2359,14 @@ class AppLocalizationsHi extends AppLocalizations {
   String get period => 'अवधि';
 
   @override
-  String get generatedBy => 'द्वारा बनाया गया';
+  String get generatedBy => 'बनाने वाला';
 
   @override
-  String get generatedOn => 'बनाया गया';
+  String get generatedOn => 'बनाने की तारीख';
 
   @override
   String ownerPaid(Object ownerName) {
-    return '$ownerName ने भुगतान किया';
+    return '$ownerName ने दिया';
   }
 
   @override
@@ -2186,7 +2386,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String ownerGives(Object ownerName) {
-    return '$ownerName देगा';
+    return '$ownerName देंगे';
+  }
+
+  @override
+  String ownerToReceive(Object ownerName) {
+    return '$ownerName को लेना है';
+  }
+
+  @override
+  String ownerToPay(Object ownerName) {
+    return '$ownerName को देना है';
   }
 
   @override
@@ -2200,39 +2410,62 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get routedThroughTrustedPerson =>
-      'भरोसेमंद व्यक्ति के जरिए रूट किया गया';
+  String get routedThroughTrustedPerson => 'भरोसेमंद व्यक्ति के ज़रिए';
 
   @override
-  String get optimizedRouteLabel => 'ऑप्टिमाइज्ड रूट';
+  String get optimizedRouteLabel => 'ऑप्टिमाइज़्ड रास्ता';
 
   @override
-  String get opening => 'शुरुआती';
+  String get opening => 'शुरुआती बैलेंस';
 
   @override
-  String get closing => 'अंतिम';
+  String get closing => 'अंतिम बैलेंस';
 
   @override
-  String get noTransactionsInDateRange =>
-      'इस तारीख रेंज में कोई लेन-देन नहीं मिला।';
+  String get noTransactionsInDateRange => 'इस अवधि में कोई लेन-देन नहीं मिला।';
 
   @override
   String get allCategories => 'सभी कैटेगरी';
 
   @override
-  String get gaveOnly => 'केवल दिया';
+  String get gaveOnly => 'सिर्फ़ दिया';
 
   @override
-  String get gotOnly => 'केवल मिला';
+  String get gotOnly => 'सिर्फ़ मिला';
 
   @override
   String get searchLabel => 'खोज';
 
   @override
+  String get sortTransactions => 'लेन-देन सॉर्ट करें';
+
+  @override
+  String get transactionDateNewest => 'लेन-देन की तारीख: नए पहले';
+
+  @override
+  String get transactionDateOldest => 'लेन-देन की तारीख: पुराने पहले';
+
+  @override
+  String get addedDateNewest => 'जोड़ने की तारीख: नए पहले';
+
+  @override
+  String get addedDateOldest => 'जोड़ने की तारीख: पुराने पहले';
+
+  @override
+  String yourCalculatedShare(Object amount) {
+    return 'आपका हिस्सा: $amount';
+  }
+
+  @override
+  String yourCalculatedShareHelp(Object total, Object assigned) {
+    return '$total कुल - $assigned दूसरों के नाम';
+  }
+
+  @override
   String get comment_language => '========== Language ==========';
 
   @override
-  String get languageChangedTo => 'भाषा बदली गई';
+  String get languageChangedTo => 'भाषा बदली गई:';
 
   @override
   String get english => 'English';
