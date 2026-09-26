@@ -8,20 +8,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app_dialog_components.dart';
 import 'custom_text_field.dart';
 
-Future<String?> ensureShareOwnerName(BuildContext context) async {
+Future<String?> ensureShareOwnerName(
+  BuildContext context, {
+  bool requirePhone = true,
+}) async {
   final repository = context.read<UserProfileRepository>();
   final profile = await repository.getProfile();
   final hasCompleteShareProfile =
       profile.hasName &&
-      (profile.phone?.trim().isNotEmpty ?? false) &&
-      FormInputUtils.isValidOptionalPhone(profile.phone);
+      (!requirePhone ||
+          ((profile.phone?.trim().isNotEmpty ?? false) &&
+              FormInputUtils.isValidOptionalPhone(profile.phone)));
   if (hasCompleteShareProfile) return profile.name.trim();
   if (!context.mounted) return null;
 
   final updatedProfile = await showDialog<UserProfileModel>(
     context: context,
-    builder: (_) =>
-        _ShareNameDialog(initialProfile: profile, repository: repository),
+    builder: (_) => _ShareNameDialog(
+      initialProfile: profile,
+      repository: repository,
+      requirePhone: requirePhone,
+    ),
   );
 
   return updatedProfile?.name.trim();
@@ -30,10 +37,12 @@ Future<String?> ensureShareOwnerName(BuildContext context) async {
 class _ShareNameDialog extends StatefulWidget {
   final UserProfileModel initialProfile;
   final UserProfileRepository repository;
+  final bool requirePhone;
 
   const _ShareNameDialog({
     required this.initialProfile,
     required this.repository,
+    this.requirePhone = true,
   });
 
   @override
@@ -73,7 +82,9 @@ class _ShareNameDialogState extends State<_ShareNameDialog> {
       title: tr.yourProfile,
       content: [
         Text(
-          tr.nameUsedInSharedSplits,
+          widget.requirePhone
+              ? tr.nameUsedInSharedSplits
+              : tr.nameUsedInSharedMessages,
           style: TextStyle(
             fontSize: 13,
             height: 1.35,
@@ -100,22 +111,24 @@ class _ShareNameDialogState extends State<_ShareNameDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 10),
-              CustomTextField(
-                controller: _phoneController,
-                labelText: '${tr.phoneNumber} *',
-                prefixIcon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                inputFormatters: FormInputUtils.phoneInputFormatters,
-                validator: (value) {
-                  final phone = value?.trim() ?? '';
-                  if (phone.isEmpty) return tr.pleaseEnterPhoneNumber;
-                  if (!FormInputUtils.isValidOptionalPhone(phone)) {
-                    return tr.invalidPhone;
-                  }
-                  return null;
-                },
-              ),
+              if (widget.requirePhone) ...[
+                const SizedBox(height: 10),
+                CustomTextField(
+                  controller: _phoneController,
+                  labelText: '${tr.phoneNumber} *',
+                  prefixIcon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: FormInputUtils.phoneInputFormatters,
+                  validator: (value) {
+                    final phone = value?.trim() ?? '';
+                    if (phone.isEmpty) return tr.pleaseEnterPhoneNumber;
+                    if (!FormInputUtils.isValidOptionalPhone(phone)) {
+                      return tr.invalidPhone;
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ],
           ),
         ),

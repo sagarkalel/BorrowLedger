@@ -14,6 +14,7 @@ class SettleDialog extends StatefulWidget {
   final double? directBalance;
   final double? splitBalance;
   final bool isZeroSettlement;
+  final String? actionLabel;
   final VoidCallback onFullSettle;
   final Function(double) onPartialSettle;
 
@@ -27,6 +28,7 @@ class SettleDialog extends StatefulWidget {
     this.directBalance,
     this.splitBalance,
     this.isZeroSettlement = false,
+    this.actionLabel,
     required this.onFullSettle,
     required this.onPartialSettle,
   });
@@ -340,11 +342,12 @@ class _SettleDialogState extends State<SettleDialog> {
                         onPressed: _handleSettle,
                         icon: const Icon(Icons.check_circle, size: 20),
                         label: Text(
-                          widget.isZeroSettlement
-                              ? tr.clearOffsettingBalances
-                              : _isPartialSettle
-                              ? tr.settlePartial
-                              : tr.settleFull,
+                          widget.actionLabel ??
+                              (widget.isZeroSettlement
+                                  ? tr.clearOffsettingBalances
+                                  : _isPartialSettle
+                                  ? tr.settlePartial
+                                  : tr.settleFull),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color,

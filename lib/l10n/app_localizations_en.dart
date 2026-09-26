@@ -523,6 +523,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editContact => 'Edit Contact';
 
   @override
+  String get contactUpdated => 'Contact updated';
+
+  @override
+  String get failedToUpdateContact => 'Failed to update contact';
+
+  @override
   String get reviewContact => 'Review Contact';
 
   @override
@@ -540,6 +546,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reviewAndEditContactDetails =>
       'Review and edit contact details before adding';
+
+  @override
+  String get editSavedContactDetails => 'Edit the saved contact details';
 
   @override
   String get contactDetails => 'Contact Details';
@@ -635,6 +644,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNumberOptional => 'Phone Number (Optional)';
+
+  @override
+  String get upiIdOptional => 'UPI ID (Optional)';
+
+  @override
+  String get upiId => 'UPI ID';
+
+  @override
+  String get enterUpiId => 'name@bank';
+
+  @override
+  String get invalidUpiId => 'Enter a valid UPI ID';
 
   @override
   String get email => 'Email';
@@ -1373,6 +1394,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settlementAmount => 'Settlement Amount';
+
+  @override
+  String get upiOptions => 'UPI options';
+
+  @override
+  String get payOrRequestThroughUpi => 'Pay or request through UPI';
+
+  @override
+  String get upiSettlement => 'UPI settlement';
+
+  @override
+  String get youNeedToPay => 'You need to pay';
+
+  @override
+  String get youNeedToReceive => 'You need to receive';
+
+  @override
+  String get openPreferredUpiApp => 'Open your preferred UPI app';
+
+  @override
+  String get sharePaymentLinkToReceive =>
+      'Share a payment link to receive money';
+
+  @override
+  String get sendThroughWhatsAppOrAnotherApp =>
+      'Send through WhatsApp or another app';
+
+  @override
+  String get addYourUpiId => 'Add your UPI ID';
+
+  @override
+  String addContactUpiId(Object contactName) {
+    return 'Add $contactName\'s UPI ID';
+  }
+
+  @override
+  String get requiredToPayThroughUpi =>
+      'Required to pay this contact through UPI.';
+
+  @override
+  String get requiredToRequestMoney => 'Required to request money through UPI.';
+
+  @override
+  String get saveAndContinue => 'Save & continue';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get upi => 'UPI';
+
+  @override
+  String get payByUpi => 'Pay by UPI';
+
+  @override
+  String get requestViaUpi => 'Request via UPI';
+
+  @override
+  String get shareRequest => 'Share request';
+
+  @override
+  String get sharePaymentDetails => 'Share payment details';
+
+  @override
+  String get upiRequestShareSubject => 'HisaabMate UPI Request';
+
+  @override
+  String get upiPaymentDetailsShareSubject => 'HisaabMate Payment Details';
+
+  @override
+  String upiRequestShareMessage(
+    Object contactName,
+    Object amount,
+    Object ownerName,
+    Object appName,
+    Object upiUri,
+  ) {
+    return 'Hi $contactName 👋\n\nCould you please send $amount to $ownerName (me) to settle our balance on $appName?\n\nUPI link:\n$upiUri\n\nThanks,\n$ownerName';
+  }
+
+  @override
+  String upiPaymentDetailsShareMessage(
+    Object contactName,
+    Object amount,
+    Object appName,
+    Object upiUri,
+    Object ownerName,
+  ) {
+    return 'Hi $contactName 👋\n\nHere’s the UPI link for $amount to settle our balance on $appName.\n\nUPI link:\n$upiUri\n\nThanks,\n$ownerName';
+  }
+
+  @override
+  String get upiIdRequired => 'Your UPI ID is required to request money.';
+
+  @override
+  String get contactUpiIdRequired =>
+      'This contact\'s UPI ID is required to pay by UPI.';
+
+  @override
+  String get noUpiAppFound => 'No UPI app was found on this device.';
+
+  @override
+  String get paymentCompleted => 'Did the payment complete?';
+
+  @override
+  String get recordUpiSettlement => 'Record UPI settlement';
+
+  @override
+  String get paymentReference => 'Payment reference (Optional)';
+
+  @override
+  String get upiPaymentCancelled => 'Payment was not recorded.';
+
+  @override
+  String get requestSharedSuccessfully => 'Request shared successfully';
+
+  @override
+  String get paymentDetailsSharedSuccessfully =>
+      'Payment details shared successfully';
+
+  @override
+  String get copyUpiLink => 'Copy UPI link';
 
   @override
   String get enterSettlementAmount => 'Enter settlement amount';
@@ -2296,11 +2439,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameUsedInSharedSplits => 'Used in shared splits and reports';
 
   @override
+  String get nameUsedInSharedMessages =>
+      'Used in messages shared outside HisaabMate';
+
+  @override
   String get helpFriendsRecognizeYou =>
       'Help friends recognize who paid or owes';
 
   @override
   String get yourNameRequired => 'Your Name *';
+
+  @override
+  String get yourUpiIdOptional => 'Your UPI ID (Optional)';
 
   @override
   String get pleaseEnterYourName => 'Please enter your name';
@@ -2345,6 +2495,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get borrowLedgerFullStatement => 'HisaabMate Full Statement';
 
   @override
+  String contactStatementShareSubject(Object contactName) {
+    return 'HisaabMate Statement - $contactName';
+  }
+
+  @override
+  String get ledgerStatementShareSubject => 'HisaabMate Ledger Statement';
+
+  @override
+  String contactStatementShareMessage(
+    Object contactName,
+    Object appName,
+    Object dateRange,
+    Object ownerName,
+  ) {
+    return 'Hi $contactName 👋\n\nHere’s your $appName statement for $dateRange.\n\nThe statement is attached for your reference.\n\nThanks,\n$ownerName';
+  }
+
+  @override
+  String ledgerStatementShareMessage(
+    Object appName,
+    Object dateRange,
+    Object ownerName,
+  ) {
+    return 'Hi everyone 👋\n\nHere’s the $appName ledger statement for $dateRange.\n\nThe statement is attached for your reference.\n\nThanks,\n$ownerName';
+  }
+
+  @override
   String get splitInvoice => 'Split Invoice';
 
   @override
@@ -2354,7 +2531,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String splitInvoiceSubject(Object splitTitle) {
-    return 'Split Invoice - $splitTitle';
+    return 'HisaabMate Split Invoice - $splitTitle';
+  }
+
+  @override
+  String splitInvoiceShareMessage(
+    Object appName,
+    Object splitTitle,
+    Object ownerName,
+  ) {
+    return 'Hi everyone 👋\n\nHere’s the $appName split invoice for “$splitTitle”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n$ownerName';
   }
 
   @override

@@ -6,7 +6,7 @@ class AppConstants {
 
   // Database
   static const String dbName = 'borrow_ledger.db';
-  static const int dbVersion = 15; // UPDATED: Added contact settlement events
+  static const int dbVersion = 16; // Added UPI settlement details
 
   // Storage Keys
   static const String themeKey = 'theme_mode';
@@ -41,6 +41,10 @@ class AppConstants {
   static const String statusPaid = 'paid';
   static const String statusPartial = 'partial';
   static const String statusSettled = 'settled';
+
+  // Settlement methods
+  static const String settlementMethodManual = 'manual';
+  static const String settlementMethodUpi = 'upi';
 
   static const String splitRouteOptimized = 'optimized';
   static const String splitRouteMediator = 'mediator';

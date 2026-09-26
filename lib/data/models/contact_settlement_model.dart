@@ -25,6 +25,8 @@ class ContactSettlementModel {
   final double splitCleared;
   final double offsetAmount;
   final bool isPartial;
+  final String settlementMethod;
+  final String? paymentReference;
   final String? note;
   final DateTime date;
   final DateTime createdAt;
@@ -42,6 +44,8 @@ class ContactSettlementModel {
     this.splitCleared = 0,
     this.offsetAmount = 0,
     this.isPartial = false,
+    this.settlementMethod = 'manual',
+    this.paymentReference,
     this.note,
     required this.date,
     DateTime? createdAt,
@@ -66,6 +70,8 @@ class ContactSettlementModel {
       'split_cleared': splitCleared,
       'offset_amount': offsetAmount,
       'is_partial': isPartial ? 1 : 0,
+      'settlement_method': settlementMethod,
+      'payment_reference': paymentReference,
       'note': note,
       'date': date.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
@@ -83,6 +89,8 @@ class ContactSettlementModel {
       splitCleared: (map['split_cleared'] as num?)?.toDouble() ?? 0,
       offsetAmount: (map['offset_amount'] as num?)?.toDouble() ?? 0,
       isPartial: (map['is_partial'] as int?) == 1,
+      settlementMethod: map['settlement_method'] as String? ?? 'manual',
+      paymentReference: map['payment_reference'] as String?,
       note: map['note'] as String?,
       date: DateTime.parse(map['date'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),

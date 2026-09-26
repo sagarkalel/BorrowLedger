@@ -85,6 +85,8 @@ class TransactionRepository {
     required double amount,
     required String paymentDescription,
     required String offsetDescription,
+    String settlementMethod = AppConstants.settlementMethodManual,
+    String? paymentReference,
     DateTime? date,
   }) async {
     return _dbHelper.transaction((txn) async {
@@ -117,6 +119,8 @@ class TransactionRepository {
           splitNet: splitNet,
           paymentDescription: paymentDescription,
           offsetDescription: offsetDescription,
+          settlementMethod: settlementMethod,
+          paymentReference: paymentReference,
           date: effectiveDate,
         );
       }
@@ -135,6 +139,8 @@ class TransactionRepository {
         splitNet: splitNet,
         amount: amount,
         paymentDescription: paymentDescription,
+        settlementMethod: settlementMethod,
+        paymentReference: paymentReference,
         date: effectiveDate,
       );
     });
@@ -1811,6 +1817,8 @@ class TransactionRepository {
     required double splitCleared,
     required double offsetAmount,
     required bool isPartial,
+    required String settlementMethod,
+    required String? paymentReference,
     required DateTime date,
   }) async {
     final now = DateTime.now();
@@ -1830,6 +1838,8 @@ class TransactionRepository {
         splitCleared: splitCleared,
         offsetAmount: offsetAmount,
         isPartial: isPartial,
+        settlementMethod: settlementMethod,
+        paymentReference: paymentReference,
         date: date,
         createdAt: now,
         updatedAt: now,
@@ -1890,6 +1900,8 @@ class TransactionRepository {
     required double splitNet,
     required String paymentDescription,
     required String offsetDescription,
+    required String settlementMethod,
+    required String? paymentReference,
     required DateTime date,
   }) async {
     final directSign = _amountSign(directNet);
@@ -1910,6 +1922,8 @@ class TransactionRepository {
       splitCleared: splitNet.abs(),
       offsetAmount: offsetAmount,
       isPartial: false,
+      settlementMethod: settlementMethod,
+      paymentReference: paymentReference,
       date: date,
     );
 
@@ -1985,6 +1999,8 @@ class TransactionRepository {
     required double splitNet,
     required double amount,
     required String paymentDescription,
+    required String settlementMethod,
+    required String? paymentReference,
     required DateTime date,
   }) async {
     final netSign = _amountSign(directNet + splitNet);
@@ -2006,6 +2022,8 @@ class TransactionRepository {
       splitCleared: splitPlan,
       offsetAmount: 0,
       isPartial: true,
+      settlementMethod: settlementMethod,
+      paymentReference: paymentReference,
       date: date,
     );
 

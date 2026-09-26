@@ -1096,6 +1096,18 @@ abstract class AppLocalizations {
   /// **'Edit Contact'**
   String get editContact;
 
+  /// No description provided for @contactUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact updated'**
+  String get contactUpdated;
+
+  /// No description provided for @failedToUpdateContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update contact'**
+  String get failedToUpdateContact;
+
   /// No description provided for @reviewContact.
   ///
   /// In en, this message translates to:
@@ -1131,6 +1143,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review and edit contact details before adding'**
   String get reviewAndEditContactDetails;
+
+  /// No description provided for @editSavedContactDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the saved contact details'**
+  String get editSavedContactDetails;
 
   /// No description provided for @contactDetails.
   ///
@@ -1305,6 +1323,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Phone Number (Optional)'**
   String get phoneNumberOptional;
+
+  /// No description provided for @upiIdOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID (Optional)'**
+  String get upiIdOptional;
+
+  /// No description provided for @upiId.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get upiId;
+
+  /// No description provided for @enterUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'name@bank'**
+  String get enterUpiId;
+
+  /// No description provided for @invalidUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid UPI ID'**
+  String get invalidUpiId;
 
   /// No description provided for @email.
   ///
@@ -2695,6 +2737,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settlement Amount'**
   String get settlementAmount;
+
+  /// No description provided for @upiOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI options'**
+  String get upiOptions;
+
+  /// No description provided for @payOrRequestThroughUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay or request through UPI'**
+  String get payOrRequestThroughUpi;
+
+  /// No description provided for @upiSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI settlement'**
+  String get upiSettlement;
+
+  /// No description provided for @youNeedToPay.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to pay'**
+  String get youNeedToPay;
+
+  /// No description provided for @youNeedToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to receive'**
+  String get youNeedToReceive;
+
+  /// No description provided for @openPreferredUpiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your preferred UPI app'**
+  String get openPreferredUpiApp;
+
+  /// No description provided for @sharePaymentLinkToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a payment link to receive money'**
+  String get sharePaymentLinkToReceive;
+
+  /// No description provided for @sendThroughWhatsAppOrAnotherApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send through WhatsApp or another app'**
+  String get sendThroughWhatsAppOrAnotherApp;
+
+  /// No description provided for @addYourUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your UPI ID'**
+  String get addYourUpiId;
+
+  /// No description provided for @addContactUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {contactName}\'s UPI ID'**
+  String addContactUpiId(Object contactName);
+
+  /// No description provided for @requiredToPayThroughUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Required to pay this contact through UPI.'**
+  String get requiredToPayThroughUpi;
+
+  /// No description provided for @requiredToRequestMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Required to request money through UPI.'**
+  String get requiredToRequestMoney;
+
+  /// No description provided for @saveAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & continue'**
+  String get saveAndContinue;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @upi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI'**
+  String get upi;
+
+  /// No description provided for @payByUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay by UPI'**
+  String get payByUpi;
+
+  /// No description provided for @requestViaUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Request via UPI'**
+  String get requestViaUpi;
+
+  /// No description provided for @shareRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Share request'**
+  String get shareRequest;
+
+  /// No description provided for @sharePaymentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Share payment details'**
+  String get sharePaymentDetails;
+
+  /// No description provided for @upiRequestShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'HisaabMate UPI Request'**
+  String get upiRequestShareSubject;
+
+  /// No description provided for @upiPaymentDetailsShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'HisaabMate Payment Details'**
+  String get upiPaymentDetailsShareSubject;
+
+  /// No description provided for @upiRequestShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi {contactName} 👋\n\nCould you please send {amount} to {ownerName} (me) to settle our balance on {appName}?\n\nUPI link:\n{upiUri}\n\nThanks,\n{ownerName}'**
+  String upiRequestShareMessage(
+    Object contactName,
+    Object amount,
+    Object ownerName,
+    Object appName,
+    Object upiUri,
+  );
+
+  /// No description provided for @upiPaymentDetailsShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi {contactName} 👋\n\nHere’s the UPI link for {amount} to settle our balance on {appName}.\n\nUPI link:\n{upiUri}\n\nThanks,\n{ownerName}'**
+  String upiPaymentDetailsShareMessage(
+    Object contactName,
+    Object amount,
+    Object appName,
+    Object upiUri,
+    Object ownerName,
+  );
+
+  /// No description provided for @upiIdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your UPI ID is required to request money.'**
+  String get upiIdRequired;
+
+  /// No description provided for @contactUpiIdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This contact\'s UPI ID is required to pay by UPI.'**
+  String get contactUpiIdRequired;
+
+  /// No description provided for @noUpiAppFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No UPI app was found on this device.'**
+  String get noUpiAppFound;
+
+  /// No description provided for @paymentCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Did the payment complete?'**
+  String get paymentCompleted;
+
+  /// No description provided for @recordUpiSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Record UPI settlement'**
+  String get recordUpiSettlement;
+
+  /// No description provided for @paymentReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference (Optional)'**
+  String get paymentReference;
+
+  /// No description provided for @upiPaymentCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment was not recorded.'**
+  String get upiPaymentCancelled;
+
+  /// No description provided for @requestSharedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Request shared successfully'**
+  String get requestSharedSuccessfully;
+
+  /// No description provided for @paymentDetailsSharedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment details shared successfully'**
+  String get paymentDetailsSharedSuccessfully;
+
+  /// No description provided for @copyUpiLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy UPI link'**
+  String get copyUpiLink;
 
   /// No description provided for @enterSettlementAmount.
   ///
@@ -4436,6 +4688,12 @@ abstract class AppLocalizations {
   /// **'Used in shared splits and reports'**
   String get nameUsedInSharedSplits;
 
+  /// No description provided for @nameUsedInSharedMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in messages shared outside HisaabMate'**
+  String get nameUsedInSharedMessages;
+
   /// No description provided for @helpFriendsRecognizeYou.
   ///
   /// In en, this message translates to:
@@ -4447,6 +4705,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your Name *'**
   String get yourNameRequired;
+
+  /// No description provided for @yourUpiIdOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Your UPI ID (Optional)'**
+  String get yourUpiIdOptional;
 
   /// No description provided for @pleaseEnterYourName.
   ///
@@ -4532,6 +4796,39 @@ abstract class AppLocalizations {
   /// **'HisaabMate Full Statement'**
   String get borrowLedgerFullStatement;
 
+  /// No description provided for @contactStatementShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'HisaabMate Statement - {contactName}'**
+  String contactStatementShareSubject(Object contactName);
+
+  /// No description provided for @ledgerStatementShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'HisaabMate Ledger Statement'**
+  String get ledgerStatementShareSubject;
+
+  /// No description provided for @contactStatementShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi {contactName} 👋\n\nHere’s your {appName} statement for {dateRange}.\n\nThe statement is attached for your reference.\n\nThanks,\n{ownerName}'**
+  String contactStatementShareMessage(
+    Object contactName,
+    Object appName,
+    Object dateRange,
+    Object ownerName,
+  );
+
+  /// No description provided for @ledgerStatementShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi everyone 👋\n\nHere’s the {appName} ledger statement for {dateRange}.\n\nThe statement is attached for your reference.\n\nThanks,\n{ownerName}'**
+  String ledgerStatementShareMessage(
+    Object appName,
+    Object dateRange,
+    Object ownerName,
+  );
+
   /// No description provided for @splitInvoice.
   ///
   /// In en, this message translates to:
@@ -4547,8 +4844,18 @@ abstract class AppLocalizations {
   /// No description provided for @splitInvoiceSubject.
   ///
   /// In en, this message translates to:
-  /// **'Split Invoice - {splitTitle}'**
+  /// **'HisaabMate Split Invoice - {splitTitle}'**
   String splitInvoiceSubject(Object splitTitle);
+
+  /// No description provided for @splitInvoiceShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi everyone 👋\n\nHere’s the {appName} split invoice for “{splitTitle}”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n{ownerName}'**
+  String splitInvoiceShareMessage(
+    Object appName,
+    Object splitTitle,
+    Object ownerName,
+  );
 
   /// No description provided for @period.
   ///

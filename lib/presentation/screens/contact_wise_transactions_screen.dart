@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
+import 'package:borrow_ledger/core/services/share_message_builder.dart';
+import 'package:borrow_ledger/core/services/upi_service.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
@@ -10,6 +13,7 @@ import 'package:borrow_ledger/data/models/contact_activity_item.dart';
 import 'package:borrow_ledger/data/models/contact_model.dart';
 import 'package:borrow_ledger/data/models/contact_settlement_model.dart';
 import 'package:borrow_ledger/data/models/transaction_model.dart';
+import 'package:borrow_ledger/data/models/user_profile_model.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
@@ -17,9 +21,10 @@ import 'package:borrow_ledger/presentation/widgets/app_loading_state.dart';
 import 'package:borrow_ledger/presentation/widgets/build_summary_card.dart';
 import 'package:borrow_ledger/presentation/widgets/floating_tab_header_delegate.dart';
 import 'package:borrow_ledger/presentation/widgets/settle_txn_dialog_with_partial_payment.dart';
+import 'package:borrow_ledger/presentation/widgets/upi_settlement_action_sheet.dart';
+import 'package:borrow_ledger/presentation/widgets/upi_id_setup_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -31,14 +36,17 @@ import '../../core/theme/app_theme.dart';
 import '../../data/repositories/split_repository.dart';
 import '../../data/repositories/contact_repository.dart';
 import '../../data/repositories/transaction_repository.dart';
+import '../../data/repositories/user_profile_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
 import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/share_name_prompt.dart';
+import '../widgets/settlement_details_sheet.dart';
 import 'transaction_details_screen.dart';
 import 'split_detail_screen.dart';
+import 'contact_edit_screen.dart';
 
 class _StatementRangeOption {
   final String label;
@@ -51,8 +59,6 @@ class _StatementRangeOption {
     this.isCustom = false,
   });
 }
-
-enum _ContactAvatarAction { camera, gallery, remove }
 
 class ContactWiseTransactionsScreen extends StatefulWidget {
   final int? contactId;
@@ -359,6 +365,27 @@ class _ContactWiseTransactionsScreenState
     };
   }
 
+  IconData _sortOptionIcon(TransactionSortOption option) {
+    return switch (option) {
+      TransactionSortOption.transactionDateDesc ||
+      TransactionSortOption.transactionDateAsc => Icons.event_outlined,
+      TransactionSortOption.createdDateDesc ||
+      TransactionSortOption.createdDateAsc => Icons.schedule_outlined,
+    };
+  }
+
+  Widget _buildMenuIcon(IconData icon, Color color) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(icon, size: 17, color: color),
+    );
+  }
+
   String _signedMoney(double amount) {
     final isPositive = amount >= 0;
     return CurrencyFormatter.format(
@@ -367,83 +394,53 @@ class _ContactWiseTransactionsScreenState
     ).replaceFirst('+', isPositive ? '+' : '-');
   }
 
-  Future<void> _showContactAvatarOptions() async {
+  Future<Uint8List?> _loadContactAvatarBytes(String? avatar) async {
+    final legacyBytes = ContactAvatarService.instance.decodeLegacyBase64(
+      avatar,
+    );
+    if (legacyBytes != null) return legacyBytes;
+
+    final file = await ContactAvatarService.instance.resolveAvatarFile(avatar);
+    return file?.readAsBytes();
+  }
+
+  Future<void> _openContactProfile() async {
     if (widget.contactId == null) return;
+
     final tr = AppLocalizations.of(context)!;
     final contactRepo = context.read<ContactRepository>();
-    final action = await showModalBottomSheet<_ContactAvatarAction>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_rounded),
-                title: Text(tr.takePhoto),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _ContactAvatarAction.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_rounded),
-                title: Text(tr.chooseFromGallery),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _ContactAvatarAction.gallery),
-              ),
-              if (_contact?.avatar?.trim().isNotEmpty == true)
-                ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded),
-                  title: Text(tr.removePhoto),
-                  onTap: () =>
-                      Navigator.pop(sheetContext, _ContactAvatarAction.remove),
-                ),
-            ],
-          ),
-        );
-      },
+    final contact =
+        _contact ??
+        (await contactRepo.getContactById(widget.contactId!))?.contact;
+    if (contact == null || !mounted) return;
+
+    final photo = await _loadContactAvatarBytes(contact.avatar);
+    if (!mounted) return;
+
+    final updatedContact = await Navigator.push<ContactModel>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ContactEditScreen(
+          name: contact.name,
+          phone: contact.phone ?? '',
+          email: contact.email,
+          photo: photo,
+          avatar: contact.avatar,
+          existingContact: contact,
+        ),
+      ),
     );
-    if (action == null) return;
+    if (updatedContact == null || !mounted) return;
 
     try {
-      var contact = _contact;
-      contact ??= (await contactRepo.getContactById(
-        widget.contactId!,
-      ))?.contact;
-      if (contact == null) return;
-
-      final oldAvatar = contact.avatar;
-      String? avatar;
-      if (action == _ContactAvatarAction.remove) {
-        await ContactAvatarService.instance.deleteAvatar(oldAvatar);
-      } else {
-        final source = action == _ContactAvatarAction.camera
-            ? ImageSource.camera
-            : ImageSource.gallery;
-        final picked = await ImagePicker().pickImage(source: source);
-        if (picked == null) return;
-        avatar = await ContactAvatarService.instance.savePickedAvatar(
-          picked,
-          oldAvatar: oldAvatar,
-        );
-        if (avatar == null) {
-          if (mounted) showWarningSnackbar(context, tr.photoCouldNotBeSaved);
-          return;
-        }
-      }
-
-      final updated = contact.copyWith(
-        avatar: avatar,
-        clearAvatar: action == _ContactAvatarAction.remove,
-      );
-      await contactRepo.updateContact(updated);
+      await contactRepo.updateContact(updatedContact);
       if (!mounted) return;
-      setState(() => _contact = updated);
+      setState(() => _contact = updatedContact);
       await _loadTransactions(showLoading: false);
-      if (mounted) showSuccessSnackbar(context, tr.photoUpdated);
+      if (mounted) showSuccessSnackbar(context, tr.contactUpdated);
     } catch (e) {
       if (mounted) {
-        showFailureSnackbar(context, '${tr.failedToUpdatePhoto}: $e');
+        showFailureSnackbar(context, '${tr.failedToUpdateContact}: $e');
       }
     }
   }
@@ -467,10 +464,21 @@ class _ContactWiseTransactionsScreenState
             PopupMenuButton<String>(
               tooltip: tr.moreOptions,
               icon: const Icon(Icons.more_vert_rounded),
+              padding: const EdgeInsets.only(right: 8),
+              offset: const Offset(0, 8),
+              constraints: const BoxConstraints(minWidth: 224, maxWidth: 260),
+              menuPadding: const EdgeInsets.symmetric(vertical: 7),
+              color: colorScheme.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.12),
+                ),
+              ),
               onSelected: (value) {
-                if (value == 'edit_photo') {
-                  _showContactAvatarOptions();
-                } else if (value == 'share_statement') {
+                if (value == 'share_statement') {
                   _shareContactStatement();
                 } else if (value.startsWith('sort:')) {
                   final sortOption = _sortOptionFromMenuValue(value);
@@ -482,42 +490,75 @@ class _ContactWiseTransactionsScreenState
               itemBuilder: (context) => [
                 if (widget.contactId != null)
                   PopupMenuItem(
-                    value: 'edit_photo',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.account_circle_rounded, size: 20),
-                        const SizedBox(width: 12),
-                        Text(tr.changePhoto),
-                      ],
-                    ),
-                  ),
-                if (widget.contactId != null)
-                  PopupMenuItem(
                     value: 'share_statement',
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Row(
                       children: [
-                        const Icon(Icons.ios_share_rounded, size: 20),
-                        const SizedBox(width: 12),
-                        Text(tr.sharePdfStatement),
+                        _buildMenuIcon(
+                          Icons.ios_share_rounded,
+                          colorScheme.primary,
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Text(
+                            tr.sharePdfStatement,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 if (widget.contactId != null) const PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: false,
-                  height: 32,
-                  child: Text(
-                    tr.sortTransactions,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  height: 30,
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        tr.sortTransactions,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 ...TransactionSortOption.values.map(
                   (option) => CheckedPopupMenuItem<String>(
                     value: _sortMenuValue(option),
                     checked: _sortOption == option,
-                    child: Text(_sortOptionLabel(option, tr)),
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _sortOptionIcon(option),
+                          size: 18,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _sortOptionLabel(option, tr),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -833,35 +874,46 @@ class _ContactWiseTransactionsScreenState
     final contactName = _contact?.name ?? widget.contactName ?? tr.unknown;
     final phone = _contact?.phone ?? widget.contactPhone;
 
-    return Row(
-      children: [
-        AppListAvatar(label: contactName, avatar: _contact?.avatar, size: 34),
-        const SizedBox(width: 9),
-        Flexible(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                contactName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+    return InkWell(
+      onTap: _openContactProfile,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Row(
+          children: [
+            AppListAvatar(
+              label: contactName,
+              avatar: _contact?.avatar,
+              size: 34,
+            ),
+            const SizedBox(width: 9),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contactName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (phone?.trim().isNotEmpty == true)
+                    Text(
+                      phone!.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5),
+                    ),
+                ],
               ),
-              if (phone?.trim().isNotEmpty == true)
-                Text(
-                  phone!.trim(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11.5),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -1162,74 +1214,143 @@ class _ContactWiseTransactionsScreenState
         : AppTheme.moneyOutColor;
     final tr = AppLocalizations.of(context)!;
 
-    return Material(
+    final settleCard = Material(
       color: statusColor.withValues(
         alpha: theme.brightness == Brightness.dark ? 0.18 : 0.1,
       ),
       borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: _showSettleDialog,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: statusColor.withValues(alpha: 0.24)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withValues(alpha: 0.75),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Icon(
-                  Icons.done_all_rounded,
-                  color: statusColor,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: statusColor.withValues(alpha: 0.24)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: _showSettleDialog,
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
                   children: [
-                    Text(
-                      isNetZero ? tr.clearOffsettingBalances : tr.settleUp,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Icon(
+                        Icons.done_all_rounded,
                         color: statusColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        size: 16,
                       ),
                     ),
-                    Text(
-                      isNetZero
-                          ? tr.noCashPaymentNeeded
-                          : tr.netSettlementAmount(
-                              CurrencyFormatter.format(_netBalance.abs()),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isNetZero
+                                ? tr.clearOffsettingBalances
+                                : tr.settleUp,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
                             ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                          ),
+                          Text(
+                            isNetZero
+                                ? tr.noCashPaymentNeeded
+                                : tr.netSettlementAmount(
+                                    CurrencyFormatter.format(_netBalance.abs()),
+                                  ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: statusColor,
+                      size: 18,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_rounded, color: statusColor, size: 18),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+
+    if (isNetZero || widget.contactId == null) return settleCard;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        settleCard,
+        const SizedBox(height: 8),
+        Material(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: _showUpiActions,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: statusColor.withValues(alpha: 0.28)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.payments_outlined, color: statusColor, size: 19),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr.upiOptions,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          tr.payOrRequestThroughUpi,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 19,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1262,10 +1383,16 @@ class _ContactWiseTransactionsScreenState
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text:
-              '${tr.borrowLedgerStatement}: ${widget.contactName ?? tr.allContacts} (${_formatDate(range.start)} - ${_formatDate(range.end)})',
-          subject:
-              '${tr.borrowLedgerStatement} - ${widget.contactName ?? tr.allContacts}',
+          text: ShareMessageBuilder.contactStatement(
+            tr: tr,
+            contactName: widget.contactName ?? tr.allContacts,
+            dateRange:
+                '${_formatDate(range.start)} - ${_formatDate(range.end)}',
+            ownerName: ownerName,
+          ),
+          subject: tr.contactStatementShareSubject(
+            widget.contactName ?? tr.allContacts,
+          ),
         ),
       );
     } catch (e) {
@@ -1867,9 +1994,385 @@ class _ContactWiseTransactionsScreenState
     );
   }
 
+  Future<void> _showUpiActions() async {
+    if (widget.contactId == null || _netBalance.abs() < 0.01) return;
+
+    final contactName = _contact?.name ?? widget.contactName ?? 'Contact';
+    final action = await showUpiSettlementActionSheet(
+      context,
+      isPayable: _netBalance < 0,
+      contactName: contactName,
+      amount: _netBalance.abs(),
+    );
+    if (!mounted || action == null) return;
+
+    await _continueUpiAction(action);
+  }
+
+  Future<void> _continueUpiAction(
+    UpiSettlementAction action, {
+    bool allowSetup = true,
+  }) async {
+    if (!mounted || widget.contactId == null) return;
+
+    final isPayable = _netBalance < 0;
+    final contactName = _contact?.name ?? widget.contactName ?? 'Contact';
+    final contactUpiId = UpiService.normalizeUpiId(_contact?.upiId);
+    final profile = await context.read<UserProfileRepository>().getProfile();
+    if (!mounted) return;
+    final userUpiId = UpiService.normalizeUpiId(profile.upiId);
+
+    if (isPayable && contactUpiId == null) {
+      if (!allowSetup || _contact == null) return;
+      final saved = await showUpiIdSetupSheet(
+        context,
+        owner: UpiIdSetupOwner.contact,
+        displayName: contactName,
+        initialUpiId: _contact!.upiId,
+        onSave: _saveContactUpiId,
+      );
+      if (saved == true && mounted) {
+        await _continueUpiAction(action, allowSetup: false);
+      }
+      return;
+    }
+    if (!isPayable && userUpiId == null) {
+      if (!allowSetup) return;
+      final saved = await showUpiIdSetupSheet(
+        context,
+        owner: UpiIdSetupOwner.profile,
+        displayName: profile.name,
+        initialUpiId: profile.upiId,
+        onSave: (upiId) => _saveProfileUpiId(profile, upiId),
+      );
+      if (saved == true && mounted) {
+        await _continueUpiAction(action, allowSetup: false);
+      }
+      return;
+    }
+
+    String? ownerName = profile.name.trim().isEmpty
+        ? null
+        : profile.name.trim();
+    if (action != UpiSettlementAction.pay && ownerName == null) {
+      ownerName = await ensureShareOwnerName(context, requirePhone: false);
+      if (!mounted || ownerName == null) return;
+    }
+
+    _showUpiAmountDialog(
+      action: action,
+      isPayable: isPayable,
+      payeeUpiId: isPayable ? contactUpiId! : userUpiId!,
+      payeeName: isPayable ? contactName : ownerName ?? profile.name,
+      ownerName: ownerName,
+    );
+  }
+
+  Future<bool> _saveContactUpiId(String upiId) async {
+    final contact = _contact;
+    final contactId = contact?.id;
+    if (contact == null || contactId == null) return false;
+
+    final tr = AppLocalizations.of(context)!;
+    try {
+      final updatedContact = contact.copyWith(
+        upiId: upiId,
+        updatedAt: DateTime.now(),
+      );
+      await context.read<ContactRepository>().updateContact(updatedContact);
+      if (!mounted) return false;
+      setState(() => _contact = updatedContact);
+      return true;
+    } catch (e) {
+      if (mounted) showFailureSnackbar(context, '${tr.failedToUpdate}: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _saveProfileUpiId(UserProfileModel profile, String upiId) async {
+    final tr = AppLocalizations.of(context)!;
+    try {
+      await context.read<UserProfileRepository>().saveProfile(
+        UserProfileModel(
+          name: profile.name,
+          phone: profile.phone,
+          upiId: upiId,
+        ),
+      );
+      return true;
+    } catch (e) {
+      if (mounted) showFailureSnackbar(context, '${tr.failedToUpdate}: $e');
+      return false;
+    }
+  }
+
+  void _showUpiAmountDialog({
+    required UpiSettlementAction action,
+    required bool isPayable,
+    required String payeeUpiId,
+    required String payeeName,
+    String? ownerName,
+  }) {
+    final isNetZero = _netBalance.abs() < 0.01;
+    final isPositive = isNetZero || _netBalance > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tr = AppLocalizations.of(context)!;
+    final actionLabel = action == UpiSettlementAction.pay
+        ? tr.payByUpi
+        : action == UpiSettlementAction.request
+        ? tr.requestViaUpi
+        : isPayable
+        ? tr.sharePaymentDetails
+        : tr.shareRequest;
+
+    showDialog(
+      context: context,
+      builder: (context) => SettleDialog(
+        netBalance: _netBalance,
+        isPositive: isPositive,
+        isDark: isDark,
+        balanceLabel: tr.netSettlement,
+        contactName: _contact?.name ?? widget.contactName,
+        directBalance: _normalNetBalance,
+        splitBalance: _splitNetBalance,
+        isZeroSettlement: isNetZero,
+        actionLabel: actionLabel,
+        onFullSettle: () {
+          Navigator.pop(context);
+          _performUpiAction(
+            action: action,
+            isPayable: isPayable,
+            payeeUpiId: payeeUpiId,
+            payeeName: payeeName,
+            ownerName: ownerName,
+            settleFull: true,
+            amount: _netBalance.abs(),
+          );
+        },
+        onPartialSettle: (amount) {
+          Navigator.pop(context);
+          _performUpiAction(
+            action: action,
+            isPayable: isPayable,
+            payeeUpiId: payeeUpiId,
+            payeeName: payeeName,
+            ownerName: ownerName,
+            settleFull: false,
+            amount: amount,
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _performUpiAction({
+    required UpiSettlementAction action,
+    required bool isPayable,
+    required String payeeUpiId,
+    required String payeeName,
+    required String? ownerName,
+    required bool settleFull,
+    required double amount,
+  }) async {
+    final tr = AppLocalizations.of(context)!;
+    final contactName = _contact?.name ?? widget.contactName ?? tr.unknown;
+    final note = 'HisaabMate settlement with $contactName';
+    final uri = UpiService.buildPaymentUri(
+      payeeUpiId: payeeUpiId,
+      payeeName: payeeName,
+      amount: amount,
+      note: note,
+    );
+    final upiService = const UpiService();
+
+    if (action == UpiSettlementAction.pay) {
+      try {
+        final launched = await upiService.launchPayment(uri);
+        if (!mounted) return;
+        if (!launched) {
+          await _showUpiFallback(
+            uri: uri,
+            isPayable: isPayable,
+            amount: amount,
+            contactName: contactName,
+            ownerName: ownerName,
+          );
+          return;
+        }
+        await _confirmAndRecordUpiPayment(
+          settleFull: settleFull,
+          amount: amount,
+        );
+      } catch (e) {
+        if (mounted) {
+          await _showUpiFallback(
+            uri: uri,
+            isPayable: isPayable,
+            amount: amount,
+            contactName: contactName,
+            ownerName: ownerName,
+          );
+        }
+      }
+      return;
+    }
+
+    final message = _buildUpiShareMessage(
+      isPayable: isPayable,
+      amount: amount,
+      contactName: contactName,
+      uri: uri,
+      ownerName: ownerName!,
+    );
+    try {
+      await upiService.shareText(
+        text: message,
+        subject: isPayable
+            ? tr.upiPaymentDetailsShareSubject
+            : tr.upiRequestShareSubject,
+      );
+      if (!mounted) return;
+      showSuccessSnackbar(
+        context,
+        isPayable
+            ? tr.paymentDetailsSharedSuccessfully
+            : tr.requestSharedSuccessfully,
+      );
+    } catch (e) {
+      if (mounted) showFailureSnackbar(context, '${tr.shareFailed} $e');
+    }
+  }
+
+  String _buildUpiShareMessage({
+    required bool isPayable,
+    required double amount,
+    required String contactName,
+    required Uri uri,
+    required String ownerName,
+  }) {
+    final amountText = CurrencyFormatter.format(amount);
+    return isPayable
+        ? ShareMessageBuilder.upiPaymentDetails(
+            tr: AppLocalizations.of(context)!,
+            contactName: contactName,
+            amount: amountText,
+            ownerName: ownerName,
+            upiUri: uri.toString(),
+          )
+        : ShareMessageBuilder.upiRequest(
+            tr: AppLocalizations.of(context)!,
+            contactName: contactName,
+            amount: amountText,
+            ownerName: ownerName,
+            upiUri: uri.toString(),
+          );
+  }
+
+  Future<void> _showUpiFallback({
+    required Uri uri,
+    required bool isPayable,
+    required double amount,
+    required String contactName,
+    required String? ownerName,
+  }) async {
+    final tr = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: Text(tr.copyUpiLink),
+              onTap: () => Navigator.pop(sheetContext, 'copy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.ios_share_outlined),
+              title: Text(tr.sharePaymentDetails),
+              onTap: () => Navigator.pop(sheetContext, 'share'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+
+    final upiService = const UpiService();
+    if (action == 'copy') {
+      await upiService.copyToClipboard(uri.toString());
+      if (mounted) showSuccessSnackbar(context, tr.copyUpiLink);
+    } else if (action == 'share') {
+      var resolvedOwnerName = ownerName;
+      if (resolvedOwnerName == null || resolvedOwnerName.trim().isEmpty) {
+        resolvedOwnerName = await ensureShareOwnerName(
+          context,
+          requirePhone: false,
+        );
+        if (!mounted || resolvedOwnerName == null) return;
+      }
+      final message = _buildUpiShareMessage(
+        isPayable: isPayable,
+        amount: amount,
+        contactName: contactName,
+        uri: uri,
+        ownerName: resolvedOwnerName,
+      );
+      await upiService.shareText(
+        text: message,
+        subject: tr.upiPaymentDetailsShareSubject,
+      );
+    }
+  }
+
+  Future<void> _confirmAndRecordUpiPayment({
+    required bool settleFull,
+    required double amount,
+  }) async {
+    final tr = AppLocalizations.of(context)!;
+    final referenceController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr.paymentCompleted),
+        content: TextField(
+          controller: referenceController,
+          decoration: InputDecoration(
+            labelText: tr.paymentReference,
+            prefixIcon: const Icon(Icons.receipt_long_outlined),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(tr.no),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(tr.recordUpiSettlement),
+          ),
+        ],
+      ),
+    );
+    final reference = referenceController.text.trim();
+    referenceController.dispose();
+    if (confirmed != true || !mounted) return;
+
+    await _settleContactBalance(
+      settleFull: settleFull,
+      amount: amount,
+      settlementMethod: AppConstants.settlementMethodUpi,
+      paymentReference: reference.isEmpty ? null : reference,
+    );
+  }
+
   Future<void> _settleContactBalance({
     required bool settleFull,
     required double amount,
+    String settlementMethod = AppConstants.settlementMethodManual,
+    String? paymentReference,
   }) async {
     final tr = AppLocalizations.of(context)!;
     try {
@@ -1879,6 +2382,8 @@ class _ContactWiseTransactionsScreenState
         amount: amount,
         paymentDescription: tr.directBalanceSettlement,
         offsetDescription: tr.directAndSplitBalanceOffset,
+        settlementMethod: settlementMethod,
+        paymentReference: paymentReference,
       );
 
       if (mounted) {
@@ -1893,79 +2398,27 @@ class _ContactWiseTransactionsScreenState
 
   void _showSettlementDetails(ContactSettlementModel settlement) {
     final tr = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              tr.settlementWithContact(
-                settlement.contactName ?? widget.contactName ?? tr.unknown,
-              ),
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            _settlementDetailRow(
-              tr.netSettlement,
-              _settlementNetText(settlement, tr),
-              colorScheme,
-            ),
-            _settlementDetailRow(
-              tr.directBalance,
-              CurrencyFormatter.format(settlement.directCleared),
-              colorScheme,
-            ),
-            _settlementDetailRow(
-              tr.splitBalance,
-              CurrencyFormatter.format(settlement.splitCleared),
-              colorScheme,
-            ),
-            if (settlement.offsetAmount > 0.01) ...[
-              const SizedBox(height: 8),
-              Text(
-                _settlementDetailNote(settlement, tr),
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ],
-        ),
+    showSettlementDetailsSheet(
+      context,
+      title: tr.settlementWithContact(
+        settlement.contactName ?? widget.contactName ?? tr.unknown,
       ),
-    );
-  }
-
-  Widget _settlementDetailRow(
-    String label,
-    String value,
-    ColorScheme colorScheme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
+      netSettlementLabel: tr.netSettlement,
+      netSettlement: _settlementNetText(settlement, tr),
+      directBalanceLabel: tr.directBalance,
+      directBalance: CurrencyFormatter.format(settlement.directCleared),
+      splitBalanceLabel: tr.splitBalance,
+      splitBalance: CurrencyFormatter.format(settlement.splitCleared),
+      settlementMethodLabel: tr.upi,
+      settlementMethod:
+          settlement.settlementMethod == AppConstants.settlementMethodUpi
+          ? tr.upi
+          : null,
+      paymentReferenceLabel: tr.paymentReference,
+      paymentReference: settlement.paymentReference,
+      offsetNote: settlement.offsetAmount > 0.01
+          ? _settlementDetailNote(settlement, tr)
+          : null,
     );
   }
 }

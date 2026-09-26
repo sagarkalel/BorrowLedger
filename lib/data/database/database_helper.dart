@@ -45,6 +45,7 @@ class DatabaseHelper {
       name TEXT NOT NULL,
       phone TEXT,
       email TEXT,
+      upi_id TEXT,
       avatar TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -687,6 +688,32 @@ class DatabaseHelper {
       await _createContactSettlementTables(db);
     }
 
+    if (oldVersion < 16) {
+      log('DatabaseHelper: Upgrading to version 16 - Adding UPI details');
+
+      try {
+        await db.execute('ALTER TABLE contacts ADD COLUMN upi_id TEXT');
+      } catch (e) {
+        log('DatabaseHelper: upi_id column may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE contact_settlements ADD COLUMN settlement_method TEXT NOT NULL DEFAULT "manual"',
+        );
+      } catch (e) {
+        log('DatabaseHelper: settlement_method may already exist: $e');
+      }
+
+      try {
+        await db.execute(
+          'ALTER TABLE contact_settlements ADD COLUMN payment_reference TEXT',
+        );
+      } catch (e) {
+        log('DatabaseHelper: payment_reference may already exist: $e');
+      }
+    }
+
     // Ensure all indexes exist (for any version upgrade)
     await _createIndexes(db);
     log('DatabaseHelper: Database upgrade completed');
@@ -955,6 +982,8 @@ class DatabaseHelper {
         split_cleared REAL NOT NULL DEFAULT 0,
         offset_amount REAL NOT NULL DEFAULT 0,
         is_partial INTEGER NOT NULL DEFAULT 0,
+        settlement_method TEXT NOT NULL DEFAULT 'manual',
+        payment_reference TEXT,
         note TEXT,
         date TEXT NOT NULL,
         created_at TEXT NOT NULL,

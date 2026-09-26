@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/constants/app_text_styles.dart';
+import 'package:borrow_ledger/core/services/share_message_builder.dart';
 import 'package:borrow_ledger/core/utils/split_settlement_calculator.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/data/models/split_model.dart';
@@ -1944,7 +1945,11 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: tr.splitInvoiceFrom(ownerName, split.title),
+          text: ShareMessageBuilder.splitInvoice(
+            tr: tr,
+            splitTitle: split.title,
+            ownerName: ownerName,
+          ),
           subject: tr.splitInvoiceSubject(split.title),
         ),
       );

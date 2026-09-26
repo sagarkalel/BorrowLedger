@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/upi_service.dart';
 import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
@@ -1412,6 +1413,7 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _upiIdController;
   bool _isSaving = false;
 
   @override
@@ -1419,12 +1421,14 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialProfile.name);
     _phoneController = TextEditingController(text: widget.initialProfile.phone);
+    _upiIdController = TextEditingController(text: widget.initialProfile.upiId);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _upiIdController.dispose();
     super.dispose();
   }
 
@@ -1483,6 +1487,25 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
                 return null;
               },
             ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _upiIdController,
+              style: const TextStyle(fontSize: 15, height: 1.15),
+              decoration: _profileInputDecoration(
+                labelText: tr.upiIdOptional,
+                hintText: tr.enterUpiId,
+                icon: Icons.payments_outlined,
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                final upiId = value?.trim() ?? '';
+                if (upiId.isEmpty) return null;
+                if (!UpiService.isValidUpiId(upiId)) {
+                  return tr.invalidUpiId;
+                }
+                return null;
+              },
+            ),
           ],
         ),
       ),
@@ -1537,6 +1560,7 @@ class _UserProfileDialogState extends State<_UserProfileDialog> {
     final profile = UserProfileModel(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
+      upiId: UpiService.normalizeUpiId(_upiIdController.text),
     );
 
     await widget.repository.saveProfile(profile);

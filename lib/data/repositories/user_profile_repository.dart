@@ -5,12 +5,14 @@ import '../models/user_profile_model.dart';
 class UserProfileRepository {
   static const String _nameKey = 'user_profile_name';
   static const String _phoneKey = 'user_profile_phone';
+  static const String _upiIdKey = 'user_profile_upi_id';
 
   Future<UserProfileModel> getProfile() async {
     final prefs = await SharedPreferences.getInstance();
     return UserProfileModel(
       name: prefs.getString(_nameKey)?.trim() ?? '',
       phone: _emptyToNull(prefs.getString(_phoneKey)),
+      upiId: _emptyToNull(prefs.getString(_upiIdKey)),
     );
   }
 
@@ -23,6 +25,13 @@ class UserProfileRepository {
       await prefs.remove(_phoneKey);
     } else {
       await prefs.setString(_phoneKey, phone);
+    }
+
+    final upiId = profile.upiId?.trim() ?? '';
+    if (upiId.isEmpty) {
+      await prefs.remove(_upiIdKey);
+    } else {
+      await prefs.setString(_upiIdKey, upiId);
     }
   }
 

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:developer';
 
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/share_message_builder.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
@@ -35,6 +36,7 @@ import '../widgets/contact_summary_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/share_name_prompt.dart';
+import '../widgets/settlement_details_sheet.dart';
 import '../widgets/transaction_list_item.dart';
 import 'transaction_details_screen.dart';
 import 'contact_wise_transactions_screen.dart';
@@ -173,6 +175,27 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     };
   }
 
+  IconData _sortOptionIcon(TransactionSortOption option) {
+    return switch (option) {
+      TransactionSortOption.transactionDateDesc ||
+      TransactionSortOption.transactionDateAsc => Icons.event_outlined,
+      TransactionSortOption.createdDateDesc ||
+      TransactionSortOption.createdDateAsc => Icons.schedule_outlined,
+    };
+  }
+
+  Widget _buildMenuIcon(IconData icon, Color color) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(icon, size: 17, color: color),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -209,6 +232,21 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
           PopupMenuButton<String>(
             tooltip: tr.moreOptions,
             icon: const Icon(Icons.more_vert_rounded),
+            padding: const EdgeInsets.only(right: 8),
+            offset: const Offset(0, 8),
+            constraints: const BoxConstraints(minWidth: 224, maxWidth: 260),
+            menuPadding: const EdgeInsets.symmetric(vertical: 7),
+            color: Theme.of(context).colorScheme.surface,
+            surfaceTintColor: Colors.transparent,
+            elevation: 5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.12),
+              ),
+            ),
             onSelected: (value) {
               if (value == 'share_ledger') {
                 _shareLedgerStatement();
@@ -226,11 +264,24 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
               return [
                 PopupMenuItem(
                   value: 'share_ledger',
+                  height: 46,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     children: [
-                      const Icon(Icons.ios_share_rounded, size: 20),
-                      const SizedBox(width: 12),
-                      Text(tr.shareLedgerPdf),
+                      _buildMenuIcon(
+                        Icons.ios_share_rounded,
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          tr.shareLedgerPdf,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -238,19 +289,54 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   const PopupMenuDivider(),
                   PopupMenuItem(
                     enabled: false,
-                    height: 32,
-                    child: Text(
-                      tr.sortTransactions,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    height: 30,
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 9),
+                        Text(
+                          tr.sortTransactions,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   ...TransactionSortOption.values.map(
                     (option) => CheckedPopupMenuItem<String>(
                       value: _sortMenuValue(option),
                       checked: state.transactionSortOption == option,
-                      child: Text(_sortOptionLabel(option, tr)),
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _sortOptionIcon(option),
+                            size: 18,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _sortOptionLabel(option, tr),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -374,9 +460,13 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text:
-              '${tr.borrowLedgerFullStatement} (${_formatDate(range.start)} - ${_formatDate(range.end)})',
-          subject: tr.borrowLedgerFullStatement,
+          text: ShareMessageBuilder.ledgerStatement(
+            tr: tr,
+            dateRange:
+                '${_formatDate(range.start)} - ${_formatDate(range.end)}',
+            ownerName: ownerName,
+          ),
+          subject: tr.ledgerStatementShareSubject,
         ),
       );
     } catch (e) {
@@ -1726,77 +1816,18 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
 
   void _showSettlementDetails(ContactSettlementModel settlement) {
     final tr = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              tr.settlementWithContact(settlement.contactName ?? tr.unknown),
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            _settlementDetailRow(
-              tr.netSettlement,
-              _settlementNetText(settlement, tr),
-              colorScheme,
-            ),
-            _settlementDetailRow(
-              tr.directBalance,
-              CurrencyFormatter.format(settlement.directCleared),
-              colorScheme,
-            ),
-            _settlementDetailRow(
-              tr.splitBalance,
-              CurrencyFormatter.format(settlement.splitCleared),
-              colorScheme,
-            ),
-            if (settlement.offsetAmount > 0.01) ...[
-              const SizedBox(height: 8),
-              Text(
-                _settlementDetailNote(settlement, tr),
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _settlementDetailRow(
-    String label,
-    String value,
-    ColorScheme colorScheme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
+    showSettlementDetailsSheet(
+      context,
+      title: tr.settlementWithContact(settlement.contactName ?? tr.unknown),
+      netSettlementLabel: tr.netSettlement,
+      netSettlement: _settlementNetText(settlement, tr),
+      directBalanceLabel: tr.directBalance,
+      directBalance: CurrencyFormatter.format(settlement.directCleared),
+      splitBalanceLabel: tr.splitBalance,
+      splitBalance: CurrencyFormatter.format(settlement.splitCleared),
+      offsetNote: settlement.offsetAmount > 0.01
+          ? _settlementDetailNote(settlement, tr)
+          : null,
     );
   }
 }

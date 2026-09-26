@@ -35,6 +35,7 @@ class ContactModel {
   final String name;
   final String? phone;
   final String? email;
+  final String? upiId;
   final String? avatar;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -44,6 +45,7 @@ class ContactModel {
     required this.name,
     this.phone,
     this.email,
+    this.upiId,
     this.avatar,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -56,6 +58,7 @@ class ContactModel {
       'name': name,
       'phone': phone,
       'email': email,
+      'upi_id': upiId,
       'avatar': avatar,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -68,6 +71,7 @@ class ContactModel {
       name: map['name'] as String,
       phone: map['phone'] as String?,
       email: map['email'] as String?,
+      upiId: map['upi_id'] as String?,
       avatar: map['avatar'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -79,6 +83,8 @@ class ContactModel {
     String? name,
     String? phone,
     String? email,
+    String? upiId,
+    bool clearUpiId = false,
     String? avatar,
     bool clearAvatar = false,
     DateTime? createdAt,
@@ -89,6 +95,7 @@ class ContactModel {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       email: email ?? this.email,
+      upiId: clearUpiId ? null : upiId ?? this.upiId,
       avatar: clearAvatar ? null : avatar ?? this.avatar,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -97,6 +104,6 @@ class ContactModel {
 
   @override
   String toString() {
-    return 'ContactModel(id: $id, name: $name, phone: $phone, email: $email)';
+    return 'ContactModel(id: $id, name: $name, phone: $phone, email: $email, upiId: $upiId)';
   }
 }

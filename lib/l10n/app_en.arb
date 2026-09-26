@@ -210,12 +210,15 @@
   "contactNameRequired": "Contact Name *",
   "addContact": "Add Contact",
   "editContact": "Edit Contact",
+  "contactUpdated": "Contact updated",
+  "failedToUpdateContact": "Failed to update contact",
   "reviewContact": "Review Contact",
   "selectContact": "Select Contact",
   "selectContactRequired": "Select Contact *",
   "pickFromContacts": "Pick from Contacts",
   "createNewContact": "Create New Contact",
   "reviewAndEditContactDetails": "Review and edit contact details before adding",
+  "editSavedContactDetails": "Edit the saved contact details",
   "contactDetails": "Contact Details",
   "pleaseSelectContact": "Please select a contact",
   "pleaseSelectContactFromPhone": "Please select a contact from your phone",
@@ -251,6 +254,10 @@
   "phoneNumber": "Phone Number",
   "phoneNumbersSmall": "phone numbers",
   "phoneNumberOptional": "Phone Number (Optional)",
+  "upiIdOptional": "UPI ID (Optional)",
+  "upiId": "UPI ID",
+  "enterUpiId": "name@bank",
+  "invalidUpiId": "Enter a valid UPI ID",
   "email": "Email",
   "emailOptional": "Email (Optional)",
   "enterContactName": "Enter contact name",
@@ -532,6 +539,62 @@
   "fullSettlement": "Full Settlement",
   "partialSettlement": "Partial Settlement",
   "settlementAmount": "Settlement Amount",
+  "upiOptions": "UPI options",
+  "payOrRequestThroughUpi": "Pay or request through UPI",
+  "upiSettlement": "UPI settlement",
+  "youNeedToPay": "You need to pay",
+  "youNeedToReceive": "You need to receive",
+  "openPreferredUpiApp": "Open your preferred UPI app",
+  "sharePaymentLinkToReceive": "Share a payment link to receive money",
+  "sendThroughWhatsAppOrAnotherApp": "Send through WhatsApp or another app",
+  "addYourUpiId": "Add your UPI ID",
+  "addContactUpiId": "Add {contactName}'s UPI ID",
+  "@addContactUpiId": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "requiredToPayThroughUpi": "Required to pay this contact through UPI.",
+  "requiredToRequestMoney": "Required to request money through UPI.",
+  "saveAndContinue": "Save & continue",
+  "notNow": "Not now",
+  "upi": "UPI",
+  "payByUpi": "Pay by UPI",
+  "requestViaUpi": "Request via UPI",
+  "shareRequest": "Share request",
+  "sharePaymentDetails": "Share payment details",
+  "upiRequestShareSubject": "HisaabMate UPI Request",
+  "upiPaymentDetailsShareSubject": "HisaabMate Payment Details",
+  "upiRequestShareMessage": "Hi {contactName} 👋\n\nCould you please send {amount} to {ownerName} (me) to settle our balance on {appName}?\n\nUPI link:\n{upiUri}\n\nThanks,\n{ownerName}",
+  "@upiRequestShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {},
+      "ownerName": {},
+      "appName": {},
+      "upiUri": {}
+    }
+  },
+  "upiPaymentDetailsShareMessage": "Hi {contactName} 👋\n\nHere’s the UPI link for {amount} to settle our balance on {appName}.\n\nUPI link:\n{upiUri}\n\nThanks,\n{ownerName}",
+  "@upiPaymentDetailsShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {},
+      "appName": {},
+      "upiUri": {},
+      "ownerName": {}
+    }
+  },
+  "upiIdRequired": "Your UPI ID is required to request money.",
+  "contactUpiIdRequired": "This contact's UPI ID is required to pay by UPI.",
+  "noUpiAppFound": "No UPI app was found on this device.",
+  "paymentCompleted": "Did the payment complete?",
+  "recordUpiSettlement": "Record UPI settlement",
+  "paymentReference": "Payment reference (Optional)",
+  "upiPaymentCancelled": "Payment was not recorded.",
+  "requestSharedSuccessfully": "Request shared successfully",
+  "paymentDetailsSharedSuccessfully": "Payment details shared successfully",
+  "copyUpiLink": "Copy UPI link",
   "enterSettlementAmount": "Enter settlement amount",
   "currentBalance": "Current Balance",
   "settleWithContact": "Settle with {contactName}",
@@ -890,8 +953,10 @@
   "yourProfile": "Your Profile",
   "setYourName": "Set your name",
   "nameUsedInSharedSplits": "Used in shared splits and reports",
+  "nameUsedInSharedMessages": "Used in messages shared outside HisaabMate",
   "helpFriendsRecognizeYou": "Help friends recognize who paid or owes",
   "yourNameRequired": "Your Name *",
+  "yourUpiIdOptional": "Your UPI ID (Optional)",
   "pleaseEnterYourName": "Please enter your name",
   "profileSaved": "Profile saved",
   "moreOptions": "More options",
@@ -906,6 +971,30 @@
   "customRange": "Custom range",
   "borrowLedgerStatement": "HisaabMate Statement",
   "borrowLedgerFullStatement": "HisaabMate Full Statement",
+  "contactStatementShareSubject": "HisaabMate Statement - {contactName}",
+  "@contactStatementShareSubject": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "ledgerStatementShareSubject": "HisaabMate Ledger Statement",
+  "contactStatementShareMessage": "Hi {contactName} 👋\n\nHere’s your {appName} statement for {dateRange}.\n\nThe statement is attached for your reference.\n\nThanks,\n{ownerName}",
+  "@contactStatementShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "appName": {},
+      "dateRange": {},
+      "ownerName": {}
+    }
+  },
+  "ledgerStatementShareMessage": "Hi everyone 👋\n\nHere’s the {appName} ledger statement for {dateRange}.\n\nThe statement is attached for your reference.\n\nThanks,\n{ownerName}",
+  "@ledgerStatementShareMessage": {
+    "placeholders": {
+      "appName": {},
+      "dateRange": {},
+      "ownerName": {}
+    }
+  },
   "splitInvoice": "Split Invoice",
   "splitInvoiceFrom": "Split invoice from {ownerName}: {splitTitle}",
   "@splitInvoiceFrom": {
@@ -914,10 +1003,18 @@
       "splitTitle": {}
     }
   },
-  "splitInvoiceSubject": "Split Invoice - {splitTitle}",
+  "splitInvoiceSubject": "HisaabMate Split Invoice - {splitTitle}",
   "@splitInvoiceSubject": {
     "placeholders": {
       "splitTitle": {}
+    }
+  },
+  "splitInvoiceShareMessage": "Hi everyone 👋\n\nHere’s the {appName} split invoice for “{splitTitle}”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n{ownerName}",
+  "@splitInvoiceShareMessage": {
+    "placeholders": {
+      "appName": {},
+      "splitTitle": {},
+      "ownerName": {}
     }
   },
   "period": "Period",

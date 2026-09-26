@@ -54,6 +54,8 @@
   "contact": "संपर्क",
   "addContact": "नवीन संपर्क",
   "editContact": "संपर्क एडिट करा",
+  "contactUpdated": "संपर्क अपडेट झाला",
+  "failedToUpdateContact": "संपर्क अपडेट करता आला नाही",
   "name": "नाव",
   "phone": "फोन",
   "contactAdded": "संपर्क जोडला गेला",
@@ -440,6 +442,10 @@
   "phoneNumber": "फोन नंबर",
   "phoneNumbersSmall": "फोन नंबर",
   "phoneNumberOptional": "फोन नंबर (ऐच्छिक)",
+  "upiIdOptional": "UPI ID (ऐच्छिक)",
+  "upiId": "UPI ID",
+  "enterUpiId": "name@bank",
+  "invalidUpiId": "वैध UPI ID टाका",
   "pickFromContacts": "संपर्कांमधून निवडा",
   "pleaseAddAtLeastOneParticipant": "कृपया किमान एक सदस्य जोडा",
   "pleaseEnterAmount": "कृपया रक्कम टाका",
@@ -471,6 +477,7 @@
   "restoreRecommendedMessage": "रीस्टार्ट करणे चांगले",
   "restoresDataFromBackup": "बॅकअपमधून डेटा परत आणते:",
   "reviewAndEditContactDetails": "जोडण्यापूर्वी संपर्काचा तपशील पाहा आणि गरज असल्यास एडिट करा",
+  "editSavedContactDetails": "सेव्ह केलेले संपर्क तपशील एडिट करा",
   "reviewContact": "संपर्क पाहा",
   "rupee": "₹",
   "rupees": "रुपये",
@@ -506,6 +513,62 @@
     }
   },
   "settlementTransaction": "हिशोब चुकता करण्याचा व्यवहार",
+  "upiOptions": "UPI पर्याय",
+  "payOrRequestThroughUpi": "UPI ने पैसे द्या किंवा मागा",
+  "upiSettlement": "UPI हिशोब",
+  "youNeedToPay": "तुम्हाला द्यायचे आहेत",
+  "youNeedToReceive": "तुम्हाला घ्यायचे आहेत",
+  "openPreferredUpiApp": "तुमचे आवडते UPI अॅप उघडा",
+  "sharePaymentLinkToReceive": "पैसे घेण्यासाठी पेमेंट लिंक शेअर करा",
+  "sendThroughWhatsAppOrAnotherApp": "WhatsApp किंवा इतर अॅपमधून पाठवा",
+  "addYourUpiId": "तुमचा UPI ID जोडा",
+  "addContactUpiId": "{contactName} चा UPI ID जोडा",
+  "@addContactUpiId": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "requiredToPayThroughUpi": "या संपर्काला UPI ने पैसे देण्यासाठी आवश्यक आहे.",
+  "requiredToRequestMoney": "UPI ने पैसे मागण्यासाठी आवश्यक आहे.",
+  "saveAndContinue": "सेव्ह करून पुढे जा",
+  "notNow": "आत्ता नाही",
+  "upi": "UPI",
+  "payByUpi": "UPI ने पैसे द्या",
+  "requestViaUpi": "UPI ने पैसे मागा",
+  "shareRequest": "विनंती शेअर करा",
+  "sharePaymentDetails": "पेमेंट तपशील शेअर करा",
+  "upiRequestShareSubject": "HisaabMate UPI विनंती",
+  "upiPaymentDetailsShareSubject": "HisaabMate पेमेंट तपशील",
+  "upiRequestShareMessage": "नमस्कार {contactName} 👋\n\n{appName} वरील आपला हिशोब चुकता करण्यासाठी कृपया {ownerName} (मला) {amount} पाठवू शकाल का?\n\nUPI लिंक:\n{upiUri}\n\nधन्यवाद,\n{ownerName}",
+  "@upiRequestShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {},
+      "ownerName": {},
+      "appName": {},
+      "upiUri": {}
+    }
+  },
+  "upiPaymentDetailsShareMessage": "नमस्कार {contactName} 👋\n\n{appName} वरील आपला हिशोब चुकता करण्यासाठी {amount} ची UPI लिंक येथे आहे.\n\nUPI लिंक:\n{upiUri}\n\nधन्यवाद,\n{ownerName}",
+  "@upiPaymentDetailsShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "amount": {},
+      "appName": {},
+      "upiUri": {},
+      "ownerName": {}
+    }
+  },
+  "upiIdRequired": "पैसे मागण्यासाठी तुमचा UPI ID आवश्यक आहे.",
+  "contactUpiIdRequired": "UPI ने पैसे देण्यासाठी या संपर्काचा UPI ID आवश्यक आहे.",
+  "noUpiAppFound": "या डिव्हाइसवर कोणतेही UPI अॅप सापडले नाही.",
+  "paymentCompleted": "पेमेंट पूर्ण झाले का?",
+  "recordUpiSettlement": "UPI हिशोब नोंदवा",
+  "paymentReference": "पेमेंट संदर्भ (ऐच्छिक)",
+  "upiPaymentCancelled": "पेमेंट नोंदवले गेले नाही.",
+  "requestSharedSuccessfully": "विनंती शेअर झाली",
+  "paymentDetailsSharedSuccessfully": "पेमेंट तपशील शेअर झाले",
+  "copyUpiLink": "UPI लिंक कॉपी करा",
   "balanceSettledSuccessfully": "बाकी रक्कम चुकता झाली",
   "clearThisBalance": "ही शिल्लक क्लिअर करा",
   "clearOffsettingBalances": "शिल्लक क्लिअर करा",
@@ -759,8 +822,10 @@
   "yourProfile": "तुमची प्रोफाइल",
   "setYourName": "तुमचे नाव सेट करा",
   "nameUsedInSharedSplits": "शेअर केलेल्या स्प्लिट आणि रिपोर्टमध्ये वापरले जाईल",
+  "nameUsedInSharedMessages": "HisaabMate बाहेर शेअर केलेल्या मेसेजमध्ये वापरले जाईल",
   "helpFriendsRecognizeYou": "कोणी पैसे दिले किंवा कोणाला द्यायचे आहेत हे मित्रांना ओळखायला मदत करा",
   "yourNameRequired": "तुमचे नाव *",
+  "yourUpiIdOptional": "तुमचा UPI ID (ऐच्छिक)",
   "pleaseEnterYourName": "कृपया तुमचे नाव टाका",
   "profileSaved": "प्रोफाइल सेव्ह झाली",
   "moreOptions": "आणखी पर्याय",
@@ -775,6 +840,30 @@
   "customRange": "कस्टम कालावधी",
   "borrowLedgerStatement": "HisaabMate स्टेटमेंट",
   "borrowLedgerFullStatement": "HisaabMate पूर्ण स्टेटमेंट",
+  "contactStatementShareSubject": "HisaabMate स्टेटमेंट - {contactName}",
+  "@contactStatementShareSubject": {
+    "placeholders": {
+      "contactName": {}
+    }
+  },
+  "ledgerStatementShareSubject": "HisaabMate लेजर स्टेटमेंट",
+  "contactStatementShareMessage": "नमस्कार {contactName} 👋\n\n{dateRange} चे तुमचे {appName} स्टेटमेंट येथे आहे.\n\nतुमच्या संदर्भासाठी स्टेटमेंट जोडले आहे.\n\nधन्यवाद,\n{ownerName}",
+  "@contactStatementShareMessage": {
+    "placeholders": {
+      "contactName": {},
+      "appName": {},
+      "dateRange": {},
+      "ownerName": {}
+    }
+  },
+  "ledgerStatementShareMessage": "नमस्कार सर्वांना 👋\n\n{dateRange} चे {appName} लेजर स्टेटमेंट येथे आहे.\n\nतुमच्या संदर्भासाठी स्टेटमेंट जोडले आहे.\n\nधन्यवाद,\n{ownerName}",
+  "@ledgerStatementShareMessage": {
+    "placeholders": {
+      "appName": {},
+      "dateRange": {},
+      "ownerName": {}
+    }
+  },
   "period": "कालावधी",
   "generatedBy": "तयार करणारा",
   "generatedOn": "तयार केल्याची तारीख",
@@ -868,10 +957,18 @@
       "splitTitle": {}
     }
   },
-  "splitInvoiceSubject": "स्प्लिट इनव्हॉइस - {splitTitle}",
+  "splitInvoiceSubject": "HisaabMate स्प्लिट इनव्हॉइस - {splitTitle}",
   "@splitInvoiceSubject": {
     "placeholders": {
       "splitTitle": {}
+    }
+  },
+  "splitInvoiceShareMessage": "नमस्कार सर्वांना 👋\n\n“{splitTitle}” चे {appName} स्प्लिट इनव्हॉइस येथे आहे.\n\nकृपया जोडलेल्या फाइलमध्ये रक्कम आणि स्प्लिटचा तपशील पहा.\n\nधन्यवाद,\n{ownerName}",
+  "@splitInvoiceShareMessage": {
+    "placeholders": {
+      "appName": {},
+      "splitTitle": {},
+      "ownerName": {}
     }
   },
   "ownerPaid": "{ownerName} ने दिले",
