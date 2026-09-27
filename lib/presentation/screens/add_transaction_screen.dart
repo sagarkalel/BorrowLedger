@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/shared_expense_mode.dart';
 import '../../data/models/contact_model.dart';
 import '../../data/repositories/contact_repository.dart';
 import '../../data/repositories/shared_spend_purpose_repository.dart';
@@ -75,6 +76,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late String _currentTransactionCategory;
   bool _sharedPaidByUser = true;
   bool _sharedSplitEqually = true;
+  bool _sharedCostEnabled = false;
+  bool _legacySharedExpense = false;
 
   @override
   void initState() {
@@ -96,6 +99,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _sharedPaidByUser =
           widget.transaction!.sharedPaidByUser ??
           (widget.transaction!.type == AppConstants.typeLend);
+      if (widget.transaction!.isSharedSpend) {
+        final sharedMode = SharedExpenseModeResolver.forTransaction(
+          widget.transaction!,
+        );
+        _sharedCostEnabled = sharedMode != SharedExpenseMode.paidOnBehalf;
+        _legacySharedExpense = sharedMode == SharedExpenseMode.legacy;
+      }
       if (widget.transaction!.sharedTotalAmount != null) {
         _sharedTotalController.text = widget.transaction!.sharedTotalAmount!
             .toString();
@@ -265,6 +275,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       ),
                     ),
                     const SizedBox(height: 9),
+
+                    if (isShared) ...[
+                      _buildCompactSwitchRow(
+                        title: tr.weSharedTheCost,
+                        subtitle: tr.weSharedTheCostDescription,
+                        value: _sharedCostEnabled,
+                        onChanged: _setSharedCostEnabled,
+                      ),
+                      const SizedBox(height: 9),
+                    ],
 
                     _buildComposerSection(
                       context,
@@ -629,6 +649,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String? _outcomePreviewDetails(String contactName) {
     final tr = AppLocalizations.of(context)!;
     if (_currentTransactionCategory == AppConstants.categorySharedSpend) {
+      if (!_sharedCostEnabled) return null;
+
       final total = _sharedTotalAmount;
       final share = double.tryParse(_amountController.text.trim());
       final userShare = _sharedPaidByUser
@@ -678,7 +700,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       case AppConstants.categoryUdhari:
         return tr.udhariItemCreditDescription;
       case AppConstants.categorySharedSpend:
-        return tr.sharedSpendDescription;
+        return tr.expenseWithSomeoneFormDescription;
       default:
         return tr.addNewTransaction;
     }
@@ -721,7 +743,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final tr = AppLocalizations.of(context)!;
     switch (_currentTransactionCategory) {
       case AppConstants.categorySharedSpend:
-        return tr.iPaid;
+        return tr.iPaidForThem;
       case AppConstants.categoryUdhari:
         return tr.iGaveItem;
       default:
@@ -733,12 +755,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final tr = AppLocalizations.of(context)!;
     switch (_currentTransactionCategory) {
       case AppConstants.categorySharedSpend:
-        return tr.personPaid(_contactDisplayName());
+        return tr.personPaidForMe(_contactDisplayName());
       case AppConstants.categoryUdhari:
         return tr.iTookItem;
       default:
         return tr.iGot;
     }
+  }
+
+  void _setSharedCostEnabled(bool enabled) {
+    setState(() {
+      _sharedCostEnabled = enabled;
+      _legacySharedExpense = false;
+      _sharedSplitEqually = true;
+      if (!enabled) {
+        _sharedTotalController.clear();
+      } else {
+        _syncSharedEqualShare();
+      }
+    });
   }
 
   void _setPayerType(String type) {
@@ -814,8 +849,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       children: [
         _buildCompactTextField(
           controller: _descriptionController,
-          labelText: tr.purposeRequired,
-          hintText: tr.purposeHint,
+          labelText: tr.whatWasItForRequired,
+          hintText: tr.whatWasItForHint,
           prefixIcon: Icons.local_offer_outlined,
           textCapitalization: TextCapitalization.words,
           onChanged: (_) => setState(() {}),
@@ -831,55 +866,79 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           onPurposeSelected: () => setState(() {}),
         ),
         const SizedBox(height: 8),
-        AppAmountField(
-          controller: _sharedTotalController,
-          labelText: _sharedPaidByUser
-              ? tr.totalBillAmountRequired
-              : tr.totalBillAmountOptional,
-          hintText: tr.enterFullBillAmount,
-          onChanged: (_) => setState(_syncSharedEqualShare),
-          validator: (value) {
-            final text = value?.trim() ?? '';
-            if (!_sharedPaidByUser && text.isEmpty) return null;
-            return _requiredPositiveAmountValidator(text);
-          },
-        ),
-        const SizedBox(height: 8),
-        _buildCompactSwitchRow(
-          title: tr.splitEqually,
-          subtitle: _sharedPaidByUser
-              ? tr.contactShareBecomesHalf
-              : tr.yourShareBecomesHalf,
-          value: _sharedSplitEqually,
-          onChanged: (value) {
-            setState(() {
-              _sharedSplitEqually = value;
-              _syncSharedEqualShare();
-            });
-          },
-        ),
-        const SizedBox(height: 8),
-        AppAmountField(
-          controller: _amountController,
-          labelText: _sharedPaidByUser
-              ? tr.personShareRequired(contactName)
-              : tr.myShareRequired,
-          hintText: _sharedPaidByUser
-              ? tr.amountPersonShouldPay(contactName)
-              : tr.amountYouShouldPay,
-          onChanged: (_) => setState(() {}),
-          validator: (value) {
-            final baseValidation = _requiredPositiveAmountValidator(value);
-            if (baseValidation != null) return baseValidation;
+        if (_sharedCostEnabled) ...[
+          AppAmountField(
+            controller: _sharedTotalController,
+            labelText: _legacySharedExpense && !_sharedPaidByUser
+                ? tr.totalBillAmountOptional
+                : tr.totalBillAmountRequired,
+            hintText: tr.enterFullBillAmount,
+            onChanged: (_) => setState(_syncSharedEqualShare),
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (text.isEmpty && !_legacySharedExpense) {
+                return tr.totalBillRequiredMessage;
+              }
+              if (text.isEmpty) return null;
+              return _requiredPositiveAmountValidator(text);
+            },
+          ),
+          const SizedBox(height: 8),
+          _buildCompactSwitchRow(
+            title: tr.splitEqually,
+            subtitle: _sharedPaidByUser
+                ? tr.contactShareBecomesHalf
+                : tr.yourShareBecomesHalf,
+            value: _sharedSplitEqually,
+            onChanged: (value) {
+              setState(() {
+                _sharedSplitEqually = value;
+                _syncSharedEqualShare();
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          AppAmountField(
+            controller: _amountController,
+            labelText: _sharedPaidByUser
+                ? tr.personShareRequired(contactName)
+                : tr.myShareRequired,
+            hintText: _sharedPaidByUser
+                ? tr.amountPersonShouldPay(contactName)
+                : tr.amountYouShouldPay,
+            onChanged: (_) => setState(() {}),
+            validator: (value) {
+              final baseValidation = _requiredPositiveAmountValidator(value);
+              if (baseValidation != null) return baseValidation;
 
-            final total = _sharedTotalAmount;
-            final share = double.parse(value!.trim());
-            if (total != null && share - total > 0.01) {
-              return tr.shareCannotExceedTotalBill;
-            }
-            return null;
-          },
-        ),
+              final total = _sharedTotalAmount;
+              if (total == null || total <= 0) {
+                return tr.totalBillRequiredMessage;
+              }
+
+              final share = double.parse(value!.trim());
+              if (share - total > 0.01) {
+                return tr.shareCannotExceedTotalBill;
+              }
+
+              if (!_legacySharedExpense && total - share <= 0.01) {
+                return tr.sharedCostRequiresBothShares;
+              }
+              return null;
+            },
+          ),
+        ] else
+          AppAmountField(
+            controller: _amountController,
+            labelText: _sharedPaidByUser
+                ? tr.amountPaidForThemRequired
+                : tr.amountPaidForYouRequired,
+            hintText: _sharedPaidByUser
+                ? tr.amountPaidForThemHint(contactName)
+                : tr.amountPaidForYouHint(contactName),
+            onChanged: (_) => setState(() {}),
+            validator: _requiredPositiveAmountValidator,
+          ),
       ],
     );
   }
@@ -1241,16 +1300,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final quantity = _quantityController.text.trim();
       final description = _descriptionController.text.trim();
       final amount = double.parse(_amountController.text.trim());
-      final sharedTotal = isSavingShared ? _sharedTotalAmount : null;
-      final sharedUserShare = isSavingShared
-          ? (_sharedPaidByUser
-                ? (sharedTotal == null ? null : sharedTotal - amount)
-                : amount)
-          : null;
-      final sharedContactShare = isSavingShared
-          ? (_sharedPaidByUser
-                ? amount
-                : (sharedTotal == null ? null : sharedTotal - amount))
+      final sharedAmounts = isSavingShared
+          ? (_sharedCostEnabled
+                ? SharedExpenseAmounts.sharedCost(
+                    totalAmount: _sharedTotalAmount,
+                    counterpartyShare: amount,
+                    paidByUser: _sharedPaidByUser,
+                  )
+                : SharedExpenseAmounts.paidOnBehalf(
+                    amount: amount,
+                    paidByUser: _sharedPaidByUser,
+                  ))
           : null;
 
       final transaction = TransactionModel(
@@ -1276,9 +1336,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         updatedAt: widget.transaction?.updatedAt,
         isSettlement: widget.transaction?.isSettlement ?? false,
         sourceType: isSavingShared ? AppConstants.sourceTypeSharedSpend : null,
-        sharedTotalAmount: sharedTotal,
-        sharedUserShare: sharedUserShare?.clamp(0, double.infinity).toDouble(),
-        sharedContactShare: sharedContactShare
+        sharedTotalAmount: sharedAmounts?.totalAmount,
+        sharedUserShare: sharedAmounts?.userShare
+            ?.clamp(0, double.infinity)
+            .toDouble(),
+        sharedContactShare: sharedAmounts?.contactShare
             ?.clamp(0, double.infinity)
             .toDouble(),
         sharedPaidByUser: isSavingShared ? _sharedPaidByUser : null,

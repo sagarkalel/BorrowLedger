@@ -415,8 +415,14 @@ abstract class AppLocalizations {
   /// No description provided for @splits.
   ///
   /// In en, this message translates to:
-  /// **'Splits'**
+  /// **'Group Expenses'**
   String get splits;
+
+  /// No description provided for @myExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'My Expenses'**
+  String get myExpenses;
 
   /// No description provided for @expenses.
   ///
@@ -499,7 +505,7 @@ abstract class AppLocalizations {
   /// No description provided for @addNewTransaction.
   ///
   /// In en, this message translates to:
-  /// **'Add New Transaction'**
+  /// **'What do you want to add?'**
   String get addNewTransaction;
 
   /// No description provided for @saveTransaction.
@@ -673,26 +679,68 @@ abstract class AppLocalizations {
   /// No description provided for @udhariItemCredit.
   ///
   /// In en, this message translates to:
-  /// **'Udhari / Item Credit'**
+  /// **'Udhari'**
   String get udhariItemCredit;
 
   /// No description provided for @udhariItemCreditDescription.
   ///
   /// In en, this message translates to:
-  /// **'Item or service bought/sold on credit'**
+  /// **'Items or services bought or sold on credit.'**
   String get udhariItemCreditDescription;
 
   /// No description provided for @sharedSpend.
   ///
   /// In en, this message translates to:
-  /// **'Shared Spend'**
+  /// **'Expense with Someone'**
   String get sharedSpend;
 
   /// No description provided for @sharedSpendDescription.
   ///
   /// In en, this message translates to:
-  /// **'One of you paid for something together'**
+  /// **'You paid for them or they paid for you.'**
   String get sharedSpendDescription;
+
+  /// No description provided for @onBehalf.
+  ///
+  /// In en, this message translates to:
+  /// **'On behalf'**
+  String get onBehalf;
+
+  /// No description provided for @sharedCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared cost'**
+  String get sharedCost;
+
+  /// No description provided for @expenseWithSomeoneFormDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a payment made for you or by you.'**
+  String get expenseWithSomeoneFormDescription;
+
+  /// No description provided for @weSharedTheCost.
+  ///
+  /// In en, this message translates to:
+  /// **'We shared the cost'**
+  String get weSharedTheCost;
+
+  /// No description provided for @weSharedTheCostDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the total bill and each person’s share.'**
+  String get weSharedTheCostDescription;
+
+  /// No description provided for @iPaidForThem.
+  ///
+  /// In en, this message translates to:
+  /// **'I paid for them'**
+  String get iPaidForThem;
+
+  /// No description provided for @personPaidForMe.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} paid for me'**
+  String personPaidForMe(Object personName);
 
   /// No description provided for @whoPaid.
   ///
@@ -753,6 +801,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{personName} paid'**
   String personPaid(Object personName);
+
+  /// No description provided for @youPaidForPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid for {personName}'**
+  String youPaidForPerson(Object personName);
+
+  /// No description provided for @paidForPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid for {personName}'**
+  String paidForPerson(Object personName);
+
+  /// No description provided for @personPaidForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} paid for you'**
+  String personPaidForYou(Object personName);
+
+  /// No description provided for @ownerPaidForPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerName} paid for {personName}'**
+  String ownerPaidForPerson(Object ownerName, Object personName);
 
   /// No description provided for @personPays.
   ///
@@ -829,13 +901,13 @@ abstract class AppLocalizations {
   /// No description provided for @groupSplit.
   ///
   /// In en, this message translates to:
-  /// **'Group split'**
+  /// **'Group Expense'**
   String get groupSplit;
 
   /// No description provided for @groupSplitDescription.
   ///
   /// In en, this message translates to:
-  /// **'Split one expense with multiple people'**
+  /// **'Split one expense with multiple people.'**
   String get groupSplitDescription;
 
   /// No description provided for @comment_amounts.
@@ -891,6 +963,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paid by You'**
   String get paidByYou;
+
+  /// No description provided for @paymentContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment context'**
+  String get paymentContext;
 
   /// No description provided for @youPaidRequired.
   ///
@@ -976,6 +1054,18 @@ abstract class AppLocalizations {
   /// **'Dinner, petrol, shopping...'**
   String get purposeHint;
 
+  /// No description provided for @whatWasItForRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'What was it for? *'**
+  String get whatWasItForRequired;
+
+  /// No description provided for @whatWasItForHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch, a mall item, mess...'**
+  String get whatWasItForHint;
+
   /// No description provided for @pleaseEnterPurpose.
   ///
   /// In en, this message translates to:
@@ -1005,6 +1095,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter full bill amount'**
   String get enterFullBillAmount;
+
+  /// No description provided for @totalBillRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the total bill amount.'**
+  String get totalBillRequiredMessage;
+
+  /// No description provided for @sharedCostRequiresBothShares.
+  ///
+  /// In en, this message translates to:
+  /// **'A shared cost must include a share for both people.'**
+  String get sharedCostRequiresBothShares;
 
   /// No description provided for @contactShareBecomesHalf.
   ///
@@ -1041,6 +1143,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Amount {personName} should pay'**
   String amountPersonShouldPay(Object personName);
+
+  /// No description provided for @amountPaidForThemRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid for them *'**
+  String get amountPaidForThemRequired;
+
+  /// No description provided for @amountPaidForYouRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid for you *'**
+  String get amountPaidForYouRequired;
+
+  /// No description provided for @amountPaidForThemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What {personName} owes you'**
+  String amountPaidForThemHint(Object personName);
+
+  /// No description provided for @amountPaidForYouHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What you owe {personName}'**
+  String amountPaidForYouHint(Object personName);
 
   /// No description provided for @amountYouShouldPay.
   ///
@@ -1261,7 +1387,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneAlreadySavedMessage.
   ///
   /// In en, this message translates to:
-  /// **'This number is already saved as {contactName}. Use that contact for this split?'**
+  /// **'This number is already saved as {contactName}. Use that contact for this group expense?'**
   String phoneAlreadySavedMessage(Object contactName);
 
   /// No description provided for @useExistingContact.
@@ -1621,7 +1747,7 @@ abstract class AppLocalizations {
   /// No description provided for @trackYourSpending.
   ///
   /// In en, this message translates to:
-  /// **'Track your spending'**
+  /// **'Track something you paid for yourself.'**
   String get trackYourSpending;
 
   /// No description provided for @expenseDeleted.
@@ -1729,115 +1855,115 @@ abstract class AppLocalizations {
   /// No description provided for @split.
   ///
   /// In en, this message translates to:
-  /// **'Split'**
+  /// **'Group Expense'**
   String get split;
 
   /// No description provided for @splitExpense.
   ///
   /// In en, this message translates to:
-  /// **'Split Expense'**
+  /// **'Group Expense'**
   String get splitExpense;
 
   /// No description provided for @splitExpenses.
   ///
   /// In en, this message translates to:
-  /// **'Split Expenses'**
+  /// **'Group Expenses'**
   String get splitExpenses;
 
   /// No description provided for @addSplit.
   ///
   /// In en, this message translates to:
-  /// **'Add Split'**
+  /// **'Add Group Expense'**
   String get addSplit;
 
   /// No description provided for @editSplit.
   ///
   /// In en, this message translates to:
-  /// **'Edit Split'**
+  /// **'Edit Group Expense'**
   String get editSplit;
 
   /// No description provided for @editSplitExpense.
   ///
   /// In en, this message translates to:
-  /// **'Edit Split Expense'**
+  /// **'Edit Group Expense'**
   String get editSplitExpense;
 
   /// No description provided for @deleteSplit.
   ///
   /// In en, this message translates to:
-  /// **'Delete Split'**
+  /// **'Delete Group Expense'**
   String get deleteSplit;
 
   /// No description provided for @deleteSplitExpense.
   ///
   /// In en, this message translates to:
-  /// **'Delete Split Expense'**
+  /// **'Delete Group Expense'**
   String get deleteSplitExpense;
 
   /// No description provided for @splitDetails.
   ///
   /// In en, this message translates to:
-  /// **'Split Details'**
+  /// **'Group Expense Details'**
   String get splitDetails;
 
   /// No description provided for @splitDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Split deleted'**
+  /// **'Group Expense deleted'**
   String get splitDeleted;
 
   /// No description provided for @splitExpenseDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Split expense deleted'**
+  /// **'Group Expense deleted'**
   String get splitExpenseDeleted;
 
   /// No description provided for @splitMarkedAsSettled.
   ///
   /// In en, this message translates to:
-  /// **'Split marked as settled'**
+  /// **'Group Expense marked as settled'**
   String get splitMarkedAsSettled;
 
   /// No description provided for @splitNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Split not found'**
+  /// **'Group Expense not found'**
   String get splitNotFound;
 
   /// No description provided for @noSplitsYet.
   ///
   /// In en, this message translates to:
-  /// **'No splits yet'**
+  /// **'No group expenses yet'**
   String get noSplitsYet;
 
   /// No description provided for @noSplitExpensesYet.
   ///
   /// In en, this message translates to:
-  /// **'No split expenses yet'**
+  /// **'No group expenses yet'**
   String get noSplitExpensesYet;
 
   /// No description provided for @noMoreSplits.
   ///
   /// In en, this message translates to:
-  /// **'No more splits'**
+  /// **'No more group expenses'**
   String get noMoreSplits;
 
   /// No description provided for @noSplitsFound.
   ///
   /// In en, this message translates to:
-  /// **'No splits found'**
+  /// **'No group expenses found'**
   String get noSplitsFound;
 
   /// No description provided for @startSplittingExpenses.
   ///
   /// In en, this message translates to:
-  /// **'Start splitting expenses with friends and family'**
+  /// **'Start tracking group expenses with friends and family'**
   String get startSplittingExpenses;
 
   /// No description provided for @startSplittingExpensesWithFriends.
   ///
   /// In en, this message translates to:
-  /// **'Start splitting expenses with friends'**
+  /// **'Start tracking group expenses with friends'**
   String get startSplittingExpensesWithFriends;
 
   /// No description provided for @shareCostsWithFriends.
@@ -1879,7 +2005,7 @@ abstract class AppLocalizations {
   /// No description provided for @addAtLeastOnePerson.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one person to split with'**
+  /// **'Add at least one person to include'**
   String get addAtLeastOnePerson;
 
   /// No description provided for @totalParticipantShares.
@@ -1891,25 +2017,25 @@ abstract class AppLocalizations {
   /// No description provided for @recentSplits.
   ///
   /// In en, this message translates to:
-  /// **'Recent Splits'**
+  /// **'Recent Group Expenses'**
   String get recentSplits;
 
   /// No description provided for @searchSplits.
   ///
   /// In en, this message translates to:
-  /// **'Search splits...'**
+  /// **'Search group expenses...'**
   String get searchSplits;
 
   /// No description provided for @createSplit.
   ///
   /// In en, this message translates to:
-  /// **'Create Split'**
+  /// **'Create Group Expense'**
   String get createSplit;
 
   /// No description provided for @updateSplit.
   ///
   /// In en, this message translates to:
-  /// **'Update Split'**
+  /// **'Update Group Expense'**
   String get updateSplit;
 
   /// No description provided for @settleAnyway.
@@ -1921,13 +2047,13 @@ abstract class AppLocalizations {
   /// No description provided for @settleSplit.
   ///
   /// In en, this message translates to:
-  /// **'Settle Split'**
+  /// **'Settle Group Expense'**
   String get settleSplit;
 
   /// No description provided for @reviewAndSettleSplit.
   ///
   /// In en, this message translates to:
-  /// **'Review & Settle Split'**
+  /// **'Review & Settle Group Expense'**
   String get reviewAndSettleSplit;
 
   /// No description provided for @notPaidYet.
@@ -1957,7 +2083,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewPendingSettlements.
   ///
   /// In en, this message translates to:
-  /// **'Review pending settlements before closing this split.'**
+  /// **'Review pending settlements before closing this group expense.'**
   String get reviewPendingSettlements;
 
   /// No description provided for @pendingSettlementsWillBeMarkedComplete.
@@ -2017,13 +2143,13 @@ abstract class AppLocalizations {
   /// No description provided for @settlingWillCloseThesePayments.
   ///
   /// In en, this message translates to:
-  /// **'This will close these payments and remove generated split ledger entries.'**
+  /// **'This will close these payments and remove generated group expense ledger entries.'**
   String get settlingWillCloseThesePayments;
 
   /// No description provided for @allSettlementsAlreadyComplete.
   ///
   /// In en, this message translates to:
-  /// **'All settlements are already complete. Mark this split as settled?'**
+  /// **'All settlements are already complete. Mark this group expense as settled?'**
   String get allSettlementsAlreadyComplete;
 
   /// No description provided for @yourShare.
@@ -2138,6 +2264,12 @@ abstract class AppLocalizations {
     Object amount,
   );
 
+  /// No description provided for @personOwesYouShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{personName} owes you'**
+  String personOwesYouShort(Object personName);
+
   /// No description provided for @owesCounterparty.
   ///
   /// In en, this message translates to:
@@ -2149,6 +2281,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You owe {personName} {amount}'**
   String youOwePerson(Object personName, Object amount);
+
+  /// No description provided for @youOwePersonShort.
+  ///
+  /// In en, this message translates to:
+  /// **'You owe {personName}'**
+  String youOwePersonShort(Object personName);
 
   /// No description provided for @fullRemainingAmountWillBeMarkedAsReceived.
   ///
@@ -2177,7 +2315,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteSplitConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete this split expense? This action cannot be undone.'**
+  /// **'Are you sure you want to delete this group expense? This action cannot be undone.'**
   String get deleteSplitConfirmMessage;
 
   /// No description provided for @doYouWantToMarkSettled.
@@ -2189,7 +2327,7 @@ abstract class AppLocalizations {
   /// No description provided for @allParticipantHasPaidTheirShareMarkAsSetteled.
   ///
   /// In en, this message translates to:
-  /// **'All participants have paid their share. Mark this split as settled?\n\nThis action cannot be undone.'**
+  /// **'All participants have paid their share. Mark this group expense as settled?\n\nThis action cannot be undone.'**
   String get allParticipantHasPaidTheirShareMarkAsSetteled;
 
   /// No description provided for @amountYouPaidCannotExceedTotalAmount.
@@ -2219,13 +2357,13 @@ abstract class AppLocalizations {
   /// No description provided for @splitTitle.
   ///
   /// In en, this message translates to:
-  /// **'Split Title'**
+  /// **'Group Expense Title'**
   String get splitTitle;
 
   /// No description provided for @enterSplitTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter split title'**
+  /// **'Enter group expense title'**
   String get enterSplitTitle;
 
   /// No description provided for @egDinnerAtRestaurant.
@@ -2291,13 +2429,13 @@ abstract class AppLocalizations {
   /// No description provided for @splitBills.
   ///
   /// In en, this message translates to:
-  /// **'Bills in this split'**
+  /// **'Bills in this group expense'**
   String get splitBills;
 
   /// No description provided for @splitBillsHelp.
   ///
   /// In en, this message translates to:
-  /// **'Add one or more bills that belong to this split'**
+  /// **'Add one or more bills that belong to this group expense'**
   String get splitBillsHelp;
 
   /// No description provided for @addBill.
@@ -2363,7 +2501,7 @@ abstract class AppLocalizations {
   /// No description provided for @addAtLeastOneBill.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one bill or expense for this split'**
+  /// **'Add at least one bill or expense for this group expense'**
   String get addAtLeastOneBill;
 
   /// No description provided for @pleaseAddAtLeastOneBill.
@@ -2483,7 +2621,7 @@ abstract class AppLocalizations {
   /// No description provided for @totalSplits.
   ///
   /// In en, this message translates to:
-  /// **'Total Splits'**
+  /// **'Total Group Expenses'**
   String get totalSplits;
 
   /// No description provided for @youOwe.
@@ -2981,7 +3119,7 @@ abstract class AppLocalizations {
   /// No description provided for @splitBalance.
   ///
   /// In en, this message translates to:
-  /// **'Split balance'**
+  /// **'Group expense balance'**
   String get splitBalance;
 
   /// No description provided for @netSettlement.
@@ -3011,7 +3149,7 @@ abstract class AppLocalizations {
   /// No description provided for @noCashNeededOffset.
   ///
   /// In en, this message translates to:
-  /// **'No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.'**
+  /// **'No money needs to be paid. Your direct and group expense balances will be cleared, and your history will stay visible.'**
   String get noCashNeededOffset;
 
   /// No description provided for @clearOffsettingBalances.
@@ -3095,7 +3233,7 @@ abstract class AppLocalizations {
   /// No description provided for @balancesClearedTogetherNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Direct and split balances were cleared together, so only the net amount was paid.'**
+  /// **'Note: Direct and group expense balances were cleared together, so only the net amount was paid.'**
   String get balancesClearedTogetherNote;
 
   /// No description provided for @balancesCancelledNoPaymentNote.
@@ -3107,7 +3245,7 @@ abstract class AppLocalizations {
   /// No description provided for @balancesClearedTogetherReportNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Direct and split balances were cleared together.'**
+  /// **'Note: Direct and group expense balances were cleared together.'**
   String get balancesClearedTogetherReportNote;
 
   /// No description provided for @cashBorrowBalance.
@@ -3125,19 +3263,19 @@ abstract class AppLocalizations {
   /// No description provided for @excludingSplitBalances.
   ///
   /// In en, this message translates to:
-  /// **'{amount} excluding split balances'**
+  /// **'{amount} excluding group expense balances'**
   String excludingSplitBalances(Object amount);
 
   /// No description provided for @splitBalanceAmount.
   ///
   /// In en, this message translates to:
-  /// **'Split balance: {amount}'**
+  /// **'Group expense balance: {amount}'**
   String splitBalanceAmount(Object amount);
 
   /// No description provided for @settleSplitsFromSplitDetails.
   ///
   /// In en, this message translates to:
-  /// **'Settle splits from Split Details'**
+  /// **'Settle group expenses from Group Expense Details'**
   String get settleSplitsFromSplitDetails;
 
   /// No description provided for @setToFullBalance.
@@ -3215,13 +3353,13 @@ abstract class AppLocalizations {
   /// No description provided for @deleteSplitTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete Split?'**
+  /// **'Delete Group Expense?'**
   String get deleteSplitTitle;
 
   /// No description provided for @deleteSplitMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete this split expense?'**
+  /// **'Are you sure you want to delete this group expense?'**
   String get deleteSplitMessage;
 
   /// No description provided for @actionCannotBeUndone.
@@ -3317,7 +3455,7 @@ abstract class AppLocalizations {
   /// No description provided for @allSplitExpensesItem.
   ///
   /// In en, this message translates to:
-  /// **'All split expenses'**
+  /// **'All group expenses'**
   String get allSplitExpensesItem;
 
   /// No description provided for @allContactReferencesItem.
@@ -3377,7 +3515,7 @@ abstract class AppLocalizations {
   /// No description provided for @allSplitExpenses.
   ///
   /// In en, this message translates to:
-  /// **'All split expenses'**
+  /// **'All group expenses'**
   String get allSplitExpenses;
 
   /// No description provided for @contactReferences.
@@ -3515,7 +3653,7 @@ abstract class AppLocalizations {
   /// No description provided for @allSplitsDeleted.
   ///
   /// In en, this message translates to:
-  /// **'All splits'**
+  /// **'All group expenses'**
   String get allSplitsDeleted;
 
   /// No description provided for @comment_settings.
@@ -3935,7 +4073,7 @@ abstract class AppLocalizations {
   /// No description provided for @addFirstSplit.
   ///
   /// In en, this message translates to:
-  /// **'Add your first split to get started'**
+  /// **'Add your first group expense to get started'**
   String get addFirstSplit;
 
   /// No description provided for @tryAdjustingFilters.
@@ -4685,7 +4823,7 @@ abstract class AppLocalizations {
   /// No description provided for @nameUsedInSharedSplits.
   ///
   /// In en, this message translates to:
-  /// **'Used in shared splits and reports'**
+  /// **'Used in group expenses and reports'**
   String get nameUsedInSharedSplits;
 
   /// No description provided for @nameUsedInSharedMessages.
@@ -4832,25 +4970,25 @@ abstract class AppLocalizations {
   /// No description provided for @splitInvoice.
   ///
   /// In en, this message translates to:
-  /// **'Split Invoice'**
+  /// **'Group Expense Invoice'**
   String get splitInvoice;
 
   /// No description provided for @splitInvoiceFrom.
   ///
   /// In en, this message translates to:
-  /// **'Split invoice from {ownerName}: {splitTitle}'**
+  /// **'Group expense invoice from {ownerName}: {splitTitle}'**
   String splitInvoiceFrom(Object ownerName, Object splitTitle);
 
   /// No description provided for @splitInvoiceSubject.
   ///
   /// In en, this message translates to:
-  /// **'HisaabMate Split Invoice - {splitTitle}'**
+  /// **'HisaabMate Group Expense Invoice - {splitTitle}'**
   String splitInvoiceSubject(Object splitTitle);
 
   /// No description provided for @splitInvoiceShareMessage.
   ///
   /// In en, this message translates to:
-  /// **'Hi everyone 👋\n\nHere’s the {appName} split invoice for “{splitTitle}”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n{ownerName}'**
+  /// **'Hi everyone 👋\n\nHere’s the {appName} group expense invoice for “{splitTitle}”.\n\nPlease review the amounts and group expense details in the attachment.\n\nThanks,\n{ownerName}'**
   String splitInvoiceShareMessage(
     Object appName,
     Object splitTitle,

@@ -61,7 +61,8 @@
   "home": "Home",
   "people": "People",
   "borrowLend": "Borrow/Lend",
-  "splits": "Splits",
+  "splits": "Group Expenses",
+  "myExpenses": "My Expenses",
   "expenses": "Expenses",
   "settings": "Settings",
   "moneyTracker": "Money Tracker",
@@ -76,7 +77,7 @@
   "transactionDeleted": "Transaction deleted",
   "allTransactions": "All Transactions",
   "recentTransactions": "Recent Transactions",
-  "addNewTransaction": "Add New Transaction",
+  "addNewTransaction": "What do you want to add?",
   "saveTransaction": "Save Transaction",
   "updateTransaction": "Update Transaction",
   "transactionDate": "Transaction Date",
@@ -106,10 +107,22 @@
   "moneyTransaction": "Money Transaction",
   "moneyTransactionDescription": "Direct money given or received",
   "moneyTransactionOnePersonDescription": "Direct money given or received with one person",
-  "udhariItemCredit": "Udhari / Item Credit",
-  "udhariItemCreditDescription": "Item or service bought/sold on credit",
-  "sharedSpend": "Shared Spend",
-  "sharedSpendDescription": "One of you paid for something together",
+  "udhariItemCredit": "Udhari",
+  "udhariItemCreditDescription": "Items or services bought or sold on credit.",
+  "sharedSpend": "Expense with Someone",
+  "sharedSpendDescription": "You paid for them or they paid for you.",
+  "onBehalf": "On behalf",
+  "sharedCost": "Shared cost",
+  "expenseWithSomeoneFormDescription": "Record a payment made for you or by you.",
+  "weSharedTheCost": "We shared the cost",
+  "weSharedTheCostDescription": "Show the total bill and each person’s share.",
+  "iPaidForThem": "I paid for them",
+  "personPaidForMe": "{personName} paid for me",
+  "@personPaidForMe": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
   "whoPaid": "Who paid?",
   "udhariDirection": "Udhari direction",
   "moneyDirection": "Money direction",
@@ -120,6 +133,31 @@
   "iGot": "I got",
   "youPaidLabel": "You paid",
   "personPaid": "{personName} paid",
+  "youPaidForPerson": "You paid for {personName}",
+  "paidForPerson": "Paid for {personName}",
+  "personPaidForYou": "{personName} paid for you",
+  "ownerPaidForPerson": "{ownerName} paid for {personName}",
+  "@youPaidForPerson": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "@paidForPerson": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "@personPaidForYou": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "@ownerPaidForPerson": {
+    "placeholders": {
+      "ownerName": {},
+      "personName": {}
+    }
+  },
   "@personPaid": {
     "placeholders": {
       "personName": {}
@@ -148,8 +186,8 @@
   "soldItemsOnCredit": "Sold items/service on credit",
   "boughtItemsOnCredit": "Bought items/service on credit",
   "cashAndUdhari": "Cash & Udhari",
-  "groupSplit": "Group split",
-  "groupSplitDescription": "Split one expense with multiple people",
+  "groupSplit": "Group Expense",
+  "groupSplitDescription": "Split one expense with multiple people.",
   
   "comment_amounts": "========== Amounts ==========",
   "amount": "Amount",
@@ -160,6 +198,7 @@
   "totalAmountRequired": "Total Amount *",
   "paidByUser": "Paid by User",
   "paidByYou": "Paid by You",
+  "paymentContext": "Payment context",
   "youPaidRequired": "You Paid *",
   "shareAmount": "Share Amount",
   "amountMustBeGreaterThanZero": "Amount must be greater than 0",
@@ -174,11 +213,15 @@
   "totalPending": "Total Pending",
   "purposeRequired": "Purpose *",
   "purposeHint": "Dinner, petrol, shopping...",
+  "whatWasItForRequired": "What was it for? *",
+  "whatWasItForHint": "Lunch, a mall item, mess...",
   "pleaseEnterPurpose": "Please enter purpose",
   "totalBill": "Total bill",
   "totalBillAmountRequired": "Total bill amount *",
   "totalBillAmountOptional": "Total bill amount (Optional)",
   "enterFullBillAmount": "Enter full bill amount",
+  "totalBillRequiredMessage": "Please enter the total bill amount.",
+  "sharedCostRequiresBothShares": "A shared cost must include a share for both people.",
   "contactShareBecomesHalf": "Contact share becomes half of total",
   "yourShareBecomesHalf": "Your share becomes half when total is entered",
   "personShare": "{personName} share",
@@ -195,6 +238,20 @@
   },
   "myShareRequired": "My share *",
   "amountPersonShouldPay": "Amount {personName} should pay",
+  "amountPaidForThemRequired": "Amount paid for them *",
+  "amountPaidForYouRequired": "Amount paid for you *",
+  "amountPaidForThemHint": "What {personName} owes you",
+  "amountPaidForYouHint": "What you owe {personName}",
+  "@amountPaidForThemHint": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
+  "@amountPaidForYouHint": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
   "@amountPersonShouldPay": {
     "placeholders": {
       "personName": {}
@@ -237,7 +294,7 @@
   "contactMustHavePhoneNumber": "Contact must have a phone number",
   "thisContactIsAlreadyAdded": "This contact is already added",
   "phoneAlreadySavedTitle": "Phone already saved",
-  "phoneAlreadySavedMessage": "This number is already saved as {contactName}. Use that contact for this split?",
+  "phoneAlreadySavedMessage": "This number is already saved as {contactName}. Use that contact for this group expense?",
   "@phoneAlreadySavedMessage": {
     "placeholders": {
       "contactName": {}
@@ -306,7 +363,7 @@
   "saveExpense": "Save Expense",
   "updateExpense": "Update Expense",
   "personalExpense": "Personal Expense",
-  "trackYourSpending": "Track your spending",
+  "trackYourSpending": "Track something you paid for yourself.",
   "expenseDeleted": "Expense deleted",
   "noExpensesYet": "No expenses yet",
   "startTrackingExpenses": "Start tracking your personal expenses to better manage your finances",
@@ -326,45 +383,45 @@
   "chooseRightCategory": "Choose the right category to track your spending better!",
   
   "comment_splits": "========== Splits ==========",
-  "split": "Split",
-  "splitExpense": "Split Expense",
-  "splitExpenses": "Split Expenses",
-  "addSplit": "Add Split",
-  "editSplit": "Edit Split",
-  "editSplitExpense": "Edit Split Expense",
-  "deleteSplit": "Delete Split",
-  "deleteSplitExpense": "Delete Split Expense",
-  "splitDetails": "Split Details",
-  "splitDeleted": "Split deleted",
-  "splitExpenseDeleted": "Split expense deleted",
-  "splitMarkedAsSettled": "Split marked as settled",
-  "splitNotFound": "Split not found",
-  "noSplitsYet": "No splits yet",
-  "noSplitExpensesYet": "No split expenses yet",
-  "noMoreSplits": "No more splits",
-  "noSplitsFound": "No splits found",
-  "startSplittingExpenses": "Start splitting expenses with friends and family",
-  "startSplittingExpensesWithFriends": "Start splitting expenses with friends",
+  "split": "Group Expense",
+  "splitExpense": "Group Expense",
+  "splitExpenses": "Group Expenses",
+  "addSplit": "Add Group Expense",
+  "editSplit": "Edit Group Expense",
+  "editSplitExpense": "Edit Group Expense",
+  "deleteSplit": "Delete Group Expense",
+  "deleteSplitExpense": "Delete Group Expense",
+  "splitDetails": "Group Expense Details",
+  "splitDeleted": "Group Expense deleted",
+  "splitExpenseDeleted": "Group Expense deleted",
+  "splitMarkedAsSettled": "Group Expense marked as settled",
+  "splitNotFound": "Group Expense not found",
+  "noSplitsYet": "No group expenses yet",
+  "noSplitExpensesYet": "No group expenses yet",
+  "noMoreSplits": "No more group expenses",
+  "noSplitsFound": "No group expenses found",
+  "startSplittingExpenses": "Start tracking group expenses with friends and family",
+  "startSplittingExpensesWithFriends": "Start tracking group expenses with friends",
   "shareCostsWithFriends": "Share costs with friends",
   "addParticipants": "Add Participants",
   "participants": "Participants",
   "selectParticipants": "Select Participants",
   "participantsMustBeSelected": "Please select at least one participant",
   "noParticipantsAdded": "No participants added yet",
-  "addAtLeastOnePerson": "Add at least one person to split with",
+  "addAtLeastOnePerson": "Add at least one person to include",
   "totalParticipantShares": "Total participant shares",
-  "recentSplits": "Recent Splits",
-  "searchSplits": "Search splits...",
-  "createSplit": "Create Split",
-  "updateSplit": "Update Split",
+  "recentSplits": "Recent Group Expenses",
+  "searchSplits": "Search group expenses...",
+  "createSplit": "Create Group Expense",
+  "updateSplit": "Update Group Expense",
   "settleAnyway": "Settle Anyway",
-  "settleSplit": "Settle Split",
-  "reviewAndSettleSplit": "Review & Settle Split",
+  "settleSplit": "Settle Group Expense",
+  "reviewAndSettleSplit": "Review & Settle Group Expense",
   "notPaidYet": "Not Paid Yet",
   "pendingSettlements": "Pending Settlements",
   "partiallySettled": "Partially Settled",
   "settledOrNoAction": "Settled / No Action",
-  "reviewPendingSettlements": "Review pending settlements before closing this split.",
+  "reviewPendingSettlements": "Review pending settlements before closing this group expense.",
   "pendingSettlementsWillBeMarkedComplete": "{count} pending settlement(s) will be marked complete.",
   "@pendingSettlementsWillBeMarkedComplete": {
     "placeholders": {
@@ -379,8 +436,8 @@
   "selectRoutePerson": "Select route person",
   "routePlanOnly": "This only changes the suggested payment path. Mark people as paid after they actually settle.",
   "settlementRouteCompleted": "Settlement was completed using this route.",
-  "settlingWillCloseThesePayments": "This will close these payments and remove generated split ledger entries.",
-  "allSettlementsAlreadyComplete": "All settlements are already complete. Mark this split as settled?",
+  "settlingWillCloseThesePayments": "This will close these payments and remove generated group expense ledger entries.",
+  "allSettlementsAlreadyComplete": "All settlements are already complete. Mark this group expense as settled?",
   "yourShare": "Your Share",
   "paymentBreakdown": "Payment Breakdown",
   "addMore": "Add More",
@@ -412,6 +469,12 @@
       "amount": {}
     }
   },
+  "personOwesYouShort": "{personName} owes you",
+  "@personOwesYouShort": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
   "owesCounterparty": "Owes {counterpartyName} {amount}",
   "@owesCounterparty": {
     "placeholders": {
@@ -426,20 +489,26 @@
       "amount": {}
     }
   },
+  "youOwePersonShort": "You owe {personName}",
+  "@youOwePersonShort": {
+    "placeholders": {
+      "personName": {}
+    }
+  },
   "fullRemainingAmountWillBeMarkedAsReceived": "The full remaining amount will be marked as received.",
   "onlyEnteredAmountWillBeMarkedAsReceived": "Only the entered amount will be marked as received.",
   "fullRemainingAmountWillBeMarkedAsPaid": "The full remaining amount will be marked as paid.",
   "onlyEnteredAmountWillBeMarkedAsPaid": "Only the entered amount will be marked as paid.",
-  "deleteSplitConfirmMessage": "Are you sure you want to delete this split expense? This action cannot be undone.",
+  "deleteSplitConfirmMessage": "Are you sure you want to delete this group expense? This action cannot be undone.",
   "doYouWantToMarkSettled": "Do you still want to mark this as settled? This action cannot be undone.",
-  "allParticipantHasPaidTheirShareMarkAsSetteled": "All participants have paid their share. Mark this split as settled?\n\nThis action cannot be undone.",
+  "allParticipantHasPaidTheirShareMarkAsSetteled": "All participants have paid their share. Mark this group expense as settled?\n\nThis action cannot be undone.",
   "amountYouPaidCannotExceedTotalAmount": "Amount you paid cannot exceed total amount",
   
   "comment_split_fields": "========== Split Fields ==========",
   "title": "Title",
   "titleRequired": "Title *",
-  "splitTitle": "Split Title",
-  "enterSplitTitle": "Enter split title",
+  "splitTitle": "Group Expense Title",
+  "enterSplitTitle": "Enter group expense title",
   "egDinnerAtRestaurant": "e.g., Dinner at Restaurant",
   "pleaseEnterTitle": "Please enter a title",
   "totalCost": "Total Cost",
@@ -450,8 +519,8 @@
   "splitByAmount": "Split by Amount",
   "splitMethod": "Split Method",
   "divideAmountEvenlyAmongAll": "Divide amount evenly among all",
-  "splitBills": "Bills in this split",
-  "splitBillsHelp": "Add one or more bills that belong to this split",
+  "splitBills": "Bills in this group expense",
+  "splitBillsHelp": "Add one or more bills that belong to this group expense",
   "addBill": "Add Bill",
   "editBill": "Edit Bill",
   "billName": "Bill Name",
@@ -462,7 +531,7 @@
   "paidBy": "Paid by",
   "paidByMe": "Paid by me",
   "noBillsAdded": "No bills added",
-  "addAtLeastOneBill": "Add at least one bill or expense for this split",
+  "addAtLeastOneBill": "Add at least one bill or expense for this group expense",
   "pleaseAddAtLeastOneBill": "Please add at least one bill",
   "billsTotal": "Bills total",
   "paidTotalExceedsBills": "Paid total exceeds bills total by {amount}",
@@ -494,7 +563,7 @@
   "yourDataOverview": "Your Data Overview",
   "totalTransactions": "Total Transactions",
   "totalExpenses": "Total Expenses",
-  "totalSplits": "Total Splits",
+  "totalSplits": "Total Group Expenses",
   "youOwe": "You Owe",
   "oweYou": "Owe You",
   "owesYou": "Owes You",
@@ -610,7 +679,7 @@
     }
   },
   "directBalance": "Direct balance",
-  "splitBalance": "Split balance",
+  "splitBalance": "Group expense balance",
   "netSettlement": "Net settlement",
   "netSettlementAmount": "Net settlement: {amount}",
   "@netSettlementAmount": {
@@ -620,7 +689,7 @@
   },
   "offsettingBalances": "Balances matched",
   "noCashPaymentNeeded": "No money paid",
-  "noCashNeededOffset": "No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.",
+  "noCashNeededOffset": "No money needs to be paid. Your direct and group expense balances will be cleared, and your history will stay visible.",
   "clearOffsettingBalances": "Clear balances",
   "contactPaysYou": "{contactName} pays you {amount}.",
   "@contactPaysYou": {
@@ -656,24 +725,24 @@
     }
   },
   "matchedBalanceExplanation": "This amount was cleared by matching what you owed against what they owed.",
-  "balancesClearedTogetherNote": "Note: Direct and split balances were cleared together, so only the net amount was paid.",
+  "balancesClearedTogetherNote": "Note: Direct and group expense balances were cleared together, so only the net amount was paid.",
   "balancesCancelledNoPaymentNote": "Note: Both balances cancelled each other, so no payment was needed.",
-  "balancesClearedTogetherReportNote": "Note: Direct and split balances were cleared together.",
+  "balancesClearedTogetherReportNote": "Note: Direct and group expense balances were cleared together.",
   "cashBorrowBalance": "Cash / borrow balance",
   "settleCashBorrowBalance": "Settle cash/borrow balance",
-  "excludingSplitBalances": "{amount} excluding split balances",
+  "excludingSplitBalances": "{amount} excluding group expense balances",
   "@excludingSplitBalances": {
     "placeholders": {
       "amount": {}
     }
   },
-  "splitBalanceAmount": "Split balance: {amount}",
+  "splitBalanceAmount": "Group expense balance: {amount}",
   "@splitBalanceAmount": {
     "placeholders": {
       "amount": {}
     }
   },
-  "settleSplitsFromSplitDetails": "Settle splits from Split Details",
+  "settleSplitsFromSplitDetails": "Settle group expenses from Group Expense Details",
   "setToFullBalance": "Set to full balance",
   "settlePartial": "Settle Partial",
   "settleFull": "Settle Full",
@@ -687,8 +756,8 @@
   "deleteExpenseMessage": "Are you sure you want to delete this expense?",
   "deleteTransactionTitle": "Delete Transaction?",
   "deleteTransactionMessage": "Are you sure you want to delete this transaction?",
-  "deleteSplitTitle": "Delete Split?",
-  "deleteSplitMessage": "Are you sure you want to delete this split expense?",
+  "deleteSplitTitle": "Delete Group Expense?",
+  "deleteSplitMessage": "Are you sure you want to delete this group expense?",
   "actionCannotBeUndone": "This action cannot be undone",
   "permanentlyDelete": "PERMANENTLY DELETE:",
   "thisActionCannotBeUndone": "This action cannot be undone. The expense will be permanently removed from your records.",
@@ -705,7 +774,7 @@
   "thisWillPermanentlyDelete": "This will PERMANENTLY DELETE:",
   "allTransactionsItem": "All transactions",
   "allExpensesItem": "All expenses",
-  "allSplitExpensesItem": "All split expenses",
+  "allSplitExpensesItem": "All group expenses",
   "allContactReferencesItem": "All contact references",
   "considerExportingDataFirst": "Consider exporting your data first. This action cannot be undone!",
   
@@ -716,7 +785,7 @@
   "whatWillBeExported": "What will be exported:",
   "allTransactionsLendBorrow": "All transactions (lend/borrow)",
   "allPersonalExpenses": "All personal expenses",
-  "allSplitExpenses": "All split expenses",
+  "allSplitExpenses": "All group expenses",
   "contactReferences": "Contact references and photos",
   "canShareBackupFile": "You can share the backup file or save it for later import",
   "preparingExport": "Preparing export...",
@@ -740,7 +809,7 @@
   "currentDataWillBePermanentlyDeleted": "Current data will be permanently deleted:",
   "allTransactionsDeleted": "All transactions",
   "allExpensesDeleted": "All expenses",
-  "allSplitsDeleted": "All splits",
+  "allSplitsDeleted": "All group expenses",
   
   "comment_settings": "========== Settings ==========",
   "appearance": "Appearance",
@@ -816,7 +885,7 @@
   "addYourFirstCashTransaction": "Add your first cash transaction",
   "addYourFirstUdhariTransaction": "Add your first udhari transaction",
   "addFirstExpense": "Add your first expense to get started",
-  "addFirstSplit": "Add your first split to get started",
+  "addFirstSplit": "Add your first group expense to get started",
   "tryAdjustingFilters": "Try adjusting your filters",
   "tryDifferentSearchTerm": "Try a different search term",
   "clearFilters": "Clear filters",
@@ -952,7 +1021,7 @@
   "peopleSmall": "people",
   "yourProfile": "Your Profile",
   "setYourName": "Set your name",
-  "nameUsedInSharedSplits": "Used in shared splits and reports",
+  "nameUsedInSharedSplits": "Used in group expenses and reports",
   "nameUsedInSharedMessages": "Used in messages shared outside HisaabMate",
   "helpFriendsRecognizeYou": "Help friends recognize who paid or owes",
   "yourNameRequired": "Your Name *",
@@ -995,21 +1064,21 @@
       "ownerName": {}
     }
   },
-  "splitInvoice": "Split Invoice",
-  "splitInvoiceFrom": "Split invoice from {ownerName}: {splitTitle}",
+  "splitInvoice": "Group Expense Invoice",
+  "splitInvoiceFrom": "Group expense invoice from {ownerName}: {splitTitle}",
   "@splitInvoiceFrom": {
     "placeholders": {
       "ownerName": {},
       "splitTitle": {}
     }
   },
-  "splitInvoiceSubject": "HisaabMate Split Invoice - {splitTitle}",
+  "splitInvoiceSubject": "HisaabMate Group Expense Invoice - {splitTitle}",
   "@splitInvoiceSubject": {
     "placeholders": {
       "splitTitle": {}
     }
   },
-  "splitInvoiceShareMessage": "Hi everyone 👋\n\nHere’s the {appName} split invoice for “{splitTitle}”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n{ownerName}",
+  "splitInvoiceShareMessage": "Hi everyone 👋\n\nHere’s the {appName} group expense invoice for “{splitTitle}”.\n\nPlease review the amounts and group expense details in the attachment.\n\nThanks,\n{ownerName}",
   "@splitInvoiceShareMessage": {
     "placeholders": {
       "appName": {},

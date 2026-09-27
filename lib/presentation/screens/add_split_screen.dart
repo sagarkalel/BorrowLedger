@@ -259,7 +259,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               _buildComposerSection(
                 context,
                 icon: Icons.receipt_long_outlined,
-                title: 'Split details',
+                title: tr.splitDetails,
                 child: Column(
                   children: [
                     CustomTextField(
@@ -295,7 +295,7 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
               _buildComposerSection(
                 context,
                 icon: Icons.calculate_rounded,
-                title: 'Split method',
+                title: tr.splitMethod,
                 child: _buildCompactSwitchRow(
                   title: tr.splitEqually,
                   subtitle: tr.divideAmountEvenlyAmongAll,

@@ -5,6 +5,7 @@ import 'package:borrow_ledger/core/constants/app_functions.dart';
 import 'package:borrow_ledger/core/services/share_message_builder.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
+import 'package:borrow_ledger/core/utils/shared_expense_mode.dart';
 import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
@@ -968,9 +969,26 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     if (transaction.isSettlement) return tr.settlement;
     if (transaction.category == AppConstants.categorySharedSpend) {
       final contactName = transaction.contactName ?? tr.unknown;
+      final amount = formatMoney(transaction.amount);
+      if (SharedExpenseModeResolver.forTransaction(transaction) ==
+          SharedExpenseMode.paidOnBehalf) {
+        final contextText = transaction.sharedPaidByUser == true
+            ? tr.ownerPaidForPerson(ownerName, contactName)
+            : tr.personPaidForMe(contactName);
+        final outcome = transaction.sharedPaidByUser == true
+            ? tr.personOwesCounterparty(contactName, ownerName, amount)
+            : tr.youOwePerson(contactName, amount);
+        return [
+          if (transaction.description?.trim().isNotEmpty == true)
+            transaction.description!.trim(),
+          contextText,
+          outcome,
+        ].join(' | ');
+      }
+
       final payer = transaction.sharedPaidByUser == true
           ? tr.ownerPaid(ownerName)
-          : tr.personPaid(contactName);
+          : tr.personPaidForMe(contactName);
       final total = transaction.sharedTotalAmount;
       final shareLabel = transaction.sharedPaidByUser == true
           ? tr.personShare(contactName)
@@ -1659,7 +1677,9 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
                   netBalance: contactSummary.netBalance,
                   cashCount: contactSummary.cashCount,
                   udhariCount: contactSummary.udhariCount,
-                  sharedSpendCount: contactSummary.sharedSpendCount,
+                  onBehalfCount: contactSummary.onBehalfCount,
+                  sharedCostCount: contactSummary.sharedCostCount,
+                  legacySharedSpendCount: contactSummary.legacySharedSpendCount,
                   splitCount: contactSummary.splitCount,
                   splitNet: contactSummary.splitNet,
                   onTap: () async {

@@ -41,9 +41,35 @@ void main() {
 
     expect(find.text('UPI settlement'), findsOneWidget);
     expect(find.text('Request via UPI'), findsOneWidget);
-    expect(find.text('Share request'), findsOneWidget);
+    expect(find.text('Share request'), findsNothing);
     expect(find.text('Rahul'), findsOneWidget);
     expect(find.text('₹ 1,250'), findsOneWidget);
+  });
+
+  testWidgets('payable UPI sheet shows only the direct payment action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testApp(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showUpiSettlementActionSheet(
+              context,
+              isPayable: true,
+              contactName: 'Rahul',
+              amount: 1250,
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pay by UPI'), findsOneWidget);
+    expect(find.text('Share payment details'), findsNothing);
   });
 
   testWidgets('UPI setup validates and saves before closing', (tester) async {

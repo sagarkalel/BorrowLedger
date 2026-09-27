@@ -8,6 +8,9 @@ class ContactSummary {
   final int cashCount;
   final int udhariCount;
   final int sharedSpendCount;
+  final int onBehalfCount;
+  final int sharedCostCount;
+  final int legacySharedSpendCount;
   final int splitCount;
   final double splitLent;
   final double splitBorrowed;
@@ -23,6 +26,9 @@ class ContactSummary {
     this.cashCount = 0,
     this.udhariCount = 0,
     this.sharedSpendCount = 0,
+    this.onBehalfCount = 0,
+    this.sharedCostCount = 0,
+    this.legacySharedSpendCount = 0,
     this.splitCount = 0,
     this.splitLent = 0,
     this.splitBorrowed = 0,

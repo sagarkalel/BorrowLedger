@@ -1433,6 +1433,32 @@ class TransactionRepository {
           COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'lend' THEN amount ELSE 0 END), 0) AS udhari_given,
           COALESCE(SUM(CASE WHEN transaction_category = 'udhari' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS udhari_taken,
           COUNT(CASE WHEN transaction_category = 'shared_spend' THEN 1 END) AS shared_spend_count,
+          COUNT(CASE WHEN transaction_category = 'shared_spend'
+            AND shared_total_amount IS NOT NULL
+            AND ABS(shared_total_amount - amount) <= 0.01
+            AND (
+              (COALESCE(shared_user_share, 0) <= 0.01 AND shared_contact_share > 0.01)
+              OR (shared_user_share > 0.01 AND COALESCE(shared_contact_share, 0) <= 0.01)
+            )
+            THEN 1 END) AS shared_on_behalf_count,
+          COUNT(CASE WHEN transaction_category = 'shared_spend'
+            AND shared_user_share > 0.01
+            AND shared_contact_share > 0.01
+            THEN 1 END) AS shared_cost_count,
+          COUNT(CASE WHEN transaction_category = 'shared_spend'
+            AND NOT (
+              shared_total_amount IS NOT NULL
+              AND ABS(shared_total_amount - amount) <= 0.01
+              AND (
+                (COALESCE(shared_user_share, 0) <= 0.01 AND shared_contact_share > 0.01)
+                OR (shared_user_share > 0.01 AND COALESCE(shared_contact_share, 0) <= 0.01)
+              )
+            )
+            AND NOT (
+              COALESCE(shared_user_share, 0) > 0.01
+              AND COALESCE(shared_contact_share, 0) > 0.01
+            )
+            THEN 1 END) AS shared_legacy_count,
           COUNT(CASE WHEN transaction_category = 'split' THEN 1 END) AS split_transaction_count,
           COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'lend' THEN amount ELSE 0 END), 0) AS split_lent,
           COALESCE(SUM(CASE WHEN transaction_category = 'split' AND type = 'borrow' THEN amount ELSE 0 END), 0) AS split_borrowed,
@@ -1464,6 +1490,9 @@ class TransactionRepository {
         COALESCE(ts.udhari_given, 0) AS udhari_given,
         COALESCE(ts.udhari_taken, 0) AS udhari_taken,
         COALESCE(ts.shared_spend_count, 0) AS shared_spend_count,
+        COALESCE(ts.shared_on_behalf_count, 0) AS shared_on_behalf_count,
+        COALESCE(ts.shared_cost_count, 0) AS shared_cost_count,
+        COALESCE(ts.shared_legacy_count, 0) AS shared_legacy_count,
         COALESCE(ts.split_transaction_count, 0) + COALESCE(sh.split_history_count, 0) AS split_count,
         COALESCE(ts.split_lent, 0) AS split_lent,
         COALESCE(ts.split_borrowed, 0) AS split_borrowed,

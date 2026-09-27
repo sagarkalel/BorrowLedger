@@ -55,7 +55,10 @@ void main() {
     expect(contactStatement, contains('Hi Rahul 👋'));
     expect(contactStatement, contains('01 Jan - 31 Jan'));
     expect(ledgerStatement, contains('Hi everyone 👋'));
-    expect(splitInvoice, contains('HisaabMate split invoice for “Dinner”'));
+    expect(
+      splitInvoice,
+      contains('HisaabMate group expense invoice for “Dinner”'),
+    );
     expect(splitInvoice, contains('Thanks,\nSagar'));
   });
 }

@@ -275,12 +275,12 @@ class SplitCubit extends Cubit<SplitState> {
       _hasSyncedSplitTransactions = true;
 
       emit(
-        state.copyWith(successMessage: 'Split expense created successfully'),
+        state.copyWith(successMessage: 'Group expense created successfully'),
       );
       await loadSplits();
     } catch (e) {
       log('SplitCubit: Error creating split - $e');
-      emit(state.copyWith(error: 'Failed to create split: $e'));
+      emit(state.copyWith(error: 'Failed to create group expense: $e'));
     }
   }
 
@@ -296,12 +296,12 @@ class SplitCubit extends Cubit<SplitState> {
       _hasSyncedSplitTransactions = true;
       log('SplitCubit: Split updated successfully');
       emit(
-        state.copyWith(successMessage: 'Split expense updated successfully'),
+        state.copyWith(successMessage: 'Group expense updated successfully'),
       );
       await loadSplits();
     } catch (e) {
       log('SplitCubit: Error updating split - $e');
-      emit(state.copyWith(error: 'Failed to update split: $e'));
+      emit(state.copyWith(error: 'Failed to update group expense: $e'));
     }
   }
 
@@ -313,12 +313,12 @@ class SplitCubit extends Cubit<SplitState> {
       _hasSyncedSplitTransactions = true;
       log('SplitCubit: Split deleted successfully');
       emit(
-        state.copyWith(successMessage: 'Split expense deleted successfully'),
+        state.copyWith(successMessage: 'Group expense deleted successfully'),
       );
       await loadSplits();
     } catch (e) {
       log('SplitCubit: Error deleting split - $e');
-      emit(state.copyWith(error: 'Failed to delete split: $e'));
+      emit(state.copyWith(error: 'Failed to delete group expense: $e'));
     }
   }
 
@@ -347,11 +347,11 @@ class SplitCubit extends Cubit<SplitState> {
       log(
         'SplitCubit: Split settled successfully - all participants marked as paid',
       );
-      emit(state.copyWith(successMessage: 'Split marked as settled'));
+      emit(state.copyWith(successMessage: 'Group expense marked as settled'));
       await loadSplits();
     } catch (e) {
       log('SplitCubit: Error settling split - $e');
-      emit(state.copyWith(error: 'Failed to settle split: $e'));
+      emit(state.copyWith(error: 'Failed to settle group expense: $e'));
     }
   }
 

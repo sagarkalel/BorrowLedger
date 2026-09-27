@@ -15,6 +15,9 @@ class ContactSummaryCard extends StatelessWidget {
   final int cashCount;
   final int udhariCount;
   final int sharedSpendCount;
+  final int onBehalfCount;
+  final int sharedCostCount;
+  final int legacySharedSpendCount;
   final int splitCount;
   final double splitNet;
   final VoidCallback onTap;
@@ -29,6 +32,9 @@ class ContactSummaryCard extends StatelessWidget {
     this.cashCount = 0,
     this.udhariCount = 0,
     this.sharedSpendCount = 0,
+    this.onBehalfCount = 0,
+    this.sharedCostCount = 0,
+    this.legacySharedSpendCount = 0,
     this.splitCount = 0,
     this.splitNet = 0,
     required this.onTap,
@@ -114,69 +120,127 @@ class ContactSummaryCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final metaColor = colorScheme.onSurfaceVariant;
     final tr = AppLocalizations.of(context)!;
+    final categories = _categoryCounts(tr);
+    final hasPhone = phoneNumber?.isNotEmpty == true;
 
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Phone
-        if (phoneNumber != null && phoneNumber!.isNotEmpty) ...[
-          Icon(Icons.phone, size: 10, color: metaColor),
-          const SizedBox(width: 3),
-          Flexible(
-            child: Text(
-              phoneNumber!,
-              style: TextStyle(fontSize: 10, color: metaColor),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+        if (hasPhone)
+          Row(
+            children: [
+              Icon(Icons.phone, size: 10, color: metaColor),
+              const SizedBox(width: 3),
+              Expanded(
+                child: Text(
+                  phoneNumber!,
+                  style: TextStyle(fontSize: 10, color: metaColor),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Container(
-            width: 2,
-            height: 2,
-            decoration: BoxDecoration(
-              color: metaColor.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
+        if (hasPhone && categories.isNotEmpty) const SizedBox(height: 3),
+        if (categories.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) => _buildFittingCategoryBadges(
+              context,
+              categories,
+              constraints.maxWidth,
             ),
+          )
+        else
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.receipt_long, size: 10, color: metaColor),
+              const SizedBox(width: 3),
+              Text(
+                '$transactionCount',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: metaColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-        ],
-
-        // Category breakdown
-        if (cashCount > 0 ||
-            udhariCount > 0 ||
-            sharedSpendCount > 0 ||
-            splitCount > 0) ...[
-          if (cashCount > 0) ...[
-            _buildCategoryBadge(context, tr.cash, cashCount),
-            if (udhariCount > 0 || sharedSpendCount > 0 || splitCount > 0)
-              const SizedBox(width: 4),
-          ],
-          if (udhariCount > 0) ...[
-            _buildCategoryBadge(context, tr.udhari, udhariCount),
-            if (sharedSpendCount > 0 || splitCount > 0)
-              const SizedBox(width: 4),
-          ],
-          if (sharedSpendCount > 0) ...[
-            _buildCategoryBadge(context, tr.sharedSpend, sharedSpendCount),
-            if (splitCount > 0) const SizedBox(width: 4),
-          ],
-          if (splitCount > 0)
-            _buildCategoryBadge(context, tr.splits, splitCount),
-        ] else ...[
-          // Fallback to total count
-          Icon(Icons.receipt_long, size: 10, color: metaColor),
-          const SizedBox(width: 3),
-          Text(
-            '$transactionCount',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: metaColor,
-            ),
-          ),
-        ],
       ],
     );
+  }
+
+  List<_CategoryCount> _categoryCounts(AppLocalizations tr) {
+    return [
+      _CategoryCount(tr.cash, cashCount),
+      _CategoryCount(tr.udhari, udhariCount),
+      _CategoryCount(tr.onBehalf, onBehalfCount),
+      _CategoryCount(tr.sharedCost, sharedCostCount),
+      _CategoryCount(tr.sharedSpend, legacySharedSpendCount),
+      _CategoryCount(tr.splits, splitCount),
+    ].where((category) => category.count > 0).toList();
+  }
+
+  Widget _buildFittingCategoryBadges(
+    BuildContext context,
+    List<_CategoryCount> categories,
+    double availableWidth,
+  ) {
+    if (availableWidth <= 0) return const SizedBox.shrink();
+
+    var visibleCount = categories.length;
+    while (visibleCount > 0) {
+      final hiddenCount = categories.length - visibleCount;
+      final visibleWidth = _badgesWidth(
+        context,
+        categories.take(visibleCount).map((category) => category.text),
+      );
+      final overflowWidth = hiddenCount == 0
+          ? 0.0
+          : _badgesWidth(context, ['+$hiddenCount']);
+      final spacing = hiddenCount == 0 || visibleCount == 0 ? 0.0 : 4.0;
+
+      if (visibleWidth + spacing + overflowWidth <= availableWidth) break;
+      visibleCount--;
+    }
+
+    final children = <Widget>[];
+    for (var index = 0; index < visibleCount; index++) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 4));
+      children.add(_buildCategoryBadge(context, categories[index]));
+    }
+
+    final hiddenCount = categories.length - visibleCount;
+    if (hiddenCount > 0) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 4));
+      children.add(_buildBadge(context, '+$hiddenCount'));
+    }
+
+    return ClipRect(
+      child: Row(mainAxisSize: MainAxisSize.max, children: children),
+    );
+  }
+
+  double _badgesWidth(BuildContext context, Iterable<String> labels) {
+    const textStyle = TextStyle(fontSize: 9, fontWeight: FontWeight.w700);
+    const horizontalPadding = 10.0;
+    const spacing = 4.0;
+    var width = 0.0;
+    var isFirst = true;
+
+    for (final label in labels) {
+      if (!isFirst) width += spacing;
+      isFirst = false;
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: textStyle),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      width += painter.width + horizontalPadding;
+    }
+    return width;
   }
 
   Widget _buildSplitDueHint(BuildContext context, AppLocalizations tr) {
@@ -204,7 +268,14 @@ class ContactSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryBadge(BuildContext context, String label, int count) {
+  Widget _buildCategoryBadge(
+    BuildContext context,
+    _CategoryCount category,
+  ) {
+    return _buildBadge(context, category.text);
+  }
+
+  Widget _buildBadge(BuildContext context, String text) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -214,7 +285,7 @@ class ContactSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
-        '$label $count',
+        text,
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
@@ -240,29 +311,39 @@ class ContactSummaryCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Amount
-            Text(
-              CurrencyFormatter.format(netBalance.abs()),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: directionColor,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 108),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  CurrencyFormatter.format(netBalance.abs()),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: directionColor,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 3),
             // Direction badge
-            AppPillBadge(
-              label: isSettled
-                  ? tr.settled
-                  : isPositive
-                  ? tr.toReceive
-                  : tr.toPay,
-              icon: isSettled
-                  ? Icons.done_all_rounded
-                  : isPositive
-                  ? Icons.call_received
-                  : Icons.call_made,
-              color: directionColor,
-              fontSize: 7.5,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 90),
+              child: AppPillBadge(
+                label: isSettled
+                    ? tr.settled
+                    : isPositive
+                    ? tr.toReceive
+                    : tr.toPay,
+                icon: isSettled
+                    ? Icons.done_all_rounded
+                    : isPositive
+                    ? Icons.call_received
+                    : Icons.call_made,
+                color: directionColor,
+                fontSize: 7.5,
+              ),
             ),
           ],
         ),
@@ -275,4 +356,13 @@ class ContactSummaryCard extends StatelessWidget {
       ],
     );
   }
+}
+
+class _CategoryCount {
+  final String label;
+  final int count;
+
+  const _CategoryCount(this.label, this.count);
+
+  String get text => '$label $count';
 }

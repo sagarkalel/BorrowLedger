@@ -118,7 +118,7 @@ class _MergedExpensesScreenState extends State<MergedExpensesScreen>
     return Scaffold(
       drawer: const SettingsDrawer(),
       appBar: AppBar(
-        title: Text(tr.expenses),
+        title: Text(tr.myExpenses),
         actions: [
           BlocBuilder<ExpenseCubit, ExpenseState>(
             builder: (context, state) =>

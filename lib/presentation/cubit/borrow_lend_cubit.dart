@@ -471,6 +471,10 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
       final cashCount = summary['cash_count'] as int? ?? 0;
       final udhariCount = summary['udhari_count'] as int? ?? 0;
       final sharedSpendCount = summary['shared_spend_count'] as int? ?? 0;
+      final onBehalfCount = summary['shared_on_behalf_count'] as int? ?? 0;
+      final sharedCostCount = summary['shared_cost_count'] as int? ?? 0;
+      final legacySharedSpendCount =
+          summary['shared_legacy_count'] as int? ?? 0;
       final splitCount = summary['split_count'] as int? ?? 0;
       final splitLent = (summary['split_lent'] as num?)?.toDouble() ?? 0.0;
       final splitBorrowed =
@@ -493,6 +497,9 @@ class BorrowLendCubit extends Cubit<BorrowLendState> {
           cashCount: cashCount,
           udhariCount: udhariCount,
           sharedSpendCount: sharedSpendCount,
+          onBehalfCount: onBehalfCount,
+          sharedCostCount: sharedCostCount,
+          legacySharedSpendCount: legacySharedSpendCount,
           splitCount: splitCount,
           splitLent: splitLent,
           splitBorrowed: splitBorrowed,

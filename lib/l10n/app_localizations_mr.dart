@@ -165,7 +165,10 @@ class AppLocalizationsMr extends AppLocalizations {
   String get borrowLend => 'देणे-घेणे';
 
   @override
-  String get splits => 'स्प्लिट';
+  String get splits => 'ग्रुप खर्च';
+
+  @override
+  String get myExpenses => 'माझे खर्च';
 
   @override
   String get expenses => 'खर्च';
@@ -207,7 +210,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get recentTransactions => 'अलीकडील व्यवहार';
 
   @override
-  String get addNewTransaction => 'नवीन व्यवहार जोडा';
+  String get addNewTransaction => 'तुम्हाला काय जोडायचे आहे?';
 
   @override
   String get saveTransaction => 'व्यवहार सेव्ह करा';
@@ -296,18 +299,43 @@ class AppLocalizationsMr extends AppLocalizations {
       'एका व्यक्तीसोबत थेट पैसे दिले किंवा घेतले';
 
   @override
-  String get udhariItemCredit => 'उधारी / वस्तू उधार';
+  String get udhariItemCredit => 'उधारी';
 
   @override
   String get udhariItemCreditDescription =>
-      'वस्तू किंवा सेवा उधारीवर घेतली/विकली';
+      'उधारीवर घेतलेल्या किंवा विकलेल्या वस्तू किंवा सेवा.';
 
   @override
-  String get sharedSpend => 'सामायिक खर्च';
+  String get sharedSpend => 'एखाद्यासोबतचा खर्च';
 
   @override
   String get sharedSpendDescription =>
-      'तुम्हा दोघांपैकी एकाने एकत्र केलेल्या खर्चाचे पैसे दिले';
+      'तुम्ही त्यांच्यासाठी पैसे दिले किंवा त्यांनी तुमच्यासाठी दिले.';
+
+  @override
+  String get onBehalf => 'कुणाच्या वतीने';
+
+  @override
+  String get sharedCost => 'सामायिक खर्च';
+
+  @override
+  String get expenseWithSomeoneFormDescription =>
+      'तुमच्यासाठी किंवा तुमच्याकडून केलेले पेमेंट नोंदवा.';
+
+  @override
+  String get weSharedTheCost => 'आपण खर्च वाटून घेतला';
+
+  @override
+  String get weSharedTheCostDescription =>
+      'एकूण बिल आणि प्रत्येकाचा हिस्सा दाखवा.';
+
+  @override
+  String get iPaidForThem => 'मी त्यांच्यासाठी पैसे दिले';
+
+  @override
+  String personPaidForMe(Object personName) {
+    return '$personName यांनी माझ्यासाठी पैसे दिले';
+  }
 
   @override
   String get whoPaid => 'कोणी पैसे दिले?';
@@ -339,6 +367,26 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String personPaid(Object personName) {
     return '$personName ने दिले';
+  }
+
+  @override
+  String youPaidForPerson(Object personName) {
+    return 'तुम्ही $personName यांच्यासाठी पैसे दिले';
+  }
+
+  @override
+  String paidForPerson(Object personName) {
+    return '$personName साठी दिले';
+  }
+
+  @override
+  String personPaidForYou(Object personName) {
+    return '$personName यांनी तुमच्यासाठी पैसे दिले';
+  }
+
+  @override
+  String ownerPaidForPerson(Object ownerName, Object personName) {
+    return '$ownerName यांनी $personName यांच्यासाठी पैसे दिले';
   }
 
   @override
@@ -382,10 +430,10 @@ class AppLocalizationsMr extends AppLocalizations {
   String get cashAndUdhari => 'कॅश आणि उधारी';
 
   @override
-  String get groupSplit => 'ग्रुप स्प्लिट';
+  String get groupSplit => 'ग्रुप खर्च';
 
   @override
-  String get groupSplitDescription => 'एक खर्च अनेक लोकांमध्ये वाटून घ्या';
+  String get groupSplitDescription => 'एक खर्च अनेक लोकांमध्ये वाटून घ्या.';
 
   @override
   String get comment_amounts => '========== Amounts ==========';
@@ -413,6 +461,9 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get paidByYou => 'तुम्ही दिले';
+
+  @override
+  String get paymentContext => 'पेमेंटचा संदर्भ';
 
   @override
   String get youPaidRequired => 'तुम्ही दिले *';
@@ -457,6 +508,12 @@ class AppLocalizationsMr extends AppLocalizations {
   String get purposeHint => 'डिनर, पेट्रोल, शॉपिंग...';
 
   @override
+  String get whatWasItForRequired => 'हे कशासाठी होते? *';
+
+  @override
+  String get whatWasItForHint => 'दुपारचे जेवण, मॉलमधील वस्तू, मेस...';
+
+  @override
   String get pleaseEnterPurpose => 'कृपया उद्देश टाका';
 
   @override
@@ -470,6 +527,13 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get enterFullBillAmount => 'पूर्ण बिलाची रक्कम टाका';
+
+  @override
+  String get totalBillRequiredMessage => 'कृपया एकूण बिलाची रक्कम भरा.';
+
+  @override
+  String get sharedCostRequiresBothShares =>
+      'सामायिक खर्चात दोघांचाही हिस्सा असणे आवश्यक आहे.';
 
   @override
   String get contactShareBecomesHalf =>
@@ -495,6 +559,22 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String amountPersonShouldPay(Object personName) {
     return '$personName ने द्यायची रक्कम';
+  }
+
+  @override
+  String get amountPaidForThemRequired => 'त्यांच्यासाठी दिलेली रक्कम *';
+
+  @override
+  String get amountPaidForYouRequired => 'तुमच्यासाठी दिलेली रक्कम *';
+
+  @override
+  String amountPaidForThemHint(Object personName) {
+    return '$personName यांनी तुम्हाला द्यायची रक्कम';
+  }
+
+  @override
+  String amountPaidForYouHint(Object personName) {
+    return 'तुम्ही $personName यांना द्यायची रक्कम';
   }
 
   @override
@@ -797,7 +877,8 @@ class AppLocalizationsMr extends AppLocalizations {
   String get personalExpense => 'वैयक्तिक खर्च';
 
   @override
-  String get trackYourSpending => 'तुमचे खर्च ट्रॅक करा';
+  String get trackYourSpending =>
+      'तुमच्यासाठी केलेल्या पेमेंटचा खर्च ट्रॅक करा.';
 
   @override
   String get expenseDeleted => 'खर्च हटवला गेला';
@@ -854,55 +935,55 @@ class AppLocalizationsMr extends AppLocalizations {
   String get comment_splits => '========== Splits ==========';
 
   @override
-  String get split => 'स्प्लिट';
+  String get split => 'ग्रुप खर्च';
 
   @override
-  String get splitExpense => 'खर्च वाटून घ्या';
+  String get splitExpense => 'ग्रुप खर्च';
 
   @override
-  String get splitExpenses => 'स्प्लिट खर्च';
+  String get splitExpenses => 'ग्रुप खर्च';
 
   @override
-  String get addSplit => 'स्प्लिट जोडा';
+  String get addSplit => 'ग्रुप खर्च जोडा';
 
   @override
-  String get editSplit => 'स्प्लिट एडिट करा';
+  String get editSplit => 'ग्रुप खर्च एडिट करा';
 
   @override
-  String get editSplitExpense => 'स्प्लिट खर्च एडिट करा';
+  String get editSplitExpense => 'ग्रुप खर्च एडिट करा';
 
   @override
-  String get deleteSplit => 'स्प्लिट हटवा';
+  String get deleteSplit => 'ग्रुप खर्च हटवा';
 
   @override
-  String get deleteSplitExpense => 'स्प्लिट खर्च हटवा';
+  String get deleteSplitExpense => 'ग्रुप खर्च हटवा';
 
   @override
-  String get splitDetails => 'स्प्लिटचा तपशील';
+  String get splitDetails => 'ग्रुप खर्चाचा तपशील';
 
   @override
-  String get splitDeleted => 'स्प्लिट हटवला गेला';
+  String get splitDeleted => 'ग्रुप खर्च हटवला गेला';
 
   @override
-  String get splitExpenseDeleted => 'स्प्लिट खर्च हटवला गेला';
+  String get splitExpenseDeleted => 'ग्रुप खर्च हटवला गेला';
 
   @override
-  String get splitMarkedAsSettled => 'स्प्लिट चुकता म्हणून मार्क केला';
+  String get splitMarkedAsSettled => 'ग्रुप खर्च चुकता म्हणून मार्क केला';
 
   @override
-  String get splitNotFound => 'स्प्लिट सापडला नाही';
+  String get splitNotFound => 'ग्रुप खर्च सापडला नाही';
 
   @override
-  String get noSplitsYet => 'अजून स्प्लिट नाहीत';
+  String get noSplitsYet => 'अजून कोणताही ग्रुप खर्च नाही';
 
   @override
-  String get noSplitExpensesYet => 'अजून स्प्लिट खर्च नाहीत';
+  String get noSplitExpensesYet => 'अजून कोणताही ग्रुप खर्च नाही';
 
   @override
-  String get noMoreSplits => 'आणखी स्प्लिट नाहीत';
+  String get noMoreSplits => 'आता आणखी ग्रुप खर्च नाहीत';
 
   @override
-  String get noSplitsFound => 'स्प्लिट सापडले नाहीत';
+  String get noSplitsFound => 'कोणताही ग्रुप खर्च सापडला नाही';
 
   @override
   String get startSplittingExpenses =>
@@ -931,31 +1012,31 @@ class AppLocalizationsMr extends AppLocalizations {
   String get noParticipantsAdded => 'अजून कोणताही सदस्य जोडला नाही';
 
   @override
-  String get addAtLeastOnePerson => 'वाटणीसाठी किमान एक व्यक्ती जोडा';
+  String get addAtLeastOnePerson => 'समाविष्ट करण्यासाठी किमान एक व्यक्ती जोडा';
 
   @override
   String get totalParticipantShares => 'सर्व सदस्यांच्या हिश्शांची बेरीज';
 
   @override
-  String get recentSplits => 'अलीकडील स्प्लिट';
+  String get recentSplits => 'अलीकडील ग्रुप खर्च';
 
   @override
-  String get searchSplits => 'स्प्लिट शोधा...';
+  String get searchSplits => 'ग्रुप खर्च शोधा...';
 
   @override
-  String get createSplit => 'स्प्लिट तयार करा';
+  String get createSplit => 'ग्रुप खर्च तयार करा';
 
   @override
-  String get updateSplit => 'स्प्लिट अपडेट करा';
+  String get updateSplit => 'ग्रुप खर्च अपडेट करा';
 
   @override
   String get settleAnyway => 'तरीही चुकता करा';
 
   @override
-  String get settleSplit => 'स्प्लिट चुकता करा';
+  String get settleSplit => 'ग्रुप खर्च चुकता करा';
 
   @override
-  String get reviewAndSettleSplit => 'स्प्लिट पाहा आणि चुकता करा';
+  String get reviewAndSettleSplit => 'ग्रुप खर्च पाहा आणि चुकता करा';
 
   @override
   String get notPaidYet => 'अजून पैसे दिलेले नाहीत';
@@ -971,7 +1052,7 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get reviewPendingSettlements =>
-      'हा स्प्लिट बंद करण्यापूर्वी बाकी हिशोब तपासा.';
+      'हा ग्रुप खर्च बंद करण्यापूर्वी बाकी हिशोब तपासा.';
 
   @override
   String pendingSettlementsWillBeMarkedComplete(Object count) {
@@ -1005,11 +1086,11 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get settlingWillCloseThesePayments =>
-      'यामुळे हे पेमेंट बंद होतील आणि तयार झालेल्या स्प्लिट लेजर नोंदी काढल्या जातील.';
+      'यामुळे हे पेमेंट बंद होतील आणि तयार झालेल्या ग्रुप खर्चाच्या लेजर नोंदी काढल्या जातील.';
 
   @override
   String get allSettlementsAlreadyComplete =>
-      'सर्व हिशोब आधीच पूर्ण झाले आहेत. हा स्प्लिट चुकता म्हणून मार्क करायचा का?';
+      'सर्व हिशोब आधीच पूर्ण झाले आहेत. हा ग्रुप खर्च चुकता म्हणून मार्क करायचा का?';
 
   @override
   String get yourShare => 'तुमचा हिस्सा';
@@ -1074,6 +1155,11 @@ class AppLocalizationsMr extends AppLocalizations {
   }
 
   @override
+  String personOwesYouShort(Object personName) {
+    return '$personName ला तुम्हाला पैसे द्यायचे आहेत';
+  }
+
+  @override
   String owesCounterparty(Object counterpartyName, Object amount) {
     return '$counterpartyName चे $amount द्यायचे आहेत';
   }
@@ -1081,6 +1167,11 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String youOwePerson(Object personName, Object amount) {
     return 'तुम्हाला $personName चे $amount द्यायचे आहेत';
+  }
+
+  @override
+  String youOwePersonShort(Object personName) {
+    return 'तुम्हाला $personName चे पैसे द्यायचे आहेत';
   }
 
   @override
@@ -1101,7 +1192,7 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get deleteSplitConfirmMessage =>
-      'हा स्प्लिट खर्च खरोखर हटवायचा आहे का? हे परत करता येणार नाही.';
+      'हा ग्रुप खर्च खरोखर हटवायचा आहे का? हे परत करता येणार नाही.';
 
   @override
   String get doYouWantToMarkSettled =>
@@ -1125,10 +1216,10 @@ class AppLocalizationsMr extends AppLocalizations {
   String get titleRequired => 'शीर्षक *';
 
   @override
-  String get splitTitle => 'स्प्लिटचे शीर्षक';
+  String get splitTitle => 'ग्रुप खर्चाचे शीर्षक';
 
   @override
-  String get enterSplitTitle => 'स्प्लिटचे शीर्षक टाका';
+  String get enterSplitTitle => 'ग्रुप खर्चाचे शीर्षक टाका';
 
   @override
   String get egDinnerAtRestaurant => 'उदा., रेस्टॉरंटमध्ये डिनर';
@@ -1161,11 +1252,11 @@ class AppLocalizationsMr extends AppLocalizations {
   String get divideAmountEvenlyAmongAll => 'रक्कम सर्वांमध्ये समान वाटा';
 
   @override
-  String get splitBills => 'या स्प्लिटमधील बिले';
+  String get splitBills => 'या ग्रुप खर्चाची बिले';
 
   @override
   String get splitBillsHelp =>
-      'या स्प्लिटमध्ये येणारी एक किंवा जास्त बिले जोडा';
+      'या ग्रुप खर्चात येणारी एक किंवा जास्त बिले जोडा';
 
   @override
   String get addBill => 'बिल जोडा';
@@ -1198,7 +1289,8 @@ class AppLocalizationsMr extends AppLocalizations {
   String get noBillsAdded => 'एकही बिल जोडलेले नाही';
 
   @override
-  String get addAtLeastOneBill => 'या स्प्लिटसाठी किमान एक बिल किंवा खर्च जोडा';
+  String get addAtLeastOneBill =>
+      'या ग्रुप खर्चासाठी किमान एक बिल किंवा खर्च जोडा';
 
   @override
   String get pleaseAddAtLeastOneBill => 'कृपया किमान एक बिल जोडा';
@@ -1262,7 +1354,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get totalExpenses => 'एकूण खर्च';
 
   @override
-  String get totalSplits => 'एकूण स्प्लिट';
+  String get totalSplits => 'एकूण ग्रुप खर्च';
 
   @override
   String get youOwe => 'तुम्हाला द्यायचे आहे';
@@ -1534,7 +1626,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get directBalance => 'थेट शिल्लक';
 
   @override
-  String get splitBalance => 'स्प्लिट शिल्लक';
+  String get splitBalance => 'ग्रुप खर्चाची शिल्लक';
 
   @override
   String get netSettlement => 'निव्वळ हिशोब';
@@ -1623,17 +1715,17 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String excludingSplitBalances(Object amount) {
-    return 'स्प्लिट शिल्लक $amount वगळून';
+    return 'ग्रुप खर्चाची शिल्लक $amount वगळून';
   }
 
   @override
   String splitBalanceAmount(Object amount) {
-    return 'स्प्लिट शिल्लक: $amount';
+    return 'ग्रुप खर्चाची शिल्लक: $amount';
   }
 
   @override
   String get settleSplitsFromSplitDetails =>
-      'स्प्लिटचा हिशोब स्प्लिटच्या तपशिलातून चुकता करा';
+      'ग्रुप खर्चाचा हिशोब ग्रुप खर्चाच्या तपशिलातून चुकता करा';
 
   @override
   String get setToFullBalance => 'पूर्ण शिल्लक टाका';
@@ -1676,10 +1768,10 @@ class AppLocalizationsMr extends AppLocalizations {
   String get deleteTransactionMessage => 'हा व्यवहार खरोखर हटवायचा आहे का?';
 
   @override
-  String get deleteSplitTitle => 'स्प्लिट हटवायचा?';
+  String get deleteSplitTitle => 'ग्रुप खर्च हटवायचा?';
 
   @override
-  String get deleteSplitMessage => 'हा स्प्लिट खर्च खरोखर हटवायचा आहे का?';
+  String get deleteSplitMessage => 'हा ग्रुप खर्च खरोखर हटवायचा आहे का?';
 
   @override
   String get actionCannotBeUndone => 'हे परत करता येणार नाही';
@@ -1729,7 +1821,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get allExpensesItem => 'सर्व खर्च';
 
   @override
-  String get allSplitExpensesItem => 'सर्व स्प्लिट खर्च';
+  String get allSplitExpensesItem => 'सर्व ग्रुप खर्च';
 
   @override
   String get allContactReferencesItem => 'सर्व संपर्कांची माहिती';
@@ -1760,7 +1852,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get allPersonalExpenses => 'सर्व वैयक्तिक खर्च';
 
   @override
-  String get allSplitExpenses => 'सर्व स्प्लिट खर्च';
+  String get allSplitExpenses => 'सर्व ग्रुप खर्च';
 
   @override
   String get contactReferences => 'संपर्कांची माहिती आणि फोटो';
@@ -1834,7 +1926,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get allExpensesDeleted => 'सर्व खर्च';
 
   @override
-  String get allSplitsDeleted => 'सर्व स्प्लिट';
+  String get allSplitsDeleted => 'सर्व ग्रुप खर्च';
 
   @override
   String get comment_settings => '========== Settings ==========';
@@ -2055,7 +2147,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get addFirstExpense => 'सुरुवात करण्यासाठी तुमचा पहिला खर्च जोडा';
 
   @override
-  String get addFirstSplit => 'सुरुवात करण्यासाठी तुमचा पहिला स्प्लिट जोडा';
+  String get addFirstSplit => 'सुरुवात करण्यासाठी तुमचा पहिला ग्रुप खर्च जोडा';
 
   @override
   String get tryAdjustingFilters => 'फिल्टर बदलून पाहा';
@@ -2434,7 +2526,7 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get nameUsedInSharedSplits =>
-      'शेअर केलेल्या स्प्लिट आणि रिपोर्टमध्ये वापरले जाईल';
+      'ग्रुप खर्च आणि रिपोर्टमध्ये वापरले जाईल';
 
   @override
   String get nameUsedInSharedMessages =>
@@ -2520,16 +2612,16 @@ class AppLocalizationsMr extends AppLocalizations {
   }
 
   @override
-  String get splitInvoice => 'स्प्लिट इनव्हॉइस';
+  String get splitInvoice => 'ग्रुप खर्च इनव्हॉइस';
 
   @override
   String splitInvoiceFrom(Object ownerName, Object splitTitle) {
-    return '$ownerName कडून स्प्लिट इनव्हॉइस: $splitTitle';
+    return '$ownerName कडून ग्रुप खर्च इनव्हॉइस: $splitTitle';
   }
 
   @override
   String splitInvoiceSubject(Object splitTitle) {
-    return 'HisaabMate स्प्लिट इनव्हॉइस - $splitTitle';
+    return 'HisaabMate ग्रुप खर्च इनव्हॉइस - $splitTitle';
   }
 
   @override
@@ -2538,7 +2630,7 @@ class AppLocalizationsMr extends AppLocalizations {
     Object splitTitle,
     Object ownerName,
   ) {
-    return 'नमस्कार सर्वांना 👋\n\n“$splitTitle” चे $appName स्प्लिट इनव्हॉइस येथे आहे.\n\nकृपया जोडलेल्या फाइलमध्ये रक्कम आणि स्प्लिटचा तपशील पहा.\n\nधन्यवाद,\n$ownerName';
+    return 'नमस्कार सर्वांना 👋\n\n“$splitTitle” चे $appName ग्रुप खर्च इनव्हॉइस येथे आहे.\n\nकृपया जोडलेल्या फाइलमध्ये रक्कम आणि ग्रुप खर्चाचा तपशील पहा.\n\nधन्यवाद,\n$ownerName';
   }
 
   @override

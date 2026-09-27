@@ -131,15 +131,6 @@ Future<UpiSettlementAction?> showUpiSettlementActionSheet(
                         : UpiSettlementAction.request,
                   ),
                 ),
-                const SizedBox(height: 10),
-                _UpiActionCard(
-                  icon: Icons.ios_share_outlined,
-                  title: isPayable ? tr.sharePaymentDetails : tr.shareRequest,
-                  description: tr.sendThroughWhatsAppOrAnotherApp,
-                  color: color,
-                  onTap: () =>
-                      Navigator.pop(sheetContext, UpiSettlementAction.share),
-                ),
               ],
             ),
           ),

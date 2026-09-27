@@ -8,6 +8,7 @@ import 'package:borrow_ledger/core/services/upi_service.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
+import 'package:borrow_ledger/core/utils/shared_expense_mode.dart';
 import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
 import 'package:borrow_ledger/data/models/contact_activity_item.dart';
 import 'package:borrow_ledger/data/models/contact_model.dart';
@@ -725,7 +726,7 @@ class _ContactWiseTransactionsScreenState
       case AppConstants.categoryUdhari:
         return tr.udhari.toLowerCase();
       case AppConstants.categorySharedSpend:
-        return 'shared';
+        return tr.sharedSpend.toLowerCase();
       case AppConstants.categorySplit:
         return tr.split.toLowerCase();
       default:
@@ -1885,9 +1886,26 @@ class _ContactWiseTransactionsScreenState
     }
     if (transaction.category == AppConstants.categorySharedSpend) {
       final contactName = transaction.contactName ?? tr.unknown;
+      final amount = formatMoney(transaction.amount);
+      if (SharedExpenseModeResolver.forTransaction(transaction) ==
+          SharedExpenseMode.paidOnBehalf) {
+        final contextText = transaction.sharedPaidByUser == true
+            ? tr.ownerPaidForPerson(ownerName, contactName)
+            : tr.personPaidForMe(contactName);
+        final outcome = transaction.sharedPaidByUser == true
+            ? tr.personOwesCounterparty(contactName, ownerName, amount)
+            : tr.youOwePerson(contactName, amount);
+        return [
+          if (transaction.description?.trim().isNotEmpty == true)
+            transaction.description!.trim(),
+          contextText,
+          outcome,
+        ].join(' | ');
+      }
+
       final payer = transaction.sharedPaidByUser == true
           ? tr.ownerPaid(ownerName)
-          : tr.personPaid(contactName);
+          : tr.personPaidForMe(contactName);
       final total = transaction.sharedTotalAmount;
       final shareLabel = transaction.sharedPaidByUser == true
           ? tr.personShare(contactName)
@@ -2748,13 +2766,20 @@ class _CompactContactTransactionCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          CurrencyFormatter.format(transaction.amount),
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            height: 1.08,
-                            fontWeight: FontWeight.w800,
-                            color: amountColor,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 112),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              CurrencyFormatter.format(transaction.amount),
+                              style: TextStyle(
+                                fontSize: 15.5,
+                                height: 1.08,
+                                fontWeight: FontWeight.w800,
+                                color: amountColor,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -2762,18 +2787,21 @@ class _CompactContactTransactionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        AppPillBadge(
-                          label: _categoryLabel(context),
-                          icon: isSplit
-                              ? Icons.call_split_rounded
-                              : isShared
-                              ? Icons.receipt_long_outlined
-                              : null,
-                          color: categoryColor,
-                          fontSize: 8.5,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 100),
+                          child: AppPillBadge(
+                            label: _categoryLabel(context),
+                            icon: isSplit
+                                ? Icons.call_split_rounded
+                                : isShared
+                                ? Icons.receipt_long_outlined
+                                : null,
+                            color: categoryColor,
+                            fontSize: 8.5,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 7),
@@ -2818,13 +2846,20 @@ class _CompactContactTransactionCard extends StatelessWidget {
                             ),
                           ),
                         ],
-                        const Spacer(),
-                        Text(
-                          _directionLabel(context),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: amountColor,
-                            fontWeight: FontWeight.w700,
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              _directionLabel(context),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: amountColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                         Icon(
@@ -2875,6 +2910,12 @@ class _CompactContactTransactionCard extends StatelessWidget {
     final isLend = transaction.type == AppConstants.typeLend;
     if (transaction.category == AppConstants.categorySplit) {
       return isLend ? tr.owesYou : tr.youOwe;
+    }
+    if (transaction.isSharedSpend) {
+      final sharedMode = SharedExpenseModeResolver.forTransaction(transaction);
+      if (sharedMode != SharedExpenseMode.legacy) {
+        return _sharedOutcomeLabel(tr);
+      }
     }
 
     return isLend ? tr.youGave : tr.youGot;
@@ -2942,7 +2983,14 @@ class _CompactContactTransactionCard extends StatelessWidget {
       case AppConstants.categoryUdhari:
         return tr.udhariBadge;
       case AppConstants.categorySharedSpend:
-        return tr.sharedSpend;
+        switch (SharedExpenseModeResolver.forTransaction(transaction)) {
+          case SharedExpenseMode.paidOnBehalf:
+            return tr.onBehalf;
+          case SharedExpenseMode.sharedCost:
+            return tr.sharedCost;
+          case SharedExpenseMode.legacy:
+            return tr.sharedSpend;
+        }
       case AppConstants.categorySplit:
         return tr.split;
       default:
@@ -2953,6 +3001,14 @@ class _CompactContactTransactionCard extends StatelessWidget {
   String _sharedSpendSubtitle(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final contactName = transaction.contactName ?? tr.unknown;
+    if (SharedExpenseModeResolver.forTransaction(transaction) ==
+        SharedExpenseMode.paidOnBehalf) {
+      final contextText = transaction.sharedPaidByUser == true
+          ? tr.paidForPerson(contactName)
+          : tr.personPaidForYou(contactName);
+      return contextText;
+    }
+
     final payer = transaction.sharedPaidByUser == true
         ? tr.youPaidLabel
         : tr.personPaid(contactName);
@@ -2964,5 +3020,15 @@ class _CompactContactTransactionCard extends StatelessWidget {
         ? tr.personShare(contactName)
         : tr.yourShare;
     return '$payer$totalText • $shareLabel ${CurrencyFormatter.format(transaction.amount)}';
+  }
+
+  String _sharedOutcomeLabel(AppLocalizations tr) {
+    final contactName = transaction.contactName ?? tr.unknown;
+    final paidByUser =
+        transaction.sharedPaidByUser ??
+        (transaction.type == AppConstants.typeLend);
+    return paidByUser
+        ? tr.personOwesYouShort(contactName)
+        : tr.youOwePersonShort(contactName);
   }
 }

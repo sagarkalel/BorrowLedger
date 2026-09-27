@@ -165,7 +165,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get borrowLend => 'Borrow/Lend';
 
   @override
-  String get splits => 'Splits';
+  String get splits => 'Group Expenses';
+
+  @override
+  String get myExpenses => 'My Expenses';
 
   @override
   String get expenses => 'Expenses';
@@ -207,7 +210,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentTransactions => 'Recent Transactions';
 
   @override
-  String get addNewTransaction => 'Add New Transaction';
+  String get addNewTransaction => 'What do you want to add?';
 
   @override
   String get saveTransaction => 'Save Transaction';
@@ -296,17 +299,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'Direct money given or received with one person';
 
   @override
-  String get udhariItemCredit => 'Udhari / Item Credit';
+  String get udhariItemCredit => 'Udhari';
 
   @override
   String get udhariItemCreditDescription =>
-      'Item or service bought/sold on credit';
+      'Items or services bought or sold on credit.';
 
   @override
-  String get sharedSpend => 'Shared Spend';
+  String get sharedSpend => 'Expense with Someone';
 
   @override
-  String get sharedSpendDescription => 'One of you paid for something together';
+  String get sharedSpendDescription =>
+      'You paid for them or they paid for you.';
+
+  @override
+  String get onBehalf => 'On behalf';
+
+  @override
+  String get sharedCost => 'Shared cost';
+
+  @override
+  String get expenseWithSomeoneFormDescription =>
+      'Record a payment made for you or by you.';
+
+  @override
+  String get weSharedTheCost => 'We shared the cost';
+
+  @override
+  String get weSharedTheCostDescription =>
+      'Show the total bill and each person’s share.';
+
+  @override
+  String get iPaidForThem => 'I paid for them';
+
+  @override
+  String personPaidForMe(Object personName) {
+    return '$personName paid for me';
+  }
 
   @override
   String get whoPaid => 'Who paid?';
@@ -338,6 +367,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String personPaid(Object personName) {
     return '$personName paid';
+  }
+
+  @override
+  String youPaidForPerson(Object personName) {
+    return 'You paid for $personName';
+  }
+
+  @override
+  String paidForPerson(Object personName) {
+    return 'Paid for $personName';
+  }
+
+  @override
+  String personPaidForYou(Object personName) {
+    return '$personName paid for you';
+  }
+
+  @override
+  String ownerPaidForPerson(Object ownerName, Object personName) {
+    return '$ownerName paid for $personName';
   }
 
   @override
@@ -381,10 +430,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cashAndUdhari => 'Cash & Udhari';
 
   @override
-  String get groupSplit => 'Group split';
+  String get groupSplit => 'Group Expense';
 
   @override
-  String get groupSplitDescription => 'Split one expense with multiple people';
+  String get groupSplitDescription => 'Split one expense with multiple people.';
 
   @override
   String get comment_amounts => '========== Amounts ==========';
@@ -412,6 +461,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paidByYou => 'Paid by You';
+
+  @override
+  String get paymentContext => 'Payment context';
 
   @override
   String get youPaidRequired => 'You Paid *';
@@ -456,6 +508,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purposeHint => 'Dinner, petrol, shopping...';
 
   @override
+  String get whatWasItForRequired => 'What was it for? *';
+
+  @override
+  String get whatWasItForHint => 'Lunch, a mall item, mess...';
+
+  @override
   String get pleaseEnterPurpose => 'Please enter purpose';
 
   @override
@@ -469,6 +527,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterFullBillAmount => 'Enter full bill amount';
+
+  @override
+  String get totalBillRequiredMessage => 'Please enter the total bill amount.';
+
+  @override
+  String get sharedCostRequiresBothShares =>
+      'A shared cost must include a share for both people.';
 
   @override
   String get contactShareBecomesHalf => 'Contact share becomes half of total';
@@ -493,6 +558,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String amountPersonShouldPay(Object personName) {
     return 'Amount $personName should pay';
+  }
+
+  @override
+  String get amountPaidForThemRequired => 'Amount paid for them *';
+
+  @override
+  String get amountPaidForYouRequired => 'Amount paid for you *';
+
+  @override
+  String amountPaidForThemHint(Object personName) {
+    return 'What $personName owes you';
+  }
+
+  @override
+  String amountPaidForYouHint(Object personName) {
+    return 'What you owe $personName';
   }
 
   @override
@@ -611,7 +692,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String phoneAlreadySavedMessage(Object contactName) {
-    return 'This number is already saved as $contactName. Use that contact for this split?';
+    return 'This number is already saved as $contactName. Use that contact for this group expense?';
   }
 
   @override
@@ -793,7 +874,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personalExpense => 'Personal Expense';
 
   @override
-  String get trackYourSpending => 'Track your spending';
+  String get trackYourSpending => 'Track something you paid for yourself.';
 
   @override
   String get expenseDeleted => 'Expense deleted';
@@ -850,63 +931,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comment_splits => '========== Splits ==========';
 
   @override
-  String get split => 'Split';
+  String get split => 'Group Expense';
 
   @override
-  String get splitExpense => 'Split Expense';
+  String get splitExpense => 'Group Expense';
 
   @override
-  String get splitExpenses => 'Split Expenses';
+  String get splitExpenses => 'Group Expenses';
 
   @override
-  String get addSplit => 'Add Split';
+  String get addSplit => 'Add Group Expense';
 
   @override
-  String get editSplit => 'Edit Split';
+  String get editSplit => 'Edit Group Expense';
 
   @override
-  String get editSplitExpense => 'Edit Split Expense';
+  String get editSplitExpense => 'Edit Group Expense';
 
   @override
-  String get deleteSplit => 'Delete Split';
+  String get deleteSplit => 'Delete Group Expense';
 
   @override
-  String get deleteSplitExpense => 'Delete Split Expense';
+  String get deleteSplitExpense => 'Delete Group Expense';
 
   @override
-  String get splitDetails => 'Split Details';
+  String get splitDetails => 'Group Expense Details';
 
   @override
-  String get splitDeleted => 'Split deleted';
+  String get splitDeleted => 'Group Expense deleted';
 
   @override
-  String get splitExpenseDeleted => 'Split expense deleted';
+  String get splitExpenseDeleted => 'Group Expense deleted';
 
   @override
-  String get splitMarkedAsSettled => 'Split marked as settled';
+  String get splitMarkedAsSettled => 'Group Expense marked as settled';
 
   @override
-  String get splitNotFound => 'Split not found';
+  String get splitNotFound => 'Group Expense not found';
 
   @override
-  String get noSplitsYet => 'No splits yet';
+  String get noSplitsYet => 'No group expenses yet';
 
   @override
-  String get noSplitExpensesYet => 'No split expenses yet';
+  String get noSplitExpensesYet => 'No group expenses yet';
 
   @override
-  String get noMoreSplits => 'No more splits';
+  String get noMoreSplits => 'No more group expenses';
 
   @override
-  String get noSplitsFound => 'No splits found';
+  String get noSplitsFound => 'No group expenses found';
 
   @override
   String get startSplittingExpenses =>
-      'Start splitting expenses with friends and family';
+      'Start tracking group expenses with friends and family';
 
   @override
   String get startSplittingExpensesWithFriends =>
-      'Start splitting expenses with friends';
+      'Start tracking group expenses with friends';
 
   @override
   String get shareCostsWithFriends => 'Share costs with friends';
@@ -928,31 +1009,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noParticipantsAdded => 'No participants added yet';
 
   @override
-  String get addAtLeastOnePerson => 'Add at least one person to split with';
+  String get addAtLeastOnePerson => 'Add at least one person to include';
 
   @override
   String get totalParticipantShares => 'Total participant shares';
 
   @override
-  String get recentSplits => 'Recent Splits';
+  String get recentSplits => 'Recent Group Expenses';
 
   @override
-  String get searchSplits => 'Search splits...';
+  String get searchSplits => 'Search group expenses...';
 
   @override
-  String get createSplit => 'Create Split';
+  String get createSplit => 'Create Group Expense';
 
   @override
-  String get updateSplit => 'Update Split';
+  String get updateSplit => 'Update Group Expense';
 
   @override
   String get settleAnyway => 'Settle Anyway';
 
   @override
-  String get settleSplit => 'Settle Split';
+  String get settleSplit => 'Settle Group Expense';
 
   @override
-  String get reviewAndSettleSplit => 'Review & Settle Split';
+  String get reviewAndSettleSplit => 'Review & Settle Group Expense';
 
   @override
   String get notPaidYet => 'Not Paid Yet';
@@ -968,7 +1049,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewPendingSettlements =>
-      'Review pending settlements before closing this split.';
+      'Review pending settlements before closing this group expense.';
 
   @override
   String pendingSettlementsWillBeMarkedComplete(Object count) {
@@ -1004,11 +1085,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settlingWillCloseThesePayments =>
-      'This will close these payments and remove generated split ledger entries.';
+      'This will close these payments and remove generated group expense ledger entries.';
 
   @override
   String get allSettlementsAlreadyComplete =>
-      'All settlements are already complete. Mark this split as settled?';
+      'All settlements are already complete. Mark this group expense as settled?';
 
   @override
   String get yourShare => 'Your Share';
@@ -1073,6 +1154,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String personOwesYouShort(Object personName) {
+    return '$personName owes you';
+  }
+
+  @override
   String owesCounterparty(Object counterpartyName, Object amount) {
     return 'Owes $counterpartyName $amount';
   }
@@ -1080,6 +1166,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String youOwePerson(Object personName, Object amount) {
     return 'You owe $personName $amount';
+  }
+
+  @override
+  String youOwePersonShort(Object personName) {
+    return 'You owe $personName';
   }
 
   @override
@@ -1100,7 +1191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteSplitConfirmMessage =>
-      'Are you sure you want to delete this split expense? This action cannot be undone.';
+      'Are you sure you want to delete this group expense? This action cannot be undone.';
 
   @override
   String get doYouWantToMarkSettled =>
@@ -1108,7 +1199,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allParticipantHasPaidTheirShareMarkAsSetteled =>
-      'All participants have paid their share. Mark this split as settled?\n\nThis action cannot be undone.';
+      'All participants have paid their share. Mark this group expense as settled?\n\nThis action cannot be undone.';
 
   @override
   String get amountYouPaidCannotExceedTotalAmount =>
@@ -1124,10 +1215,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get titleRequired => 'Title *';
 
   @override
-  String get splitTitle => 'Split Title';
+  String get splitTitle => 'Group Expense Title';
 
   @override
-  String get enterSplitTitle => 'Enter split title';
+  String get enterSplitTitle => 'Enter group expense title';
 
   @override
   String get egDinnerAtRestaurant => 'e.g., Dinner at Restaurant';
@@ -1160,11 +1251,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divideAmountEvenlyAmongAll => 'Divide amount evenly among all';
 
   @override
-  String get splitBills => 'Bills in this split';
+  String get splitBills => 'Bills in this group expense';
 
   @override
   String get splitBillsHelp =>
-      'Add one or more bills that belong to this split';
+      'Add one or more bills that belong to this group expense';
 
   @override
   String get addBill => 'Add Bill';
@@ -1198,7 +1289,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addAtLeastOneBill =>
-      'Add at least one bill or expense for this split';
+      'Add at least one bill or expense for this group expense';
 
   @override
   String get pleaseAddAtLeastOneBill => 'Please add at least one bill';
@@ -1263,7 +1354,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totalExpenses => 'Total Expenses';
 
   @override
-  String get totalSplits => 'Total Splits';
+  String get totalSplits => 'Total Group Expenses';
 
   @override
   String get youOwe => 'You Owe';
@@ -1537,7 +1628,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get directBalance => 'Direct balance';
 
   @override
-  String get splitBalance => 'Split balance';
+  String get splitBalance => 'Group expense balance';
 
   @override
   String get netSettlement => 'Net settlement';
@@ -1555,7 +1646,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCashNeededOffset =>
-      'No money needs to be paid. Your direct and split balances will be cleared, and your history will stay visible.';
+      'No money needs to be paid. Your direct and group expense balances will be cleared, and your history will stay visible.';
 
   @override
   String get clearOffsettingBalances => 'Clear balances';
@@ -1608,7 +1699,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get balancesClearedTogetherNote =>
-      'Note: Direct and split balances were cleared together, so only the net amount was paid.';
+      'Note: Direct and group expense balances were cleared together, so only the net amount was paid.';
 
   @override
   String get balancesCancelledNoPaymentNote =>
@@ -1616,7 +1707,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get balancesClearedTogetherReportNote =>
-      'Note: Direct and split balances were cleared together.';
+      'Note: Direct and group expense balances were cleared together.';
 
   @override
   String get cashBorrowBalance => 'Cash / borrow balance';
@@ -1626,16 +1717,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String excludingSplitBalances(Object amount) {
-    return '$amount excluding split balances';
+    return '$amount excluding group expense balances';
   }
 
   @override
   String splitBalanceAmount(Object amount) {
-    return 'Split balance: $amount';
+    return 'Group expense balance: $amount';
   }
 
   @override
-  String get settleSplitsFromSplitDetails => 'Settle splits from Split Details';
+  String get settleSplitsFromSplitDetails =>
+      'Settle group expenses from Group Expense Details';
 
   @override
   String get setToFullBalance => 'Set to full balance';
@@ -1680,11 +1772,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete this transaction?';
 
   @override
-  String get deleteSplitTitle => 'Delete Split?';
+  String get deleteSplitTitle => 'Delete Group Expense?';
 
   @override
   String get deleteSplitMessage =>
-      'Are you sure you want to delete this split expense?';
+      'Are you sure you want to delete this group expense?';
 
   @override
   String get actionCannotBeUndone => 'This action cannot be undone';
@@ -1735,7 +1827,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allExpensesItem => 'All expenses';
 
   @override
-  String get allSplitExpensesItem => 'All split expenses';
+  String get allSplitExpensesItem => 'All group expenses';
 
   @override
   String get allContactReferencesItem => 'All contact references';
@@ -1767,7 +1859,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allPersonalExpenses => 'All personal expenses';
 
   @override
-  String get allSplitExpenses => 'All split expenses';
+  String get allSplitExpenses => 'All group expenses';
 
   @override
   String get contactReferences => 'Contact references and photos';
@@ -1840,7 +1932,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allExpensesDeleted => 'All expenses';
 
   @override
-  String get allSplitsDeleted => 'All splits';
+  String get allSplitsDeleted => 'All group expenses';
 
   @override
   String get comment_settings => '========== Settings ==========';
@@ -2058,7 +2150,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addFirstExpense => 'Add your first expense to get started';
 
   @override
-  String get addFirstSplit => 'Add your first split to get started';
+  String get addFirstSplit => 'Add your first group expense to get started';
 
   @override
   String get tryAdjustingFilters => 'Try adjusting your filters';
@@ -2436,7 +2528,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setYourName => 'Set your name';
 
   @override
-  String get nameUsedInSharedSplits => 'Used in shared splits and reports';
+  String get nameUsedInSharedSplits => 'Used in group expenses and reports';
 
   @override
   String get nameUsedInSharedMessages =>
@@ -2522,16 +2614,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get splitInvoice => 'Split Invoice';
+  String get splitInvoice => 'Group Expense Invoice';
 
   @override
   String splitInvoiceFrom(Object ownerName, Object splitTitle) {
-    return 'Split invoice from $ownerName: $splitTitle';
+    return 'Group expense invoice from $ownerName: $splitTitle';
   }
 
   @override
   String splitInvoiceSubject(Object splitTitle) {
-    return 'HisaabMate Split Invoice - $splitTitle';
+    return 'HisaabMate Group Expense Invoice - $splitTitle';
   }
 
   @override
@@ -2540,7 +2632,7 @@ class AppLocalizationsEn extends AppLocalizations {
     Object splitTitle,
     Object ownerName,
   ) {
-    return 'Hi everyone 👋\n\nHere’s the $appName split invoice for “$splitTitle”.\n\nPlease review the amount and split details in the attachment.\n\nThanks,\n$ownerName';
+    return 'Hi everyone 👋\n\nHere’s the $appName group expense invoice for “$splitTitle”.\n\nPlease review the amounts and group expense details in the attachment.\n\nThanks,\n$ownerName';
   }
 
   @override

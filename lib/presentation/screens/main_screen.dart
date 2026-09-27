@@ -74,7 +74,7 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.receipt_long_rounded),
               activeIcon: const Icon(Icons.receipt_long_rounded, size: 28),
-              label: tr.expenses,
+              label: tr.myExpenses,
             ),
           ],
         ),

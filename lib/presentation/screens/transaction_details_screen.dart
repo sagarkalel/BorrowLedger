@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/shared_expense_mode.dart';
 import 'add_transaction_screen.dart';
 import 'split_detail_screen.dart';
 
@@ -36,6 +37,22 @@ class TransactionDetailsScreen extends StatelessWidget {
       isDark: isDark,
     );
     final tr = AppLocalizations.of(context)!;
+    final sharedMode = SharedExpenseModeResolver.forTransaction(transaction);
+    final categoryLabel = transaction.isSharedSpend
+        ? _sharedCategoryLabel(tr, sharedMode)
+        : transaction.isSplit
+        ? tr.split
+        : transaction.isCash
+        ? tr.cashBadge
+        : tr.udhariBadge;
+    final paymentContextLabel = transaction.isSharedSpend
+        ? _sharedPaymentContextLabel(tr, sharedMode)
+        : (isLend ? tr.youGaveBadge : tr.youGotBadge);
+    final directionLabel = transaction.isSharedSpend
+        ? sharedMode != SharedExpenseMode.legacy
+              ? _sharedOutcomeLabel(tr)
+              : (isLend ? tr.youGave : tr.youGot)
+        : (isLend ? tr.youGave : tr.youGot);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -51,7 +68,7 @@ class TransactionDetailsScreen extends StatelessWidget {
               children: [
                 _buildBadge(
                   icon: isLend ? Icons.call_made : Icons.call_received,
-                  label: isLend ? tr.youGaveBadge : tr.youGotBadge,
+                  label: paymentContextLabel,
                   color: directionColor,
                   isDark: isDark,
                 ),
@@ -66,11 +83,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                       : Icons.shopping_bag,
                   label: transaction.isSplit
                       ? tr.split
-                      : transaction.isSharedSpend
-                      ? 'Shared'
-                      : transaction.isCash
-                      ? tr.cashBadge
-                      : tr.udhariBadge,
+                      : categoryLabel,
                   color: categoryColor,
                   isDark: isDark,
                 ),
@@ -125,7 +138,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isLend ? tr.youGave : tr.youGot,
+                          directionLabel,
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                             fontSize: 12,
@@ -177,49 +190,67 @@ class TransactionDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (transaction.isSharedSpend) ...[
-              _buildDetailCard(
-                context,
-                icon: Icons.account_balance_wallet_outlined,
-                label: tr.paidByUser,
-                value: transaction.sharedPaidByUser == true
-                    ? tr.you
-                    : transaction.contactName ?? tr.unknown,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 8),
-              if (transaction.sharedTotalAmount != null) ...[
+              if (sharedMode == SharedExpenseMode.paidOnBehalf)
                 _buildDetailCard(
                   context,
-                  icon: Icons.receipt_long_outlined,
-                  label: tr.totalBill,
-                  value: CurrencyFormatter.format(
-                    transaction.sharedTotalAmount!,
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: tr.paymentContext,
+                  value: transaction.sharedPaidByUser == true
+                      ? tr.youPaidForPerson(
+                          transaction.contactName ?? tr.unknown,
+                        )
+                      : tr.personPaidForMe(transaction.contactName ?? tr.unknown),
+                  isDark: isDark,
+                )
+              else ...[
+                _buildDetailCard(
+                  context,
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: tr.paidByUser,
+                  value: transaction.sharedPaidByUser == true
+                      ? tr.you
+                      : transaction.contactName ?? tr.unknown,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+                if (transaction.sharedTotalAmount != null) ...[
+                  _buildDetailCard(
+                    context,
+                    icon: Icons.receipt_long_outlined,
+                    label: tr.totalBill,
+                    value: CurrencyFormatter.format(
+                      transaction.sharedTotalAmount!,
+                    ),
+                    isDark: isDark,
                   ),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (transaction.sharedUserShare != null) ...[
-                _buildDetailCard(
-                  context,
-                  icon: Icons.person_outline_rounded,
-                  label: tr.yourShare,
-                  value: CurrencyFormatter.format(transaction.sharedUserShare!),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (transaction.sharedContactShare != null) ...[
-                _buildDetailCard(
-                  context,
-                  icon: Icons.group_outlined,
-                  label: tr.personShare(transaction.contactName ?? tr.unknown),
-                  value: CurrencyFormatter.format(
-                    transaction.sharedContactShare!,
+                  const SizedBox(height: 8),
+                ],
+                if (transaction.sharedUserShare != null) ...[
+                  _buildDetailCard(
+                    context,
+                    icon: Icons.person_outline_rounded,
+                    label: tr.yourShare,
+                    value: CurrencyFormatter.format(
+                      transaction.sharedUserShare!,
+                    ),
+                    isDark: isDark,
                   ),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                ],
+                if (transaction.sharedContactShare != null) ...[
+                  _buildDetailCard(
+                    context,
+                    icon: Icons.group_outlined,
+                    label: tr.personShare(
+                      transaction.contactName ?? tr.unknown,
+                    ),
+                    value: CurrencyFormatter.format(
+                      transaction.sharedContactShare!,
+                    ),
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ],
             ],
             if (transaction.isUdhari && transaction.itemName != null) ...[
@@ -467,6 +498,51 @@ class TransactionDetailsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _sharedCategoryLabel(
+    AppLocalizations tr,
+    SharedExpenseMode mode,
+  ) {
+    switch (mode) {
+      case SharedExpenseMode.paidOnBehalf:
+        return tr.onBehalf;
+      case SharedExpenseMode.sharedCost:
+        return tr.sharedCost;
+      case SharedExpenseMode.legacy:
+        return tr.sharedSpend;
+    }
+  }
+
+  String _sharedPaymentContextLabel(
+    AppLocalizations tr,
+    SharedExpenseMode mode,
+  ) {
+    final contactName = transaction.contactName ?? tr.unknown;
+    switch (mode) {
+      case SharedExpenseMode.paidOnBehalf:
+        return transaction.sharedPaidByUser == true
+            ? tr.paidForPerson(contactName)
+            : tr.personPaidForYou(contactName);
+      case SharedExpenseMode.sharedCost:
+        return transaction.sharedPaidByUser == true
+            ? tr.youPaidLabel
+            : tr.personPaid(contactName);
+      case SharedExpenseMode.legacy:
+        return transaction.type == AppConstants.typeLend
+            ? tr.youGaveBadge
+            : tr.youGotBadge;
+    }
+  }
+
+  String _sharedOutcomeLabel(AppLocalizations tr) {
+    final contactName = transaction.contactName ?? tr.unknown;
+    final paidByUser =
+        transaction.sharedPaidByUser ??
+        (transaction.type == AppConstants.typeLend);
+    return paidByUser
+        ? tr.personOwesYouShort(contactName)
+        : tr.youOwePersonShort(contactName);
   }
 
   Future<void> _editTransaction(BuildContext context) async {
