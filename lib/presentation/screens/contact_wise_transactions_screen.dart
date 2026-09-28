@@ -7,6 +7,7 @@ import 'package:borrow_ledger/core/services/share_message_builder.dart';
 import 'package:borrow_ledger/core/services/upi_service.dart';
 import 'package:borrow_ledger/core/utils/app_loading_delay.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/core/utils/pdf_report_theme.dart';
 import 'package:borrow_ledger/core/utils/shared_expense_mode.dart';
 import 'package:borrow_ledger/core/utils/transaction_sort_option.dart';
@@ -24,6 +25,7 @@ import 'package:borrow_ledger/presentation/widgets/floating_tab_header_delegate.
 import 'package:borrow_ledger/presentation/widgets/settle_txn_dialog_with_partial_payment.dart';
 import 'package:borrow_ledger/presentation/widgets/upi_settlement_action_sheet.dart';
 import 'package:borrow_ledger/presentation/widgets/upi_id_setup_sheet.dart';
+import 'package:borrow_ledger/presentation/widgets/upi_phone_payment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -2016,11 +2018,19 @@ class _ContactWiseTransactionsScreenState
     if (widget.contactId == null || _netBalance.abs() < 0.01) return;
 
     final contactName = _contact?.name ?? widget.contactName ?? 'Contact';
+    final contactPhone = _contact?.phone ?? widget.contactPhone;
+    final isPayable = _netBalance < 0;
     final action = await showUpiSettlementActionSheet(
       context,
-      isPayable: _netBalance < 0,
+      isPayable: isPayable,
       contactName: contactName,
       amount: _netBalance.abs(),
+      contactPhone: contactPhone,
+      hasVerifiedUpiId: UpiService.isValidUpiId(_contact?.upiId),
+      showPhoneOption:
+          isPayable &&
+          !UpiService.isValidUpiId(_contact?.upiId) &&
+          FormInputUtils.isValidOptionalPhone(contactPhone),
     );
     if (!mounted || action == null) return;
 
@@ -2035,12 +2045,26 @@ class _ContactWiseTransactionsScreenState
 
     final isPayable = _netBalance < 0;
     final contactName = _contact?.name ?? widget.contactName ?? 'Contact';
+    if (action == UpiSettlementAction.usePhoneNumber) {
+      final contactPhone = _contact?.phone ?? widget.contactPhone;
+      if (!isPayable || !FormInputUtils.isValidOptionalPhone(contactPhone)) {
+        return;
+      }
+      await showUpiPhonePaymentSheet(
+        context,
+        contactName: contactName,
+        phoneNumber: contactPhone!.trim(),
+        amount: _netBalance.abs(),
+      );
+      return;
+    }
+
     final contactUpiId = UpiService.normalizeUpiId(_contact?.upiId);
     final profile = await context.read<UserProfileRepository>().getProfile();
     if (!mounted) return;
     final userUpiId = UpiService.normalizeUpiId(profile.upiId);
 
-    if (isPayable && contactUpiId == null) {
+    if (isPayable && !UpiService.isValidUpiId(_contact?.upiId)) {
       if (!allowSetup || _contact == null) return;
       final saved = await showUpiIdSetupSheet(
         context,
@@ -2136,7 +2160,7 @@ class _ContactWiseTransactionsScreenState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tr = AppLocalizations.of(context)!;
     final actionLabel = action == UpiSettlementAction.pay
-        ? tr.payByUpi
+        ? tr.payUsingUpiId
         : action == UpiSettlementAction.request
         ? tr.requestViaUpi
         : isPayable

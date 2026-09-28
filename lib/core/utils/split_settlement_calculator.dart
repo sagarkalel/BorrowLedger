@@ -23,6 +23,22 @@ class SplitSettlementResult {
   });
 }
 
+class SplitCollectionProgress {
+  final double totalPaid;
+  final double totalExpected;
+
+  const SplitCollectionProgress({
+    required this.totalPaid,
+    required this.totalExpected,
+  });
+
+  double get fraction {
+    if (totalExpected <= SplitSettlementCalculator.tolerance) return 0;
+    final value = totalPaid / totalExpected;
+    return value.clamp(0.0, 1.0);
+  }
+}
+
 class SplitSettlementParty {
   final SplitParticipantModel? participant;
   final String name;
@@ -54,6 +70,62 @@ class SplitSettlementRouteEntry {
 
 class SplitSettlementCalculator {
   static const double tolerance = 0.01;
+
+  static SplitCollectionProgress collectionProgress(
+    SplitExpenseModel split,
+    List<SplitParticipantModel> participants,
+  ) {
+    if (participants.isEmpty) {
+      return const SplitCollectionProgress(totalPaid: 0, totalExpected: 0);
+    }
+
+    // Route entries normally contain only the remaining amount because paid
+    // values are subtracted while building them. Recalculate once with paid
+    // values cleared so the progress denominator represents the original
+    // expected settlement amount.
+    final participantsBeforeSettlement = participants
+        .map((participant) => participant.copyWith(paid: 0))
+        .toList(growable: false);
+    final originalRoutes = calculateRouteEntries(
+      split,
+      participantsBeforeSettlement,
+    );
+    final expectedByParticipant = <String, double>{};
+
+    for (final route in originalRoutes) {
+      if (route.amount <= tolerance) continue;
+      final participant = route.from.isUser
+          ? route.to.participant
+          : route.from.participant;
+      if (participant == null) continue;
+
+      final key = _participantKey(participant);
+      expectedByParticipant[key] =
+          (expectedByParticipant[key] ?? 0) + route.amount;
+    }
+
+    final totalExpected = expectedByParticipant.values.fold<double>(
+      0,
+      (sum, amount) => sum + amount,
+    );
+    var totalPaid = 0.0;
+    for (final participant in participants) {
+      final expected = expectedByParticipant[_participantKey(participant)];
+      if (expected == null || expected <= tolerance) continue;
+
+      totalPaid += participant.paid.clamp(0.0, expected);
+    }
+
+    return SplitCollectionProgress(
+      totalPaid: totalPaid,
+      totalExpected: totalExpected,
+    );
+  }
+
+  static String _participantKey(SplitParticipantModel participant) {
+    final id = participant.id;
+    return id == null ? 'contact:${participant.contactId}' : 'id:$id';
+  }
 
   static double userShare(
     SplitExpenseModel split,

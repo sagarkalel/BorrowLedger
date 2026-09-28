@@ -622,7 +622,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           ),
           const SizedBox(width: 6),
           Text(
-            'Developed By: Sagar Kalel',
+            'Developed By: Sagar Haridas Kalel',
             style: TextStyle(
               fontSize: 11.5,
               color: colorScheme.onSurfaceVariant,

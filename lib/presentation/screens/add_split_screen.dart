@@ -21,6 +21,7 @@ import '../widgets/app_list_avatar.dart';
 import '../widgets/app_pill_badge.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/person_picker_sheet.dart';
+import '../widgets/split_user_share_summary.dart';
 
 class _SettlementRouteStep {
   final String fromName;
@@ -36,8 +37,9 @@ class _SettlementRouteStep {
 
 class AddSplitScreen extends StatefulWidget {
   final SplitExpenseModel? split;
+  final int? prefilledContactId;
 
-  const AddSplitScreen({super.key, this.split});
+  const AddSplitScreen({super.key, this.split, this.prefilledContactId});
 
   @override
   State<AddSplitScreen> createState() => _AddSplitScreenState();
@@ -96,6 +98,29 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
         _settlementMediatorContactId = null;
       }
     }
+
+    if (widget.split == null && widget.prefilledContactId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _addPrefilledContact();
+      });
+    }
+  }
+
+  Future<void> _addPrefilledContact() async {
+    final contactId = widget.prefilledContactId;
+    if (!mounted || widget.split != null || contactId == null) return;
+
+    final contactSummary = await context
+        .read<ContactRepository>()
+        .getContactById(contactId);
+    if (!mounted || widget.split != null || contactSummary == null) return;
+
+    final alreadyAdded = _participants.any(
+      (participant) => participant.contact.id == contactSummary.contact.id,
+    );
+    if (alreadyAdded) return;
+
+    await _addContactAsParticipant(contactSummary.contact);
   }
 
   void _initializeBillsFromSplit(SplitExpenseModel split) {
@@ -374,57 +399,22 @@ class _AddSplitScreenState extends State<AddSplitScreen> {
                       },
                     ),
 
-                    // Total shares summary for manual mode
-                    if (!_splitEqually && _participants.isNotEmpty) ...[
+                    if (_participants.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      AppDialogNotice(
-                        color: Theme.of(context).colorScheme.secondary,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tr.yourCalculatedShare(
-                                      CurrencyFormatter.format(
-                                        _calculateCurrentUserShare(),
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    tr.yourCalculatedShareHelp(
-                                      CurrencyFormatter.format(_totalAmount),
-                                      CurrencyFormatter.format(
-                                        _calculateTotalShares(),
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      SplitUserShareSummary(
+                        title: tr.yourShare,
+                        amount: CurrencyFormatter.format(
+                          _calculateCurrentUserShare(),
                         ),
+                        subtitle: _splitEqually
+                            ? '${tr.splitEqually} • ${_participants.length + 1} ${tr.peopleSmall}'
+                            : tr.yourCalculatedShareHelp(
+                                CurrencyFormatter.format(_totalAmount),
+                                CurrencyFormatter.format(
+                                  _calculateTotalShares(),
+                                ),
+                              ),
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                     ],
                   ],

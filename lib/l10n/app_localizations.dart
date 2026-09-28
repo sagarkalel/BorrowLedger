@@ -2906,6 +2906,24 @@ abstract class AppLocalizations {
   /// **'You need to receive'**
   String get youNeedToReceive;
 
+  /// No description provided for @payUsingUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay using UPI ID'**
+  String get payUsingUpiId;
+
+  /// No description provided for @openUpiAppWithSavedUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your preferred UPI app using the saved UPI ID'**
+  String get openUpiAppWithSavedUpiId;
+
+  /// No description provided for @addContactUpiIdFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the contact’s UPI ID first'**
+  String get addContactUpiIdFirst;
+
   /// No description provided for @openPreferredUpiApp.
   ///
   /// In en, this message translates to:
@@ -2917,6 +2935,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share a payment link to receive money'**
   String get sharePaymentLinkToReceive;
+
+  /// No description provided for @usePhoneNumberInUpiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use phone number in UPI app'**
+  String get usePhoneNumberInUpiApp;
+
+  /// No description provided for @payUsingPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay using phone number'**
+  String get payUsingPhoneNumber;
+
+  /// No description provided for @phoneNumberPaymentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the number and search for the contact manually in your UPI app'**
+  String get phoneNumberPaymentDescription;
+
+  /// No description provided for @phoneNumberCannotBeVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'HisaabMate cannot verify this phone number as a UPI payment address.'**
+  String get phoneNumberCannotBeVerified;
+
+  /// No description provided for @copyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy number'**
+  String get copyNumber;
+
+  /// No description provided for @copyNumberAndOpenUpiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy number & open UPI app'**
+  String get copyNumberAndOpenUpiApp;
+
+  /// No description provided for @openUpiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open UPI app'**
+  String get openUpiApp;
+
+  /// No description provided for @numberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Number copied'**
+  String get numberCopied;
+
+  /// No description provided for @verifyRecipientBeforePaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify the recipient before paying'**
+  String get verifyRecipientBeforePaying;
+
+  /// No description provided for @searchForNumberOrSelectContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for this number or select the contact'**
+  String get searchForNumberOrSelectContact;
+
+  /// No description provided for @confirmRecipientName.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the recipient name'**
+  String get confirmRecipientName;
+
+  /// No description provided for @confirmPaymentAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the payment amount'**
+  String get confirmPaymentAmount;
+
+  /// No description provided for @enterUpiPinOnlyInUpiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your UPI PIN only inside your UPI app'**
+  String get enterUpiPinOnlyInUpiApp;
 
   /// No description provided for @sendThroughWhatsAppOrAnotherApp.
   ///
@@ -3953,7 +4049,7 @@ abstract class AppLocalizations {
   /// No description provided for @developedBy.
   ///
   /// In en, this message translates to:
-  /// **'Developed By: Sagar Kalel'**
+  /// **'Developed By: Sagar Haridas Kalel'**
   String get developedBy;
 
   /// No description provided for @comment_permissions.

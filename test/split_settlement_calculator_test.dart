@@ -112,5 +112,64 @@ void main() {
 
       expect(participantSettlement.remainingAmount, 125);
     });
+
+    test(
+      'calculates collection progress from the original expected amount',
+      () {
+        final split = SplitExpenseModel(
+          id: 1,
+          title: 'Dinner',
+          totalAmount: 110,
+          paidByUser: 110,
+          date: DateTime(2026, 8, 3),
+          status: AppConstants.statusPending,
+        );
+        final participant = SplitParticipantModel(
+          id: 10,
+          splitId: 1,
+          contactId: 2,
+          shareAmount: 110,
+          paid: 50,
+          status: AppConstants.statusPending,
+          contactName: 'Rahul',
+        );
+
+        final progress = SplitSettlementCalculator.collectionProgress(split, [
+          participant,
+        ]);
+
+        expect(progress.totalPaid, 50);
+        expect(progress.totalExpected, 110);
+        expect(progress.fraction, closeTo(50 / 110, 0.000001));
+      },
+    );
+
+    test('keeps fully paid participants in the progress denominator', () {
+      final split = SplitExpenseModel(
+        id: 1,
+        title: 'Dinner',
+        totalAmount: 110,
+        paidByUser: 110,
+        date: DateTime(2026, 8, 3),
+        status: AppConstants.statusSettled,
+      );
+      final participant = SplitParticipantModel(
+        id: 10,
+        splitId: 1,
+        contactId: 2,
+        shareAmount: 110,
+        paid: 110,
+        status: AppConstants.statusPaid,
+        contactName: 'Rahul',
+      );
+
+      final progress = SplitSettlementCalculator.collectionProgress(split, [
+        participant,
+      ]);
+
+      expect(progress.totalPaid, 110);
+      expect(progress.totalExpected, 110);
+      expect(progress.fraction, 1);
+    });
   });
 }

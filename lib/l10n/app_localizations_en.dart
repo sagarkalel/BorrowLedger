@@ -1502,11 +1502,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get youNeedToReceive => 'You need to receive';
 
   @override
+  String get payUsingUpiId => 'Pay using UPI ID';
+
+  @override
+  String get openUpiAppWithSavedUpiId =>
+      'Open your preferred UPI app using the saved UPI ID';
+
+  @override
+  String get addContactUpiIdFirst => 'Add the contact’s UPI ID first';
+
+  @override
   String get openPreferredUpiApp => 'Open your preferred UPI app';
 
   @override
   String get sharePaymentLinkToReceive =>
       'Share a payment link to receive money';
+
+  @override
+  String get usePhoneNumberInUpiApp => 'Use phone number in UPI app';
+
+  @override
+  String get payUsingPhoneNumber => 'Pay using phone number';
+
+  @override
+  String get phoneNumberPaymentDescription =>
+      'Copy the number and search for the contact manually in your UPI app';
+
+  @override
+  String get phoneNumberCannotBeVerified =>
+      'HisaabMate cannot verify this phone number as a UPI payment address.';
+
+  @override
+  String get copyNumber => 'Copy number';
+
+  @override
+  String get copyNumberAndOpenUpiApp => 'Copy number & open UPI app';
+
+  @override
+  String get openUpiApp => 'Open UPI app';
+
+  @override
+  String get numberCopied => 'Number copied';
+
+  @override
+  String get verifyRecipientBeforePaying =>
+      'Verify the recipient before paying';
+
+  @override
+  String get searchForNumberOrSelectContact =>
+      'Search for this number or select the contact';
+
+  @override
+  String get confirmRecipientName => 'Confirm the recipient name';
+
+  @override
+  String get confirmPaymentAmount => 'Confirm the payment amount';
+
+  @override
+  String get enterUpiPinOnlyInUpiApp =>
+      'Enter your UPI PIN only inside your UPI app';
 
   @override
   String get sendThroughWhatsAppOrAnotherApp =>
@@ -2087,7 +2141,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'All your data is stored locally on your device. We do not collect, transmit, or share any personal information. Your privacy is our priority.';
 
   @override
-  String get developedBy => 'Developed By: Sagar Kalel';
+  String get developedBy => 'Developed By: Sagar Haridas Kalel';
 
   @override
   String get comment_permissions => '========== Permissions ==========';

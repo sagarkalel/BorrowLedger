@@ -110,6 +110,7 @@ void showAddTransactionMenu(
                 color: AppTheme.splitColor,
                 onTap: () => _navigateToAddSplitScreen(
                   context,
+                  prefilledContactId: prefilledContactId,
                   refreshData: refreshData,
                 ),
               ),
@@ -151,12 +152,16 @@ void _navigateToAddTransactionScreen(
 
 void _navigateToAddSplitScreen(
   BuildContext context, {
+  required int? prefilledContactId,
   required VoidCallback refreshData,
 }) async {
   Navigator.pop(context);
   final result = await Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => const AddSplitScreen()),
+    MaterialPageRoute(
+      builder: (context) =>
+          AddSplitScreen(prefilledContactId: prefilledContactId),
+    ),
   );
 
   if (result == true) {

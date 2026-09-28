@@ -6,6 +6,8 @@ import 'package:borrow_ledger/data/repositories/split_repository.dart';
 import 'package:borrow_ledger/data/repositories/transaction_repository.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/cubit/borrow_lend_cubit.dart';
+import 'package:borrow_ledger/presentation/cubit/split_cubit.dart';
+import 'package:borrow_ledger/presentation/screens/add_split_screen.dart';
 import 'package:borrow_ledger/presentation/screens/add_transaction_screen.dart';
 import 'package:borrow_ledger/presentation/widgets/add_transaction_menu.dart';
 import 'package:borrow_ledger/presentation/widgets/contact_summary_card.dart';
@@ -19,6 +21,28 @@ class _FakeContactRepository extends ContactRepository {
   Future<List<ContactModel>> getContactsForPicker() async => [
     ContactModel(id: 1, name: 'Rahul', phone: '9999999999'),
   ];
+
+  @override
+  Future<ContactSummary?> getContactById(int contactId) async {
+    if (contactId != 1) return null;
+    return ContactSummary(
+      contact: ContactModel(id: 1, name: 'Rahul', phone: '9999999999'),
+      transactionCount: 0,
+      totalLent: 0,
+      totalBorrowed: 0,
+      netBalance: 0,
+      lastTransactionDate: null,
+    );
+  }
+
+  @override
+  Future<ContactModel?> getContactByPhone(String phone) async => null;
+
+  @override
+  Future<List<ContactSummary>> getAllContacts({
+    int? limit,
+    int? offset,
+  }) async => [];
 }
 
 Widget _localizedApp(Widget home) {
@@ -114,6 +138,30 @@ void main() {
     expect(find.text('Total bill amount *'), findsOneWidget);
   });
 
+  testWidgets('split opened from a contact preselects that participant', (
+    tester,
+  ) async {
+    final contactRepository = _FakeContactRepository();
+
+    await tester.pumpWidget(
+      MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<ContactRepository>.value(value: contactRepository),
+        ],
+        child: BlocProvider(
+          create: (_) => SplitCubit(SplitRepository()),
+          child: _localizedApp(const AddSplitScreen(prefilledContactId: 1)),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rahul'), findsOneWidget);
+    expect(find.text('No participants added'), findsNothing);
+    expect(find.text('Your Share'), findsOneWidget);
+  });
+
   testWidgets('saved shared expenses use compact mode tags', (tester) async {
     final paidOnBehalf = TransactionModel(
       type: AppConstants.typeLend,
@@ -156,9 +204,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _localizedApp(
-        TransactionListItem(transaction: sharedCost, onTap: () {}),
-      ),
+      _localizedApp(TransactionListItem(transaction: sharedCost, onTap: () {})),
     );
 
     expect(find.text('Shared cost'), findsOneWidget);

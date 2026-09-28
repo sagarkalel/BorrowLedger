@@ -15,6 +15,7 @@ import 'package:borrow_ledger/presentation/widgets/app_pill_badge.dart';
 import 'package:borrow_ledger/presentation/widgets/custom_text_field.dart';
 import 'package:borrow_ledger/presentation/widgets/delete_split_expense_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/share_name_prompt.dart';
+import 'package:borrow_ledger/presentation/widgets/split_user_share_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -152,7 +153,7 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
                     const SizedBox(height: 8),
 
                     // Financial summary card (compact version)
-                    _buildFinancialSummaryCard(split, participants, isDark),
+                    _buildFinancialSummaryCard(split, participants),
                     const SizedBox(height: 8),
 
                     if (_billsForDisplay(split, participants).isNotEmpty) ...[
@@ -433,9 +434,12 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
   Widget _buildFinancialSummaryCard(
     SplitExpenseModel split,
     List<SplitParticipantModel> participants,
-    bool isDark,
   ) {
     final userShare = SplitSettlementCalculator.userShare(split, participants);
+    final assignedToOthers = participants.fold<double>(
+      0,
+      (sum, participant) => sum + participant.shareAmount,
+    );
     final balance = SplitSettlementCalculator.userBalance(split, participants);
     final isPositive = balance > 0;
     final isSettled = split.status == AppConstants.statusSettled;
@@ -445,24 +449,13 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
         ? AppTheme.successColor
         : AppTheme.warningColor;
 
-    final settlements = SplitSettlementCalculator.calculate(
+    final collectionProgress = SplitSettlementCalculator.collectionProgress(
       split,
       participants,
-      unknownName: tr.unknown,
     );
-    final totalReceived = settlements.fold<double>(
-      0,
-      (sum, s) =>
-          sum +
-          (s.participant.paid > s.totalAmount
-              ? s.totalAmount
-              : s.participant.paid),
-    );
-    final totalExpected = settlements.fold<double>(
-      0,
-      (sum, s) => sum + s.totalAmount,
-    );
-    final progress = totalExpected > 0 ? totalReceived / totalExpected : 0.0;
+    final totalReceived = collectionProgress.totalPaid;
+    final totalExpected = collectionProgress.totalExpected;
+    final progress = collectionProgress.fraction;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -508,28 +501,16 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.person_rounded,
-                    label: tr.yourShare,
-                    value: _money(userShare),
-                    color: colorScheme.secondary,
-                    isDark: isDark,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.payments_rounded,
-                    label: tr.youPaid,
-                    value: _money(split.paidByUser),
-                    color: colorScheme.primary,
-                    isDark: isDark,
-                  ),
-                ),
-              ],
+            SplitUserShareSummary(
+              title: tr.yourShare,
+              amount: _money(userShare),
+              subtitle: tr.yourCalculatedShareHelp(
+                _money(split.totalAmount),
+                _money(assignedToOthers),
+              ),
+              color: colorScheme.secondary,
+              secondaryLabel: tr.youPaid,
+              secondaryValue: _money(split.paidByUser),
             ),
             if (!isSettled) ...[
               const SizedBox(height: 6),
@@ -617,48 +598,6 @@ class _SplitDetailScreenState extends State<SplitDetailScreen> {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    required bool isDark,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AppDialogNotice(
-      color: color,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: AppTextStyles.caption.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTextStyles.body2.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

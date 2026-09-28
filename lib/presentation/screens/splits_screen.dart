@@ -464,6 +464,10 @@ class _SplitsScreenState extends State<SplitsScreen>
       split,
       participants,
     );
+    final collectionProgress = SplitSettlementCalculator.collectionProgress(
+      split,
+      participants,
+    );
     final totalPendingCount = settlements
         .where((s) => s.remainingAmount > 0 && s.settledAmount == 0)
         .length;
@@ -476,17 +480,8 @@ class _SplitsScreenState extends State<SplitsScreen>
         .where((s) => s.remainingAmount > 0 && s.settledAmount > 0)
         .length;
 
-    final totalReceived = settlements.fold<double>(
-      0,
-      (sum, s) => sum + s.settledAmount,
-    );
-    final totalExpected = settlements.fold<double>(
-      0,
-      (sum, s) => sum + s.totalAmount,
-    );
-    final paymentProgress = totalExpected > 0
-        ? totalReceived / totalExpected
-        : 0.0;
+    final totalExpected = collectionProgress.totalExpected;
+    final paymentProgress = collectionProgress.fraction;
 
     return Card(
       margin: EdgeInsets.zero,

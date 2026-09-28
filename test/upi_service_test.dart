@@ -49,5 +49,14 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('exposes explicit outcomes for generic app launching', () {
+      expect(UpiAppLaunchResult.values, contains(UpiAppLaunchResult.launched));
+      expect(UpiAppLaunchResult.values, contains(UpiAppLaunchResult.cancelled));
+      expect(
+        UpiAppLaunchResult.values,
+        contains(UpiAppLaunchResult.unavailable),
+      );
+    });
   });
 }

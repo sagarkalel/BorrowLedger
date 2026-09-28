@@ -1499,11 +1499,64 @@ class AppLocalizationsHi extends AppLocalizations {
   String get youNeedToReceive => 'आपको लेना है';
 
   @override
+  String get payUsingUpiId => 'UPI ID से भुगतान करें';
+
+  @override
+  String get openUpiAppWithSavedUpiId =>
+      'सेव किए गए UPI ID से अपना पसंदीदा UPI ऐप खोलें';
+
+  @override
+  String get addContactUpiIdFirst => 'पहले संपर्क का UPI ID जोड़ें';
+
+  @override
   String get openPreferredUpiApp => 'अपना पसंदीदा UPI ऐप खोलें';
 
   @override
   String get sharePaymentLinkToReceive =>
       'पैसे लेने के लिए पेमेंट लिंक शेयर करें';
+
+  @override
+  String get usePhoneNumberInUpiApp => 'UPI ऐप में फोन नंबर का इस्तेमाल करें';
+
+  @override
+  String get payUsingPhoneNumber => 'फोन नंबर से भुगतान करें';
+
+  @override
+  String get phoneNumberPaymentDescription =>
+      'नंबर कॉपी करके अपने UPI ऐप में संपर्क को मैन्युअल रूप से खोजें';
+
+  @override
+  String get phoneNumberCannotBeVerified =>
+      'HisaabMate इस फोन नंबर को UPI पेमेंट एड्रेस के रूप में सत्यापित नहीं कर सकता।';
+
+  @override
+  String get copyNumber => 'नंबर कॉपी करें';
+
+  @override
+  String get copyNumberAndOpenUpiApp => 'नंबर कॉपी करके UPI ऐप खोलें';
+
+  @override
+  String get openUpiApp => 'UPI ऐप खोलें';
+
+  @override
+  String get numberCopied => 'नंबर कॉपी हो गया';
+
+  @override
+  String get verifyRecipientBeforePaying =>
+      'भुगतान करने से पहले प्राप्तकर्ता की पुष्टि करें';
+
+  @override
+  String get searchForNumberOrSelectContact =>
+      'इस नंबर को खोजें या संपर्क चुनें';
+
+  @override
+  String get confirmRecipientName => 'प्राप्तकर्ता के नाम की पुष्टि करें';
+
+  @override
+  String get confirmPaymentAmount => 'भुगतान राशि की पुष्टि करें';
+
+  @override
+  String get enterUpiPinOnlyInUpiApp => 'UPI PIN केवल अपने UPI ऐप में डालें';
 
   @override
   String get sendThroughWhatsAppOrAnotherApp =>

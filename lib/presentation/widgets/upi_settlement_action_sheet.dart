@@ -1,15 +1,19 @@
 import 'package:borrow_ledger/core/theme/app_theme.dart';
 import 'package:borrow_ledger/core/utils/currency_formatter.dart';
+import 'package:borrow_ledger/core/utils/form_input_utils.dart';
 import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-enum UpiSettlementAction { pay, request, share }
+enum UpiSettlementAction { pay, request, share, usePhoneNumber }
 
 Future<UpiSettlementAction?> showUpiSettlementActionSheet(
   BuildContext context, {
   required bool isPayable,
   required String contactName,
   required double amount,
+  String? contactPhone,
+  bool hasVerifiedUpiId = false,
+  bool showPhoneOption = false,
 }) {
   final tr = AppLocalizations.of(context)!;
   final color = isPayable ? AppTheme.moneyOutColor : AppTheme.moneyInColor;
@@ -118,9 +122,11 @@ Future<UpiSettlementAction?> showUpiSettlementActionSheet(
                 const SizedBox(height: 14),
                 _UpiActionCard(
                   icon: Icons.payments_outlined,
-                  title: isPayable ? tr.payByUpi : tr.requestViaUpi,
+                  title: isPayable ? tr.payUsingUpiId : tr.requestViaUpi,
                   description: isPayable
-                      ? tr.openPreferredUpiApp
+                      ? hasVerifiedUpiId
+                            ? tr.openUpiAppWithSavedUpiId
+                            : tr.addContactUpiIdFirst
                       : tr.sharePaymentLinkToReceive,
                   color: color,
                   emphasized: true,
@@ -131,6 +137,21 @@ Future<UpiSettlementAction?> showUpiSettlementActionSheet(
                         : UpiSettlementAction.request,
                   ),
                 ),
+                if (isPayable &&
+                    showPhoneOption &&
+                    FormInputUtils.isValidOptionalPhone(contactPhone)) ...[
+                  const SizedBox(height: 10),
+                  _UpiActionCard(
+                    icon: Icons.phone_outlined,
+                    title: tr.payUsingPhoneNumber,
+                    description: tr.phoneNumberPaymentDescription,
+                    color: color,
+                    onTap: () => Navigator.pop(
+                      sheetContext,
+                      UpiSettlementAction.usePhoneNumber,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
