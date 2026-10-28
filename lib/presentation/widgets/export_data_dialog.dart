@@ -32,6 +32,27 @@ class ExportDataDialog extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         AppDialogNotice(
+          color: AppTheme.warningColor,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: AppTheme.warningColor,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  tr.backupSecurityWarning,
+                  style: const TextStyle(fontSize: 12, height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppDialogNotice(
           color: AppTheme.successColor,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

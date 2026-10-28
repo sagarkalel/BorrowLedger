@@ -2,7 +2,8 @@ class AppConstants {
   // App Info
   // static const String appName = 'BorrowLedger';
   // static const String appSlogen = 'Track • Manage • Settle';
-  static const String appVersion = '1.0.0';
+  static const String privacyPolicyUrl =
+      'https://sagarkalel.github.io/BorrowLedger/privacy-policy';
 
   // Database
   static const String dbName = 'borrow_ledger.db';

@@ -1907,13 +1907,81 @@ class AppLocalizationsHi extends AppLocalizations {
       'आप बैकअप फाइल शेयर कर सकते हैं या बाद के लिए सुरक्षित रख सकते हैं';
 
   @override
+  String get backupSecurityWarning =>
+      'इस बैकअप में संवेदनशील वित्तीय रिकॉर्ड, संपर्क, UPI ID और फोटो हैं। यह आपके चुने हुए पासवर्ड से एन्क्रिप्ट होगा। इसे रीस्टोर करने के लिए पासवर्ड जरूरी है और HisaabMate इसे वापस नहीं पा सकता।';
+
+  @override
+  String get backupPasswordTitle => 'बैकअप सुरक्षित करें';
+
+  @override
+  String get importBackupPasswordTitle => 'बैकअप अनलॉक करें';
+
+  @override
+  String get backupPasswordLabel => 'पासवर्ड';
+
+  @override
+  String get confirmBackupPasswordLabel => 'पासवर्ड की पुष्टि करें';
+
+  @override
+  String get backupPasswordHint => 'लंबा पासफ्रेज़ उपयोग करें';
+
+  @override
+  String get backupPasswordRecommendation =>
+      'कम से कम 8 अक्षर चुनें। लंबा पासफ्रेज़ बेहतर है। HisaabMate यह पासवर्ड सेव नहीं करता।';
+
+  @override
+  String get backupPasswordRequired => 'पासवर्ड दर्ज करें।';
+
+  @override
+  String get backupPasswordTooShort =>
+      'पासवर्ड कम से कम 8 अक्षरों का होना चाहिए।';
+
+  @override
+  String get backupPasswordsDoNotMatch => 'पासवर्ड मेल नहीं खाते।';
+
+  @override
+  String get backupPasswordCannotBeRecovered =>
+      'भूला हुआ पासवर्ड वापस नहीं पाया जा सकता। इसे सुरक्षित जगह रखें।';
+
+  @override
+  String get backupPasswordRequiredForRestore =>
+      'बैकअप बनाते समय इस्तेमाल किया गया पासवर्ड दर्ज करें।';
+
+  @override
+  String get incorrectBackupPassword => 'गलत पासवर्ड या खराब बैकअप।';
+
+  @override
+  String get backupTamperedOrInvalid =>
+      'बैकअप खराब है या इसमें बदलाव किया गया है।';
+
+  @override
+  String get encryptBackup => 'बैकअप एन्क्रिप्ट करें';
+
+  @override
+  String get unlockBackup => 'अनलॉक करें';
+
+  @override
+  String get encryptedBackupShareWarning =>
+      'इस एन्क्रिप्टेड बैकअप में संवेदनशील जानकारी है। इसे रीस्टोर करने के लिए प्राप्तकर्ता को पासवर्ड फिर भी चाहिए।';
+
+  @override
+  String get legacyBackupTitle => 'पुराना बैकअप';
+
+  @override
+  String get legacyBackupWarning =>
+      'यह बैकअप पासवर्ड से सुरक्षित नहीं है। इसे इम्पोर्ट किया जा सकता है, लेकिन फाइल पाने वाला कोई भी व्यक्ति इसकी सामग्री पढ़ सकता है। नया एन्क्रिप्टेड बैकअप बनाने के लिए इसे फिर से एक्सपोर्ट करें।';
+
+  @override
+  String get continueImport => 'इम्पोर्ट जारी रखें';
+
+  @override
   String get preparingExport => 'एक्सपोर्ट तैयार हो रहा है...';
 
   @override
   String get exportSuccessful => 'एक्सपोर्ट सफल रहा!';
 
   @override
-  String get savedInBackupsFolder => 'Backups फोल्डर में सेव हुआ';
+  String get savedInBackupsFolder => 'चुनी हुई जगह पर सेव हुआ';
 
   @override
   String get exportFailed => 'एक्सपोर्ट असफल रहा';
@@ -1982,6 +2050,80 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dataManagement => 'डेटा प्रबंधन';
 
   @override
+  String get security => 'सुरक्षा';
+
+  @override
+  String get appLockDiscoveryTitle => 'ऐप को सुरक्षित करें';
+
+  @override
+  String get appLockDiscoveryMessage =>
+      'अपने रिकॉर्ड सुरक्षित रखने के लिए फिंगरप्रिंट, Face ID या डिवाइस क्रेडेंशियल का उपयोग करें। इसे सुरक्षा में चालू करें।';
+
+  @override
+  String get appLockDiscoverySetUp => 'अभी सेट अप करें';
+
+  @override
+  String get appLockDiscoveryMaybeLater => 'बाद में';
+
+  @override
+  String get appLockDiscoveryDontShowAgain => 'फिर न दिखाएं';
+
+  @override
+  String get appLockDiscoveryMenuLabel => 'ऐप लॉक के अन्य विकल्प';
+
+  @override
+  String get appLock => 'ऐप लॉक';
+
+  @override
+  String get appLockEnabledSubtitle =>
+      'डिवाइस प्रमाणीकरण का उपयोग करता है और 1 मिनट बाद लॉक हो जाता है।';
+
+  @override
+  String get appLockDisabledSubtitle =>
+      'फिंगरप्रिंट, Face ID या डिवाइस क्रेडेंशियल से ऐप सुरक्षित करें।';
+
+  @override
+  String get appLockLockedTitle => 'ऐप लॉक है';
+
+  @override
+  String get appLockLockedMessage =>
+      'HisaabMate का उपयोग जारी रखने के लिए प्रमाणीकरण करें। बायोमेट्रिक या क्रेडेंशियल जांच आपका डिवाइस करता है।';
+
+  @override
+  String get unlockApp => 'अनलॉक करें';
+
+  @override
+  String get appLockAuthenticating => 'प्रमाणीकरण हो रहा है...';
+
+  @override
+  String get appLockAuthenticationReason =>
+      'HisaabMate अनलॉक करने के लिए प्रमाणीकरण करें';
+
+  @override
+  String get appLockAuthenticationCancelled =>
+      'प्रमाणीकरण रद्द किया गया। फिर कोशिश करने के लिए अनलॉक दबाएं।';
+
+  @override
+  String get appLockAuthenticationUnavailable =>
+      'डिवाइस प्रमाणीकरण उपलब्ध नहीं है। पहले डिवाइस PIN, पासवर्ड, पैटर्न या बायोमेट्रिक सेट करें।';
+
+  @override
+  String get appLockAuthenticationFailed =>
+      'प्रमाणीकरण असफल रहा। आपका डेटा अभी भी लॉक है।';
+
+  @override
+  String get appLockAuthenticationLockedOut =>
+      'डिवाइस प्रमाणीकरण अस्थायी रूप से लॉक है। डिवाइस क्रेडेंशियल का उपयोग करें या बाद में फिर कोशिश करें।';
+
+  @override
+  String get appLockDeviceCredentialNote =>
+      'फिंगरप्रिंट, Face ID, PIN, पैटर्न या पासवर्ड आपका डिवाइस संभालता है। HisaabMate बायोमेट्रिक डेटा सेव नहीं करता।';
+
+  @override
+  String get appLockSettingsLoadFailed =>
+      'सुरक्षा सेटिंग लोड नहीं हो सकी। आगे बढ़ने से पहले दोबारा कोशिश करें।';
+
+  @override
   String get information => 'जानकारी';
 
   @override
@@ -2036,11 +2178,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get howBackupWorks => 'बैकअप कैसे काम करता है';
 
   @override
-  String get createsJsonFile => 'एक बैकअप फाइल बनाता है जिसमें शामिल हैं:';
+  String get createsJsonFile =>
+      'एक एन्क्रिप्टेड बैकअप फाइल बनाता है जिसमें शामिल हैं:';
 
   @override
   String get fileSavedLocally =>
-      'फाइल फोन में सेव होती है और इसे शेयर किया जा सकता है।';
+      'एन्क्रिप्टेड बैकअप को सेव करने की जगह चुनें या किसी दूसरे ऐप के साथ शेयर करें।';
 
   @override
   String get restoresDataFromBackup => 'बैकअप से डेटा वापस लाता है:';
@@ -2072,11 +2215,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get neverDeleteLastBackup => 'अपना आखिरी बैकअप कभी न मिटाएं';
 
   @override
-  String get shareBackupsSecurely => 'बैकअप सुरक्षित रूप से शेयर करें';
+  String get shareBackupsSecurely =>
+      'बैकअप केवल भरोसेमंद ऐप और लोगों के साथ शेयर करें';
 
   @override
   String get backupFilesInJson =>
-      'बैकअप फाइलों में आपके रिकॉर्ड और संपर्क फोटो शामिल होते हैं।';
+      'नए बैकअप आपके रिकॉर्ड, संपर्क जानकारी, UPI ID और संपर्क फोटो को पासवर्ड से एन्क्रिप्ट करते हैं। भूला हुआ पासवर्ड HisaabMate वापस नहीं पा सकता; फाइल शेयर करने पर प्राप्तकर्ता को एन्क्रिप्टेड फाइल मिलती है।';
 
   @override
   String get changePhoto => 'फोटो बदलें';
@@ -2116,15 +2260,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get viewTermsAndConditions => 'नियम और शर्तें देखें';
 
   @override
-  String get yourDataStaysOnDevice => 'आपका डेटा केवल आपके डिवाइस में रहता है';
+  String get yourDataStaysOnDevice =>
+      'आपका डेटा डिवाइस में रहता है, जब तक आप उसे एक्सपोर्ट या शेयर न करें';
+
+  @override
+  String get openPrivacyPolicy => 'पूरी गोपनीयता नीति खोलें';
 
   @override
   String get termsOfServiceContent =>
-      'यह एक निजी वित्त प्रबंधन ऐप है। इसका उपयोग जिम्मेदारी से करें। सभी वित्तीय निर्णय आपकी अपनी जिम्मेदारी हैं।';
+      'HisaabMate निजी वित्तीय जानकारी दर्ज करने में मदद करता है। यह वित्तीय, कानूनी या टैक्स सलाह नहीं देता और भुगतान प्रोसेस नहीं करता। अपने रिकॉर्ड और फैसलों की जांच करना आपकी जिम्मेदारी है।';
 
   @override
   String get privacyPolicyContent =>
-      'आपका सभी डेटा आपके फोन में ही स्टोर रहता है। हम कोई भी व्यक्तिगत डेटा एकत्र या शेयर नहीं करते। आपकी गोपनीयता हमारी प्राथमिकता है।';
+      'HisaabMate आपके लेजर रिकॉर्ड, खर्च, संपर्क जानकारी, UPI ID और प्रोफाइल फोटो आपके डिवाइस में स्थानीय रूप से रखता है। हम यह डेटा अपने सर्वर पर एकत्र या भेजते नहीं हैं। यदि आप बैकअप एक्सपोर्ट या शेयर करते हैं, तो प्राप्त करने वाला ऐप या व्यक्ति उसे देख सकता है। पूरी जानकारी के लिए गोपनीयता नीति देखें।';
 
   @override
   String get developedBy => 'डेवलपर: सागर हरिदास काळेल';

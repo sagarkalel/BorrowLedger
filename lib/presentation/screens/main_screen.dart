@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/borrow_lend_cubit.dart';
 import '../cubit/split_cubit.dart';
+import '../widgets/app_lock_gate.dart';
 import '../widgets/settings_drawer.dart';
 import 'borrow_lend_screen.dart';
 import 'expenses_screen.dart';
@@ -24,6 +25,14 @@ class _MainScreenState extends State<MainScreen> {
     const SplitsScreen(),
     const MergedExpensesScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppLockGate.of(context)?.markAppReady();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

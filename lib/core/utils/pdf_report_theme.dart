@@ -8,7 +8,9 @@ class PdfReportTheme {
     final cachedTheme = _theme;
     if (cachedTheme != null) return cachedTheme;
 
-    final fontData = await rootBundle.load('assets/fonts/ArialUnicode.ttf');
+    final fontData = await rootBundle.load(
+      'assets/fonts/NotoSansDevanagari-Regular.ttf',
+    );
     final font = pw.Font.ttf(fontData);
     return _theme = pw.ThemeData.withFont(
       base: font,

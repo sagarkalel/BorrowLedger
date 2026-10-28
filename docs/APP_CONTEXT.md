@@ -11,7 +11,7 @@ It was written from the implementation currently in the repository on 27 Septemb
 - Current slogan: `Track • Split • Settle`.
 - Product purpose: locally track money given to or received from people, item/service credit (`udhari`), personal expenses, two-person expenses with someone, group expenses, and later settlements.
 - Storage: local SQLite database. There is no backend, account system, or cloud synchronization in the current implementation.
-- Current app version constant: `1.0.0`.
+- The application version is maintained in `pubspec.yaml` and read from installed package metadata at runtime.
 - Supported languages: English, Hindi, and Marathi.
 
 The central product concept is a contact balance. A contact may have direct cash/udhari transactions, shared-spend transactions, split-generated balances, and settlement history. The app calculates what the user should receive from or pay to that contact.
@@ -435,6 +435,7 @@ The settings drawer currently provides:
 - Light/dark/system theme selection.
 - User profile/share name.
 - UPI ID setup.
+- Optional app lock using device authentication, with a one-minute background timeout.
 - Export backup.
 - Import/restore backup.
 - Clear all data.

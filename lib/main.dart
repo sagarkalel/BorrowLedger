@@ -5,6 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/services/app_info_service.dart';
+import 'core/services/app_lock_discovery_service.dart';
+import 'core/services/app_lock_service.dart';
 import 'data/repositories/contact_repository.dart';
 import 'data/repositories/expense_repository.dart';
 import 'data/repositories/split_repository.dart';
@@ -16,9 +19,13 @@ import 'presentation/cubit/locale_cubit.dart';
 import 'presentation/cubit/split_cubit.dart';
 import 'presentation/cubit/theme_cubit.dart';
 import 'presentation/screens/splash_screen.dart';
+import 'presentation/widgets/app_lock_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppInfoService.initialize();
+  await AppLockService.instance.initialize();
+  await AppLockDiscoveryService.instance.initialize();
   runApp(const BorrowLedgerApp());
 }
 
@@ -112,6 +119,9 @@ class BorrowLedgerApp extends StatelessWidget {
                         theme: AppTheme.lightTheme,
                         darkTheme: AppTheme.darkTheme,
                         themeMode: themeMode,
+                        builder: (context, child) => AppLockGate(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                         home: const SplashScreen(),
                       ),
                     );

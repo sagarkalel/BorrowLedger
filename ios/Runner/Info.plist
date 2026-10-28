@@ -31,13 +31,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSContactsUsageDescription</key>
-	<string>This app requires contacts access to function properly.</string>
+	<string>HisaabMate uses your contacts only when you choose people for ledger entries. It does not modify your contacts.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>We need camera access so you can take contact profile photos.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need access to save your backup files to your photo library</string>
+	<string>HisaabMate uses the camera only when you choose to take a contact profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need photo library access so you can choose contact profile photos.</string>
+	<string>HisaabMate uses your photo library only when you choose a contact profile photo.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>HisaabMate uses Face ID only to unlock the app when you enable App Lock.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -9,6 +9,8 @@ class InfoDialog extends StatelessWidget {
   final String content;
   final IconData icon;
   final Color color;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const InfoDialog({
     super.key,
@@ -16,6 +18,8 @@ class InfoDialog extends StatelessWidget {
     required this.content,
     this.icon = Icons.info_outline_rounded,
     this.color = AppTheme.infoColor,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -42,6 +46,15 @@ class InfoDialog extends StatelessWidget {
         ),
       ],
       actions: [
+        if (actionLabel != null && onAction != null) ...[
+          Expanded(
+            child: OutlinedButton(
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         Expanded(
           child: FilledButton(
             style: FilledButton.styleFrom(

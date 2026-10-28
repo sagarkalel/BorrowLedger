@@ -1923,13 +1923,81 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can share the backup file or save it for later import';
 
   @override
+  String get backupSecurityWarning =>
+      'This backup contains sensitive financial records, contacts, UPI IDs, and photos. It will be encrypted with a password you enter. The password is required to restore it and cannot be recovered by HisaabMate.';
+
+  @override
+  String get backupPasswordTitle => 'Protect your backup';
+
+  @override
+  String get importBackupPasswordTitle => 'Unlock backup';
+
+  @override
+  String get backupPasswordLabel => 'Password';
+
+  @override
+  String get confirmBackupPasswordLabel => 'Confirm password';
+
+  @override
+  String get backupPasswordHint => 'Use a long passphrase';
+
+  @override
+  String get backupPasswordRecommendation =>
+      'Choose at least 8 characters. A longer passphrase is recommended. HisaabMate does not store this password.';
+
+  @override
+  String get backupPasswordRequired => 'Enter a password.';
+
+  @override
+  String get backupPasswordTooShort =>
+      'Password must be at least 8 characters.';
+
+  @override
+  String get backupPasswordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get backupPasswordCannotBeRecovered =>
+      'Forgotten passwords cannot be recovered. Keep it somewhere safe.';
+
+  @override
+  String get backupPasswordRequiredForRestore =>
+      'Enter the password used when this backup was created.';
+
+  @override
+  String get incorrectBackupPassword => 'Incorrect password or damaged backup.';
+
+  @override
+  String get backupTamperedOrInvalid =>
+      'The backup is damaged or has been modified.';
+
+  @override
+  String get encryptBackup => 'Encrypt backup';
+
+  @override
+  String get unlockBackup => 'Unlock';
+
+  @override
+  String get encryptedBackupShareWarning =>
+      'This encrypted backup contains sensitive information. The recipient still needs the password to restore it.';
+
+  @override
+  String get legacyBackupTitle => 'Older backup';
+
+  @override
+  String get legacyBackupWarning =>
+      'This backup is not password-protected. It can be imported, but anyone who gets the file may read its contents. Export it again to create a new encrypted backup.';
+
+  @override
+  String get continueImport => 'Continue import';
+
+  @override
   String get preparingExport => 'Preparing export...';
 
   @override
   String get exportSuccessful => 'Export Successful!';
 
   @override
-  String get savedInBackupsFolder => 'Saved in Backups folder';
+  String get savedInBackupsFolder => 'Saved to the selected location';
 
   @override
   String get exportFailed => 'Export failed';
@@ -1998,6 +2066,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataManagement => 'Data Management';
 
   @override
+  String get security => 'Security';
+
+  @override
+  String get appLockDiscoveryTitle => 'Protect your app';
+
+  @override
+  String get appLockDiscoveryMessage =>
+      'Use fingerprint, Face ID, or device credentials to protect your records. Enable it in Security.';
+
+  @override
+  String get appLockDiscoverySetUp => 'Set up now';
+
+  @override
+  String get appLockDiscoveryMaybeLater => 'Maybe later';
+
+  @override
+  String get appLockDiscoveryDontShowAgain => 'Don\'t show again';
+
+  @override
+  String get appLockDiscoveryMenuLabel => 'More App Lock options';
+
+  @override
+  String get appLock => 'App Lock';
+
+  @override
+  String get appLockEnabledSubtitle =>
+      'Uses device authentication and locks after 1 minute.';
+
+  @override
+  String get appLockDisabledSubtitle =>
+      'Protect the app with fingerprint, Face ID, or device credentials.';
+
+  @override
+  String get appLockLockedTitle => 'App locked';
+
+  @override
+  String get appLockLockedMessage =>
+      'Authenticate to continue using HisaabMate. Your device handles the biometric or credential check.';
+
+  @override
+  String get unlockApp => 'Unlock';
+
+  @override
+  String get appLockAuthenticating => 'Authenticating...';
+
+  @override
+  String get appLockAuthenticationReason => 'Authenticate to unlock HisaabMate';
+
+  @override
+  String get appLockAuthenticationCancelled =>
+      'Authentication was cancelled. Tap Unlock to try again.';
+
+  @override
+  String get appLockAuthenticationUnavailable =>
+      'Device authentication is unavailable. Set up a device PIN, password, pattern, or biometric method first.';
+
+  @override
+  String get appLockAuthenticationFailed =>
+      'Authentication failed. Your data is still locked.';
+
+  @override
+  String get appLockAuthenticationLockedOut =>
+      'Device authentication is temporarily locked. Use your device credentials or try again later.';
+
+  @override
+  String get appLockDeviceCredentialNote =>
+      'Fingerprint, Face ID, PIN, pattern, or password is handled by your device. HisaabMate does not store biometric data.';
+
+  @override
+  String get appLockSettingsLoadFailed =>
+      'Security settings could not be loaded. Retry before continuing.';
+
+  @override
   String get information => 'Information';
 
   @override
@@ -2052,10 +2193,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get howBackupWorks => 'How Backup Works';
 
   @override
-  String get createsJsonFile => 'Creates a backup file containing:';
+  String get createsJsonFile => 'Creates an encrypted backup file containing:';
 
   @override
-  String get fileSavedLocally => 'The file is saved locally and can be shared.';
+  String get fileSavedLocally =>
+      'Choose where to save the encrypted backup or share it with another app.';
 
   @override
   String get restoresDataFromBackup => 'Restores data from backup:';
@@ -2086,11 +2228,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get neverDeleteLastBackup => 'Never delete your last backup';
 
   @override
-  String get shareBackupsSecurely => 'Share backups securely';
+  String get shareBackupsSecurely =>
+      'Share backups only with apps and people you trust';
 
   @override
   String get backupFilesInJson =>
-      'Backup files include your records and saved contact photos.';
+      'New backups encrypt your records, contact details, UPI IDs, and saved contact photos with your password. HisaabMate cannot recover a forgotten password; sharing the file gives the receiving destination access to the encrypted file.';
 
   @override
   String get changePhoto => 'Change photo';
@@ -2130,15 +2273,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewTermsAndConditions => 'View terms and conditions';
 
   @override
-  String get yourDataStaysOnDevice => 'Your data stays on device';
+  String get yourDataStaysOnDevice =>
+      'Your data stays on your device unless you export or share it';
+
+  @override
+  String get openPrivacyPolicy => 'Open full privacy policy';
 
   @override
   String get termsOfServiceContent =>
-      'This is a personal finance management app. Use it responsibly and at your own risk. All financial decisions are your responsibility.';
+      'HisaabMate helps you record personal financial information. It does not provide financial, legal, or tax advice and does not process payments. You are responsible for verifying your records and decisions.';
 
   @override
   String get privacyPolicyContent =>
-      'All your data is stored locally on your device. We do not collect, transmit, or share any personal information. Your privacy is our priority.';
+      'HisaabMate stores your ledger records, expenses, contact details, UPI IDs, and profile photos locally on your device. We do not collect or transmit this data to our servers. If you export or share a backup, the receiving app or person may access it. See the full privacy policy for details.';
 
   @override
   String get developedBy => 'Developed By: Sagar Haridas Kalel';

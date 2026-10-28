@@ -1,297 +1,110 @@
-```
-flutter pub get
-dart run flutter_launcher_icons
-```
+# HisaabMate
 
-# 💰 BorrowLedger - Complete Finance Tracking App
+HisaabMate is a local-first Flutter app for tracking borrowing, lending,
+personal expenses, group expenses, settlements, and contact-based ledger
+records.
 
-A comprehensive Flutter application for managing personal finances, tracking borrowing/lending, expenses, and split bills with friends.
+## What is included
 
-## ✨ Features
+- Dashboard summaries for lending, borrowing, expenses, and balances.
+- Borrow/lend records with contacts, statuses, notes, and settlement actions.
+- Personal and group expense tracking with split calculations.
+- Contact details, optional UPI IDs, and optional contact profile photos.
+- English, Hindi, and Marathi localization.
+- Light, dark, and system theme modes.
+- Optional app lock using device biometrics or device credentials, with a
+  one-minute background timeout.
+- SQLite storage on the device.
+- Password-encrypted backup export and restore using the system file picker.
+- Import compatibility for existing unencrypted `.blbackup`, `.zip`, and `.json`
+  backups.
 
-### 📊 Dashboard
+## Data and privacy
 
-- Real-time financial summary
-- Total lent/borrowed overview
-- Net balance calculation
-- Recent transactions display
-- Pull-to-refresh functionality
+The current release requires no account and has no backend, analytics,
+advertising, cloud sync, or developer-operated cloud storage. Records remain
+on the device unless you explicitly export or share a backup. Contacts,
+camera, and photo access are optional and are requested only for their related
+features.
 
-### 💸 Borrow & Lend Management
+New backups are encrypted by default with a password. HisaabMate does not
+store or recover the password, so a forgotten password cannot restore a
+backup. Backups contain financial records, contact information, UPI IDs, and
+profile photos. Sharing a backup gives the receiving app or person access to
+the file, subject to their own policies.
 
-- Track money you've lent to others
-- Record money you've borrowed
-- Mark transactions as paid/pending
-- Search and filter by contact or status
-- Transaction history with details
+App Lock is optional. Fingerprint, Face ID, PIN, pattern, and password checks
+are handled by the operating system; HisaabMate does not collect or store
+biometric data. The local SQLite database is protected by app-private device
+storage but is not application-encrypted in this release.
 
-### 🧾 Expense Tracking
+Read the [Privacy Policy](https://sagarkalel.github.io/BorrowLedger/privacy-policy)
+and [store disclosure notes](docs/STORE_DISCLOSURES.md).
 
-- Categorized expense tracking
-- 10 pre-defined categories (Food, Transport, Shopping, etc.)
-- Monthly/yearly expense summaries
-- Category-wise spending analysis
-- Search and filter expenses
+## Project structure
 
-### 🍕 Split Expenses
-
-- Create split expenses with multiple people
-- Equal split calculation
-- Track who paid and who owes
-- Monitor settlement status
-- Detailed participant breakdown
-
-### 👥 Contact Management
-
-- Store contact information (name, phone, email)
-- View transaction history per contact
-- Easy add/edit/delete functionality
-- Search contacts
-
-### ⚙️ Settings
-
-- Light/Dark theme toggle
-- System default theme option
-- Export data (backup)
-- Import data (restore)
-- Clear all data option
-- App version and about info
-
-## 🏗️ Architecture
-
-### Clean Architecture Pattern
-
-```
+```text
 lib/
-├── core/
-│   ├── constants/      # App-wide constants
-│   └── theme/          # Theme configuration
-├── data/
-│   ├── database/       # SQLite database helper
-│   ├── models/         # Data models
-│   └── repositories/   # Data access layer
-└── presentation/
-    ├── cubit/          # State management (BLoC pattern)
-    ├── screens/        # UI screens
-    └── widgets/        # Reusable widgets
+├── core/          # Constants, database helpers, services, theme, utilities
+├── data/           # Models and repositories
+└── presentation/   # Screens, widgets, Cubits, and localization
 ```
 
-### State Management
+The app uses Flutter BLoC/Cubit for state management and SQLite repositories
+for local persistence. The database schema and existing backup rows are kept
+compatible across this release.
 
-- **BLoC/Cubit Pattern** for predictable state management
-- Separate cubits for each feature:
-  - `DashboardCubit` - Dashboard data
-  - `TransactionCubit` - Borrow/lend operations
-  - `ExpenseCubit` - Expense tracking
-  - `SplitCubit` - Split expense management
-  - `ContactCubit` - Contact operations
+## Development setup
 
-### Database Schema
+Requirements:
 
-**Contacts Table**
-
-- id (PRIMARY KEY)
-- name
-- phone
-- email
-- created_at, updated_at
-
-**Transactions Table**
-
-- id (PRIMARY KEY)
-- type (borrow/lend)
-- contact_id (FOREIGN KEY)
-- amount
-- description
-- date
-- status (pending/paid/partial)
-- created_at, updated_at
-
-**Expenses Table**
-
-- id (PRIMARY KEY)
-- amount
-- category
-- description
-- date
-- created_at, updated_at
-
-**Split Expenses Table**
-
-- id (PRIMARY KEY)
-- title
-- total_amount
-- paid_by_user
-- description
-- date
-- status (pending/settled)
-- created_at, updated_at
-
-**Split Participants Table**
-
-- id (PRIMARY KEY)
-- split_id (FOREIGN KEY)
-- contact_id (FOREIGN KEY)
-- share_amount
-- paid
-- status (pending/paid)
-
-## 🎨 Design Features
-
-### Theme System
-
-- **Primary Colors**: Green (#8BC34A) & Blue (#4A90C3) from logo
-- Material 3 design system
-- Comprehensive light and dark themes
-- Smooth theme transitions
-
-### UI Components
-
-- Animated splash screen
-- Bottom navigation (5 tabs)
-- Floating action button with quick-add menu
-- Search bars with real-time filtering
-- Filter chips for easy categorization
-- Card-based layouts
-- Modal bottom sheets for details
-- Empty states with helpful messages
-- Loading indicators
-- Pull-to-refresh
-
-### Animations
-
-- Splash screen fade and scale animations
-- Smooth page transitions
-- Ripple effects on tap
-- Loading states
-
-## 📦 Dependencies
-
-```yaml
-dependencies:
-  # Core
-  flutter:
-    sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-
-  # State Management
-  flutter_bloc: ^8.1.3
-  equatable: ^2.0.5
-
-  # Database
-  sqflite: ^2.3.0
-  path: ^1.8.3
-  path_provider: ^2.1.1
-
-  # Internationalization & Date
-  intl: ^0.18.1
-
-  # UI
-  cupertino_icons: ^1.0.6
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Flutter SDK (>=3.0.0)
-- Dart SDK (>=3.0.0)
-- Android Studio / VS Code
-- Android SDK / iOS SDK
-
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone <your-repo-url>
-cd borrow_ledger
-```
-
-2. **Install dependencies**
+- Flutter SDK compatible with Dart `3.12.2` or newer compatible tooling.
+- Android Studio and Android SDK for Android development.
+- Xcode and CocoaPods for iOS development on macOS.
 
 ```bash
 flutter pub get
-```
-
-3. **Run the app**
-
-```bash
 flutter run
 ```
 
-### Build for Production
-
-**Android APK**
+Useful checks and builds:
 
 ```bash
-flutter build apk --release
-```
-
-**Android App Bundle**
-
-```bash
+dart analyze
+flutter test
 flutter build appbundle --release
-```
-
-**iOS**
-
-```bash
 flutter build ios --release
 ```
 
-## 📱 Screens Overview
+The application version is maintained in `pubspec.yaml`. It is read from
+installed package metadata at runtime; do not hardcode a second version in
+application code or documentation.
 
-1. **Splash Screen** - Animated logo with brand colors
-2. **Dashboard** - Financial summary and recent transactions
-3. **Borrow/Lend Screen** - Manage all lending and borrowing
-4. **Add Transaction** - Form to add/edit borrow/lend records
-5. **Splits Screen** - Manage shared expenses
-6. **Add Split** - Create new split expense with participants
-7. **Expenses Screen** - Track personal expenses
-8. **Add Expense** - Form to add/edit expenses
-9. **Contacts Screen** - Manage all contacts
-10. **Add Contact** - Form to add/edit contact details
-11. **Settings Screen** - App settings and preferences
+## Permissions
 
-## 🔐 Data Privacy
+- Contacts: optional, only when selecting or using contacts for ledger
+  entries; the app does not modify device contacts.
+- Camera: optional, only for taking a contact profile photo.
+- Photos: optional, only for selecting a contact profile photo.
+- Backup import/export: uses the system file picker and does not require broad
+  storage permission.
+- App Lock: optional device authentication; biometric data is handled by the
+  operating system and is not collected by HisaabMate.
 
-- All data stored locally using SQLite
-- No external servers or cloud sync
-- Export/import functionality for backups
-- User has full control over their data
+UPI actions hand off to an installed UPI application. HisaabMate does not
+process or hold payments.
 
-## 🎯 Future Enhancements
+## Licensing
 
-- [ ] Charts and graphs for expense analysis
-- [ ] Recurring transactions
-- [ ] Reminders for pending payments
-- [ ] Currency support (multi-currency)
-- [ ] Cloud backup and sync
-- [ ] Receipt/bill photo attachment
-- [ ] Reports generation (PDF/Excel)
-- [ ] Budget planning
-- [ ] Expense predictions using ML
-- [ ] Multi-language support
+HisaabMate source code and original/generated project assets are licensed under
+the [MIT License](LICENSE). The bundled Noto Sans Devanagari font is licensed
+under the [SIL Open Font License 1.1](assets/fonts/OFL.txt). Flutter and other
+dependencies retain their own licenses. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for attribution details.
 
-## 🤝 Contributing
+## Support
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+For support or privacy questions, contact
+[sagarkalel4141@gmail.com](mailto:sagarkalel4141@gmail.com).
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👨‍💻 Developer
-
-Built with ❤️ using Flutter
-
-## 📞 Support
-
-For support, email your-email@example.com or create an issue in the repository.
-
----
-
-**Version:** 1.0.0  
-**Last Updated:** December 2024
+Built with Flutter by Sagar Haridas Kalel.

@@ -25,6 +25,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/services/app_lock_discovery_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/contact_activity_item.dart';
 import '../../data/models/contact_settlement_model.dart';
@@ -33,6 +34,7 @@ import '../../data/repositories/transaction_repository.dart';
 import '../cubit/borrow_lend_cubit.dart';
 import '../widgets/app_loading_state.dart';
 import '../widgets/app_list_avatar.dart';
+import '../widgets/app_lock_discovery_dialog.dart';
 import '../widgets/contact_summary_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
@@ -74,8 +76,11 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
   late AnimationController _animationController;
   late ScrollController _scrollController;
   late ScrollController _contactScrollController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   BorrowLendViewMode _viewMode = BorrowLendViewMode.contacts;
+  bool _focusSecurityOnDrawerOpen = false;
+  bool _appLockDiscoveryDialogAttempted = false;
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _contactSearchController =
@@ -99,6 +104,9 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadInitialData();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _maybeShowAppLockDiscoveryDialog();
+      });
     });
   }
 
@@ -203,7 +211,11 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
     final tr = AppLocalizations.of(context)!;
 
     return Scaffold(
-      drawer: const SettingsDrawer(),
+      key: _scaffoldKey,
+      drawer: SettingsDrawer(
+        focusSecurityOnOpen: _focusSecurityOnDrawerOpen,
+        onSecurityFocused: _clearSecurityFocusRequest,
+      ),
       appBar: AppBar(
         title: Text(tr.home),
         actions: [
@@ -400,6 +412,61 @@ class _MergedBorrowLendScreenState extends State<MergedBorrowLendScreen>
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  void _openAppLockSettings() {
+    if (!mounted || _focusSecurityOnDrawerOpen) return;
+    setState(() => _focusSecurityOnDrawerOpen = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scaffoldKey.currentState?.openDrawer();
+    });
+  }
+
+  void _clearSecurityFocusRequest() {
+    if (mounted && _focusSecurityOnDrawerOpen) {
+      setState(() => _focusSecurityOnDrawerOpen = false);
+    }
+  }
+
+  Future<void> _maybeShowAppLockDiscoveryDialog() async {
+    if (_appLockDiscoveryDialogAttempted || !mounted) return;
+    _appLockDiscoveryDialogAttempted = true;
+
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+    final routeAnimation = route?.animation;
+    if (routeAnimation != null &&
+        routeAnimation.status != AnimationStatus.completed) {
+      late AnimationStatusListener statusListener;
+      statusListener = (status) {
+        if (status != AnimationStatus.completed) return;
+        routeAnimation.removeStatusListener(statusListener);
+        if (mounted) _showAppLockDiscoveryDialog();
+      };
+      routeAnimation.addStatusListener(statusListener);
+      return;
+    }
+
+    await _showAppLockDiscoveryDialog();
+  }
+
+  Future<void> _showAppLockDiscoveryDialog() async {
+    if (!mounted) return;
+
+    final discoveryService = AppLockDiscoveryService.instance;
+    if (!discoveryService.canShow()) return;
+
+    await discoveryService.recordDisplayed();
+    if (!mounted || AppLockDiscoveryService.instance.appLockService.isEnabled) {
+      return;
+    }
+
+    final action = await AppLockDiscoveryDialog.show(
+      context,
+      discoveryService: discoveryService,
+    );
+    if (!mounted || action != AppLockDiscoveryDialogAction.setup) return;
+    _openAppLockSettings();
   }
 
   Future<void> _shareLedgerStatement() async {

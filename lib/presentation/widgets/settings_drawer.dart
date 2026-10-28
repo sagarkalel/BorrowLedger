@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:borrow_ledger/core/constants/app_functions.dart';
+import 'package:borrow_ledger/core/services/backup_file_service.dart';
+import 'package:borrow_ledger/core/services/backup_crypto_service.dart';
+import 'package:borrow_ledger/core/services/app_info_service.dart';
+import 'package:borrow_ledger/core/services/app_lock_service.dart';
 import 'package:borrow_ledger/core/services/upi_service.dart';
 import 'package:borrow_ledger/core/services/contact_avatar_service.dart';
 import 'package:borrow_ledger/core/utils/form_input_utils.dart';
@@ -11,21 +17,20 @@ import 'package:borrow_ledger/l10n/app_localizations.dart';
 import 'package:borrow_ledger/presentation/screens/splash_screen.dart';
 import 'package:borrow_ledger/presentation/widgets/clear_data_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/app_dialog_components.dart';
+import 'package:borrow_ledger/presentation/widgets/backup_password_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/export_data_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/export_success_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/import_data_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/import_success_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/info_dialog.dart';
+import 'package:borrow_ledger/presentation/widgets/legacy_backup_warning_dialog.dart';
 import 'package:borrow_ledger/presentation/widgets/language_selector_card.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
@@ -42,7 +47,14 @@ class _ParsedBackup {
 }
 
 class SettingsDrawer extends StatefulWidget {
-  const SettingsDrawer({super.key});
+  final bool focusSecurityOnOpen;
+  final VoidCallback? onSecurityFocused;
+
+  const SettingsDrawer({
+    super.key,
+    this.focusSecurityOnOpen = false,
+    this.onSecurityFocused,
+  });
 
   @override
   State<SettingsDrawer> createState() => _SettingsDrawerState();
@@ -50,6 +62,13 @@ class SettingsDrawer extends StatefulWidget {
 
 class _SettingsDrawerState extends State<SettingsDrawer> {
   UserProfileModel _userProfile = const UserProfileModel(name: '');
+  bool _appLockToggleInProgress = false;
+  final GlobalKey _securityCardKey = GlobalKey();
+  Timer? _securityHighlightTimer;
+  bool _securityHighlighted = false;
+  bool _securityFocusRequestHandled = false;
+  final BackupFileService _backupFileService = BackupFileService();
+  final BackupCryptoService _backupCryptoService = const BackupCryptoService();
 
   static const List<String> _backupInsertOrder = [
     'contacts',
@@ -79,6 +98,54 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void initState() {
     super.initState();
     _loadUserProfile();
+    if (widget.focusSecurityOnOpen) _scheduleSecurityFocus();
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsDrawer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.focusSecurityOnOpen && oldWidget.focusSecurityOnOpen) {
+      _securityFocusRequestHandled = false;
+    }
+    if (widget.focusSecurityOnOpen &&
+        !oldWidget.focusSecurityOnOpen &&
+        !_securityFocusRequestHandled) {
+      _scheduleSecurityFocus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _securityHighlightTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleSecurityFocus() {
+    if (_securityFocusRequestHandled) return;
+    _securityFocusRequestHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !widget.focusSecurityOnOpen) return;
+      final targetContext = _securityCardKey.currentContext;
+      if (targetContext == null) {
+        _securityFocusRequestHandled = false;
+        _scheduleSecurityFocus();
+        return;
+      }
+
+      setState(() => _securityHighlighted = true);
+      await Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        alignment: 0.35,
+      );
+      if (!mounted) return;
+      widget.onSecurityFocused?.call();
+      _securityHighlightTimer?.cancel();
+      _securityHighlightTimer = Timer(const Duration(milliseconds: 1800), () {
+        if (mounted) setState(() => _securityHighlighted = false);
+      });
+    });
   }
 
   Future<void> _loadUserProfile() async {
@@ -118,6 +185,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                 _buildSectionTitle(tr.dataManagement, colorScheme),
                 const SizedBox(height: 6),
                 _buildDataManagementCard(context, colorScheme, isDark),
+                const SizedBox(height: 16),
+                _buildSectionTitle(tr.security, colorScheme),
+                const SizedBox(height: 6),
+                _buildSecurityCard(context, colorScheme),
                 const SizedBox(height: 16),
                 _buildSectionTitle(tr.information, colorScheme),
                 const SizedBox(height: 6),
@@ -457,7 +528,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
             context,
             Icons.info_outline_rounded,
             tr.version,
-            'v${AppConstants.appVersion}',
+            'v${AppInfoService.instance.fullVersion}',
             colorScheme.primary,
             colorScheme,
             onTap: null,
@@ -500,11 +571,107 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               tr.privacyPolicyContent,
               Icons.privacy_tip_outlined,
               AppTheme.infoColor,
+              actionLabel: tr.openPrivacyPolicy,
+              onAction: () => _openPrivacyPolicy(context),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSecurityCard(BuildContext context, ColorScheme colorScheme) {
+    final tr = AppLocalizations.of(context)!;
+    final service = AppLockService.instance;
+    return AnimatedBuilder(
+      animation: service,
+      builder: (context, _) {
+        final enabled = service.isEnabled;
+        final subtitle = service.initializationFailed
+            ? tr.appLockSettingsLoadFailed
+            : enabled
+            ? tr.appLockEnabledSubtitle
+            : tr.appLockDisabledSubtitle;
+        return AnimatedContainer(
+          key: _securityCardKey,
+          duration: const Duration(milliseconds: 220),
+          padding: EdgeInsets.all(_securityHighlighted ? 2 : 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _securityHighlighted
+                  ? colorScheme.primary
+                  : Colors.transparent,
+              width: _securityHighlighted ? 1.5 : 0,
+            ),
+          ),
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: SwitchListTile.adaptive(
+              value: enabled,
+              secondary: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  Icons.lock_outline_rounded,
+                  color: colorScheme.primary,
+                  size: 18,
+                ),
+              ),
+              title: Text(
+                tr.appLock,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              onChanged:
+                  _appLockToggleInProgress || service.initializationFailed
+                  ? null
+                  : (value) => _toggleAppLock(context, value),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleAppLock(BuildContext context, bool enabled) async {
+    if (_appLockToggleInProgress) return;
+    setState(() => _appLockToggleInProgress = true);
+    final tr = AppLocalizations.of(context)!;
+    try {
+      final result = await AppLockService.instance.setEnabled(
+        enabled: enabled,
+        localizedReason: tr.appLockAuthenticationReason,
+      );
+      if (!mounted || !context.mounted || result.isAuthenticated) return;
+
+      final message = switch (result.status) {
+        AppLockAuthStatus.cancelled => tr.appLockAuthenticationCancelled,
+        AppLockAuthStatus.unavailable => tr.appLockAuthenticationUnavailable,
+        AppLockAuthStatus.lockedOut => tr.appLockAuthenticationLockedOut,
+        AppLockAuthStatus.failed => tr.appLockAuthenticationFailed,
+        AppLockAuthStatus.authenticated => null,
+      };
+      if (message != null) showWarningSnackbar(context, message);
+    } finally {
+      if (mounted) setState(() => _appLockToggleInProgress = false);
+    }
   }
 
   Widget _buildDangerCard(
@@ -655,13 +822,29 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     String title,
     String content,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     showDialog(
       context: context,
-      builder: (context) =>
-          InfoDialog(title: title, content: content, icon: icon, color: color),
+      builder: (context) => InfoDialog(
+        title: title,
+        content: content,
+        icon: icon,
+        color: color,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      ),
     );
+  }
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final uri = Uri.parse(AppConstants.privacyPolicyUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      showFailureSnackbar(context, 'Could not open the privacy policy.');
+    }
   }
 
   void _showClearDataDialog() {
@@ -705,10 +888,13 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     return rowsByTable;
   }
 
-  Future<_ParsedBackup> _parseBackupFile(File file) async {
-    final extension = file.path.toLowerCase();
+  Future<_ParsedBackup> _parseBackupBytes(
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    final extension = fileName.toLowerCase();
     if (extension.endsWith(AppConstants.jsonExtension)) {
-      final jsonString = await file.readAsString();
+      final jsonString = utf8.decode(bytes);
       return _ParsedBackup(rows: _parseBackupRows(jsonString));
     }
 
@@ -717,7 +903,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       throw const FormatException('Selected file is not a valid backup.');
     }
 
-    final bytes = await file.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes, verify: true);
     final dataEntry = archive.findFile('data.json');
     if (dataEntry == null) {
@@ -757,6 +942,21 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     return _ParsedBackup(rows: rows, extractedAvatarDirectory: tempAvatarDir);
   }
 
+  Future<String?> _askForBackupPassword({required bool importing}) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => BackupPasswordDialog(importing: importing),
+    );
+  }
+
+  Future<bool> _confirmLegacyBackupImport() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => const LegacyBackupWarningDialog(),
+        ) ??
+        false;
+  }
+
   Future<void> _replaceAvatarDirectoryFromImport(
     Directory? tempAvatarDir,
   ) async {
@@ -774,7 +974,13 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     await tempAvatarDir.delete(recursive: true);
   }
 
-  String _backupErrorMessage(Object error) {
+  String _backupErrorMessage(Object error, AppLocalizations tr) {
+    if (error is BackupAuthenticationException) {
+      return tr.incorrectBackupPassword;
+    }
+    if (error is BackupFormatException) {
+      return tr.backupTamperedOrInvalid;
+    }
     if (error is FormatException) {
       return error.message;
     }
@@ -879,6 +1085,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     final tr = AppLocalizations.of(context)!;
     var loadingShown = false;
     try {
+      final password = await _askForBackupPassword(importing: false);
+      if (password == null) return;
+      if (!mounted) return;
+
       // Show loading
       showDialog(
         context: context,
@@ -923,7 +1133,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
       final exportData = {
         'app': tr.appName,
-        'version': AppConstants.appVersion,
+        'version': AppInfoService.instance.fullVersion,
         'backup_format': 2,
         'exported_at': DateTime.now().toIso8601String(),
         'data': {
@@ -978,7 +1188,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       final manifest = {
         'format': 'borrowledger_backup',
         'format_version': 2,
-        'app_version': AppConstants.appVersion,
+        'app_version': AppInfoService.instance.fullVersion,
         'exported_at': exportData['exported_at'],
         'avatar_count': avatarFiles.length,
       };
@@ -989,71 +1199,31 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         ),
       );
 
-      // Request storage permission for Android
-      if (Platform.isAndroid) {
-        developer.log('📱 Android detected, requesting permissions...');
-
-        final androidInfo = await DeviceInfoPlugin().androidInfo;
-        developer.log('📱 Android SDK: ${androidInfo.version.sdkInt}');
-
-        if (androidInfo.version.sdkInt < 33) {
-          final status = await Permission.storage.request();
-          developer.log('📱 Storage permission status: $status');
-
-          if (!status.isGranted) {
-            if (!mounted) return;
-            _dismissLoadingDialog();
-            loadingShown = false;
-            developer.log('❌ Storage permission denied');
-            showWarningSnackbar(context, tr.storagePermissionDenied);
-            return;
-          }
-        }
-      }
-
-      // Save file
+      final encodedArchive = Uint8List.fromList(ZipEncoder().encode(archive));
+      final encryptedBackup = await _backupCryptoService.encrypt(
+        payload: encodedArchive,
+        password: password,
+      );
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final fileName =
           '${AppConstants.exportFilePrefix}$timestamp${AppConstants.backupExtension}';
       developer.log('📝 File name: $fileName');
 
-      // Get directory
-      Directory? directory;
-      if (Platform.isAndroid) {
-        directory = await getExternalStorageDirectory();
-        developer.log('📂 Android directory: ${directory?.path}');
-      } else {
-        directory = await getApplicationDocumentsDirectory();
-        developer.log('📂 iOS directory: ${directory.path}');
-      }
-
-      if (directory == null) {
-        throw Exception('Could not get storage directory');
-      }
-
-      // Create a "Backups" subfolder
-      final backupDir = Directory('${directory.path}/Backups');
-      if (!await backupDir.exists()) {
-        await backupDir.create(recursive: true);
-        developer.log('📁 Created Backups directory');
-      }
-
-      final file = File('${backupDir.path}/$fileName');
-      developer.log('💾 Writing to file: ${file.path}');
-
-      final encodedArchive = ZipEncoder().encode(archive);
-      await file.writeAsBytes(encodedArchive, flush: true);
-      developer.log('✅ File written successfully');
-
-      // Verify file exists
-      final exists = await file.exists();
-      final size = await file.length();
-      developer.log('✅ File exists: $exists, Size: $size bytes');
-
       if (!mounted) return;
       _dismissLoadingDialog();
       loadingShown = false;
-      developer.log('✅ Export completed successfully');
+
+      final savedPath = await _backupFileService.saveBackup(
+        fileName: fileName,
+        bytes: encryptedBackup,
+      );
+      if (savedPath == null) {
+        developer.log('ℹ️ Export cancelled by user');
+        return;
+      }
+
+      developer.log('✅ Export completed successfully: $savedPath');
+      if (!mounted) return;
 
       // Show success dialog
       showDialog(
@@ -1063,7 +1233,15 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
           transactionsCount: transactions.length,
           splitsCount: splits.length,
           expensesCount: expenses.length,
-          onShare: () => shareExportedData(file),
+          onShare: () async {
+            Navigator.pop(context);
+            await _backupFileService.shareBackup(
+              fileName: fileName,
+              bytes: encryptedBackup,
+              text: tr.encryptedBackupShareWarning,
+              subject: tr.appName,
+            );
+          },
         ),
       );
     } catch (e, stackTrace) {
@@ -1075,7 +1253,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
       showFailureSnackbar(
         context,
-        '${tr.exportFailed}: ${_backupErrorMessage(e)}',
+        '${tr.exportFailed}: ${_backupErrorMessage(e, tr)}',
         action: SnackBarAction(
           label: tr.retry,
           textColor: Colors.white,
@@ -1094,19 +1272,28 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     try {
       // Pick file
       developer.log('📁 Opening file picker...');
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['blbackup', 'zip', 'json'],
-      );
-
-      if (result == null || result.files.single.path == null) {
+      final selectedBackup = await _backupFileService.pickBackup();
+      if (selectedBackup == null) {
         developer.log('❌ No file selected');
         return;
       }
 
-      developer.log('✅ File selected: ${result.files.single.path}');
+      developer.log('✅ File selected: ${selectedBackup.name}');
 
-      // Show loading
+      final selectedBytes = await selectedBackup.readBytes();
+      Uint8List bytesToParse = selectedBytes;
+      if (_backupCryptoService.isEncryptedEnvelope(selectedBytes)) {
+        final password = await _askForBackupPassword(importing: true);
+        if (password == null) return;
+        bytesToParse = await _backupCryptoService.decrypt(
+          envelopeBytes: selectedBytes,
+          password: password,
+        );
+      } else if (!await _confirmLegacyBackupImport()) {
+        return;
+      }
+
+      // Show loading only after the file is selected, unlocked, and accepted.
       if (!mounted) return;
       showDialog(
         context: context,
@@ -1116,8 +1303,12 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       loadingShown = true;
 
       developer.log('📖 Reading file...');
-      final file = File(result.files.single.path!);
-      final parsedBackup = await _parseBackupFile(file);
+      final parsedBackup = await _parseBackupBytes(
+        bytesToParse,
+        _backupCryptoService.isEncryptedEnvelope(selectedBytes)
+            ? 'inner.blbackup'
+            : selectedBackup.name,
+      );
       final backupRows = parsedBackup.rows;
       developer.log('✅ Backup parsed');
 
@@ -1201,7 +1392,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       if (loadingShown) _dismissLoadingDialog();
       showFailureSnackbar(
         context,
-        '${tr.importFailed}: ${_backupErrorMessage(e)}',
+        '${tr.importFailed}: ${_backupErrorMessage(e, tr)}',
       );
     }
   }
@@ -1341,7 +1532,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
     );
   }
 
-  Future<void> shareExportedData(File file) async {
+  Future<void> shareExportedData(Uint8List bytes, String fileName) async {
     final tr = AppLocalizations.of(context)!;
     Navigator.pop(context);
     developer.log('📤 Attempting to share file...');
@@ -1351,12 +1542,11 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
         AppConstants.dateTimeFormat,
       ).format(DateTime.now());
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: 'HisaabMate Backup File\nExported on: $formattedDate',
-          subject: 'HisaabMate Backup ($formattedDate)',
-        ),
+      await _backupFileService.shareBackup(
+        fileName: fileName,
+        bytes: bytes,
+        text: 'HisaabMate Backup File\nExported on: $formattedDate',
+        subject: 'HisaabMate Backup ($formattedDate)',
       );
       developer.log('✅ Share dialog opened');
     } catch (e) {

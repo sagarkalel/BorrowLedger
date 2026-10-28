@@ -60,6 +60,14 @@ class ExportSuccessDialog extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         AppDialogNotice(
+          color: AppTheme.warningColor,
+          child: Text(
+            tr.backupPasswordCannotBeRecovered,
+            style: const TextStyle(fontSize: 12, height: 1.35),
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppDialogNotice(
           color: AppTheme.successColor,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,

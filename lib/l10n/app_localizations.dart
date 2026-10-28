@@ -3626,6 +3626,126 @@ abstract class AppLocalizations {
   /// **'You can share the backup file or save it for later import'**
   String get canShareBackupFile;
 
+  /// No description provided for @backupSecurityWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup contains sensitive financial records, contacts, UPI IDs, and photos. It will be encrypted with a password you enter. The password is required to restore it and cannot be recovered by HisaabMate.'**
+  String get backupSecurityWarning;
+
+  /// No description provided for @backupPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect your backup'**
+  String get backupPasswordTitle;
+
+  /// No description provided for @importBackupPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock backup'**
+  String get importBackupPasswordTitle;
+
+  /// No description provided for @backupPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get backupPasswordLabel;
+
+  /// No description provided for @confirmBackupPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmBackupPasswordLabel;
+
+  /// No description provided for @backupPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a long passphrase'**
+  String get backupPasswordHint;
+
+  /// No description provided for @backupPasswordRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least 8 characters. A longer passphrase is recommended. HisaabMate does not store this password.'**
+  String get backupPasswordRecommendation;
+
+  /// No description provided for @backupPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a password.'**
+  String get backupPasswordRequired;
+
+  /// No description provided for @backupPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters.'**
+  String get backupPasswordTooShort;
+
+  /// No description provided for @backupPasswordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get backupPasswordsDoNotMatch;
+
+  /// No description provided for @backupPasswordCannotBeRecovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgotten passwords cannot be recovered. Keep it somewhere safe.'**
+  String get backupPasswordCannotBeRecovered;
+
+  /// No description provided for @backupPasswordRequiredForRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password used when this backup was created.'**
+  String get backupPasswordRequiredForRestore;
+
+  /// No description provided for @incorrectBackupPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password or damaged backup.'**
+  String get incorrectBackupPassword;
+
+  /// No description provided for @backupTamperedOrInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The backup is damaged or has been modified.'**
+  String get backupTamperedOrInvalid;
+
+  /// No description provided for @encryptBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypt backup'**
+  String get encryptBackup;
+
+  /// No description provided for @unlockBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlockBackup;
+
+  /// No description provided for @encryptedBackupShareWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This encrypted backup contains sensitive information. The recipient still needs the password to restore it.'**
+  String get encryptedBackupShareWarning;
+
+  /// No description provided for @legacyBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Older backup'**
+  String get legacyBackupTitle;
+
+  /// No description provided for @legacyBackupWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup is not password-protected. It can be imported, but anyone who gets the file may read its contents. Export it again to create a new encrypted backup.'**
+  String get legacyBackupWarning;
+
+  /// No description provided for @continueImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue import'**
+  String get continueImport;
+
   /// No description provided for @preparingExport.
   ///
   /// In en, this message translates to:
@@ -3641,7 +3761,7 @@ abstract class AppLocalizations {
   /// No description provided for @savedInBackupsFolder.
   ///
   /// In en, this message translates to:
-  /// **'Saved in Backups folder'**
+  /// **'Saved to the selected location'**
   String get savedInBackupsFolder;
 
   /// No description provided for @exportFailed.
@@ -3770,6 +3890,132 @@ abstract class AppLocalizations {
   /// **'Data Management'**
   String get dataManagement;
 
+  /// No description provided for @security.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get security;
+
+  /// No description provided for @appLockDiscoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect your app'**
+  String get appLockDiscoveryTitle;
+
+  /// No description provided for @appLockDiscoveryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use fingerprint, Face ID, or device credentials to protect your records. Enable it in Security.'**
+  String get appLockDiscoveryMessage;
+
+  /// No description provided for @appLockDiscoverySetUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up now'**
+  String get appLockDiscoverySetUp;
+
+  /// No description provided for @appLockDiscoveryMaybeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe later'**
+  String get appLockDiscoveryMaybeLater;
+
+  /// No description provided for @appLockDiscoveryDontShowAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show again'**
+  String get appLockDiscoveryDontShowAgain;
+
+  /// No description provided for @appLockDiscoveryMenuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'More App Lock options'**
+  String get appLockDiscoveryMenuLabel;
+
+  /// No description provided for @appLock.
+  ///
+  /// In en, this message translates to:
+  /// **'App Lock'**
+  String get appLock;
+
+  /// No description provided for @appLockEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses device authentication and locks after 1 minute.'**
+  String get appLockEnabledSubtitle;
+
+  /// No description provided for @appLockDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect the app with fingerprint, Face ID, or device credentials.'**
+  String get appLockDisabledSubtitle;
+
+  /// No description provided for @appLockLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App locked'**
+  String get appLockLockedTitle;
+
+  /// No description provided for @appLockLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticate to continue using HisaabMate. Your device handles the biometric or credential check.'**
+  String get appLockLockedMessage;
+
+  /// No description provided for @unlockApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlockApp;
+
+  /// No description provided for @appLockAuthenticating.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticating...'**
+  String get appLockAuthenticating;
+
+  /// No description provided for @appLockAuthenticationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticate to unlock HisaabMate'**
+  String get appLockAuthenticationReason;
+
+  /// No description provided for @appLockAuthenticationCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication was cancelled. Tap Unlock to try again.'**
+  String get appLockAuthenticationCancelled;
+
+  /// No description provided for @appLockAuthenticationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Device authentication is unavailable. Set up a device PIN, password, pattern, or biometric method first.'**
+  String get appLockAuthenticationUnavailable;
+
+  /// No description provided for @appLockAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Your data is still locked.'**
+  String get appLockAuthenticationFailed;
+
+  /// No description provided for @appLockAuthenticationLockedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Device authentication is temporarily locked. Use your device credentials or try again later.'**
+  String get appLockAuthenticationLockedOut;
+
+  /// No description provided for @appLockDeviceCredentialNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint, Face ID, PIN, pattern, or password is handled by your device. HisaabMate does not store biometric data.'**
+  String get appLockDeviceCredentialNote;
+
+  /// No description provided for @appLockSettingsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Security settings could not be loaded. Retry before continuing.'**
+  String get appLockSettingsLoadFailed;
+
   /// No description provided for @information.
   ///
   /// In en, this message translates to:
@@ -3881,13 +4127,13 @@ abstract class AppLocalizations {
   /// No description provided for @createsJsonFile.
   ///
   /// In en, this message translates to:
-  /// **'Creates a backup file containing:'**
+  /// **'Creates an encrypted backup file containing:'**
   String get createsJsonFile;
 
   /// No description provided for @fileSavedLocally.
   ///
   /// In en, this message translates to:
-  /// **'The file is saved locally and can be shared.'**
+  /// **'Choose where to save the encrypted backup or share it with another app.'**
   String get fileSavedLocally;
 
   /// No description provided for @restoresDataFromBackup.
@@ -3947,13 +4193,13 @@ abstract class AppLocalizations {
   /// No description provided for @shareBackupsSecurely.
   ///
   /// In en, this message translates to:
-  /// **'Share backups securely'**
+  /// **'Share backups only with apps and people you trust'**
   String get shareBackupsSecurely;
 
   /// No description provided for @backupFilesInJson.
   ///
   /// In en, this message translates to:
-  /// **'Backup files include your records and saved contact photos.'**
+  /// **'New backups encrypt your records, contact details, UPI IDs, and saved contact photos with your password. HisaabMate cannot recover a forgotten password; sharing the file gives the receiving destination access to the encrypted file.'**
   String get backupFilesInJson;
 
   /// No description provided for @changePhoto.
@@ -4031,19 +4277,25 @@ abstract class AppLocalizations {
   /// No description provided for @yourDataStaysOnDevice.
   ///
   /// In en, this message translates to:
-  /// **'Your data stays on device'**
+  /// **'Your data stays on your device unless you export or share it'**
   String get yourDataStaysOnDevice;
+
+  /// No description provided for @openPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Open full privacy policy'**
+  String get openPrivacyPolicy;
 
   /// No description provided for @termsOfServiceContent.
   ///
   /// In en, this message translates to:
-  /// **'This is a personal finance management app. Use it responsibly and at your own risk. All financial decisions are your responsibility.'**
+  /// **'HisaabMate helps you record personal financial information. It does not provide financial, legal, or tax advice and does not process payments. You are responsible for verifying your records and decisions.'**
   String get termsOfServiceContent;
 
   /// No description provided for @privacyPolicyContent.
   ///
   /// In en, this message translates to:
-  /// **'All your data is stored locally on your device. We do not collect, transmit, or share any personal information. Your privacy is our priority.'**
+  /// **'HisaabMate stores your ledger records, expenses, contact details, UPI IDs, and profile photos locally on your device. We do not collect or transmit this data to our servers. If you export or share a backup, the receiving app or person may access it. See the full privacy policy for details.'**
   String get privacyPolicyContent;
 
   /// No description provided for @developedBy.

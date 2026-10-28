@@ -32,11 +32,17 @@ The app requests contacts access only when you choose a contact-related feature.
 
 Camera and photo-library access are optional. They are used only when you choose to take or select a contact profile photo.
 
+## App Lock and device authentication
+
+App Lock is optional and can be enabled from Settings. When enabled, HisaabMate asks the operating system to authenticate you using an available biometric method or device credential and locks the app after one minute in the background. HisaabMate does not receive, collect, or store your fingerprint, face data, PIN, pattern, or password.
+
 ## Backups and sharing
 
 When you choose Export Data, HisaabMate creates a backup containing your records, contact details, UPI IDs, and saved contact photos. The backup is saved to a location selected by you through the operating system’s file picker.
 
 You may also share a backup through the operating system share sheet. Once you share a file, the receiving app, service, or person may store or access it according to their own policies. Share backups only with destinations and people you trust.
+
+New backups are encrypted by default with a password you choose. HisaabMate does not store or transmit that password and cannot recover it if forgotten. The password is required to restore the backup. Older unencrypted backup files remain importable for compatibility, but should be exported again using the current encrypted format.
 
 Backups are not automatically uploaded to HisaabMate or deleted when you clear app data or uninstall the app. You are responsible for managing copies you save or share.
 
@@ -59,7 +65,7 @@ Exported or shared backup files are separate copies and are not removed automati
 
 ## Security note
 
-The current version is designed as a local-first app and does not provide cloud security, account recovery, database encryption, or encrypted backup files. Protect your device and treat exported backups as sensitive files.
+The current version is designed as a local-first app. New backup exports use password-based Argon2id key derivation and AES-256-GCM authenticated encryption. The local SQLite database is stored in app-private device storage but is not application-encrypted. App Lock adds an authentication barrier through the operating system; it is not database encryption. Account recovery is not provided. Protect your device, keep your backup password safe, and treat exported backups as sensitive files.
 
 ## Changes to this policy
 
